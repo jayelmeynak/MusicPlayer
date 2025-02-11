@@ -10,7 +10,7 @@ data class TrackDto(
     @SerializedName("title_short")
     val titleShort: String,
     @SerializedName("album")
-    val album: Album,
+    val album: AlbumDto,
     @SerializedName("artist")
     val artist: Artist,
     @SerializedName("duration")

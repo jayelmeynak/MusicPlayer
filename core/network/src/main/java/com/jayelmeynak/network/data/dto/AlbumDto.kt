@@ -2,7 +2,7 @@ package com.jayelmeynak.network.data.dto
 
 import com.google.gson.annotations.SerializedName
 
-data class Album(
+data class AlbumDto(
     @SerializedName("id")
     val id: Int,
     @SerializedName("title")
