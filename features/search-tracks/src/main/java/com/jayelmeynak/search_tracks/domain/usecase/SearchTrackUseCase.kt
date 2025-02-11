@@ -7,5 +7,5 @@ class SearchTrackUseCase @Inject constructor(
     private val repository: MusicChartsRepository
 ) {
 
-    suspend fun invoke(q: String) = repository.searchTrack(q)
+    suspend operator fun invoke(q: String) = repository.searchTrack(q)
 }

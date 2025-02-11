@@ -1,8 +1,10 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    id("kotlin-kapt")
 }
 
 android {
@@ -31,6 +33,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+    buildFeatures {
+        compose = true
     }
 }
 
@@ -64,8 +69,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
 
-    ksp(libs.hilt.compiler)
     implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     implementation (libs.androidx.hilt.navigation.compose)
     implementation (libs.androidx.hilt.navigation.compose.v100alpha01)
 }

@@ -1,6 +1,8 @@
 package com.jayelmeynak.network.di
 
 import com.jayelmeynak.network.data.ApiService
+import com.jayelmeynak.network.data.RemoteChartDataSource
+import com.jayelmeynak.network.data.RemoteChartDataSourceImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -41,5 +43,11 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRemoteChartDataSource(apiService: ApiService): RemoteChartDataSource {
+        return RemoteChartDataSourceImpl(apiService)
     }
 }
