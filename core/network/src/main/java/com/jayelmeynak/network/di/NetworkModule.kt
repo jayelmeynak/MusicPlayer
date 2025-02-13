@@ -3,6 +3,8 @@ package com.jayelmeynak.network.di
 import com.jayelmeynak.network.data.ApiService
 import com.jayelmeynak.network.data.RemoteChartDataSource
 import com.jayelmeynak.network.data.RemoteChartDataSourceImpl
+import com.jayelmeynak.network.data.RemoteTrackDataSource
+import com.jayelmeynak.network.data.RemoteTrackDataSourceImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -49,5 +51,11 @@ object NetworkModule {
     @Singleton
     fun provideRemoteChartDataSource(apiService: ApiService): RemoteChartDataSource {
         return RemoteChartDataSourceImpl(apiService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRemoteTrackDataSource(apiService: ApiService): RemoteTrackDataSource {
+        return RemoteTrackDataSourceImpl(apiService)
     }
 }

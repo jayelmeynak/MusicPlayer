@@ -45,6 +45,7 @@ android {
 dependencies {
 
     implementation(project(":features:search-tracks"))
+    implementation(project(":features:player"))
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

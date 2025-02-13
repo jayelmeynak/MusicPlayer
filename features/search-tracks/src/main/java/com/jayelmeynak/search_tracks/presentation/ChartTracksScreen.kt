@@ -23,7 +23,8 @@ import com.jayelmeynak.search_tracks.presentation.components.TrackSearchBar
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun ChartTracksScreen(
-    viewModel: ChartTracksViewModel = hiltViewModel()
+    viewModel: ChartTracksViewModel = hiltViewModel(),
+    onTrackClicked: (String) -> Unit
 ) {
     val state = viewModel.state.value
     val listToDisplay = if (state.searchList.isNotEmpty()) state.searchList else state.charts
@@ -62,6 +63,7 @@ fun ChartTracksScreen(
                                         track.id.toString()
                                     )
                                 )
+                                onTrackClicked(track.id.toString())
                             }
                         )
                     }

@@ -20,4 +20,9 @@ interface ApiService {
 
     @GET("/track/{id}")
     suspend fun getTrack(@Path("id") songId: String): Response<TrackDto>
+
+
+    @GET("/album/{id}")
+    suspend fun getAlbum(@Path("id") albumId: String): Response<ResponseChart>
+
 }
