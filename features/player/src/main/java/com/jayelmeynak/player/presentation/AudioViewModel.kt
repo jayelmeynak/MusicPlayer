@@ -1,7 +1,12 @@
 package com.jayelmeynak.player.presentation
 
 import android.annotation.SuppressLint
+import android.content.ContentResolver
+import android.content.Context
+import android.database.Cursor
+import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -20,6 +25,7 @@ import com.jayelmeynak.player.player.service.MusicState
 import com.jayelmeynak.player.player.service.PlayerEvent
 import com.jayelmeynak.ui.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +50,7 @@ class AudioViewModel @Inject constructor(
     private val audioServiceHandler: MusicServiceHandler,
     private val musicRemoteRepository: MusicRemoteRepository,
     savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     var duration by savedStateHandle.saveable { mutableStateOf(0L) }
@@ -104,7 +111,7 @@ class AudioViewModel @Inject constructor(
                     MediaMetadata.Builder()
                         .setTitle(audio.title)
                         .setArtist(audio.artistName)
-                        .setArtworkUri(Uri.parse(audio.album?.cover))
+                        .setArtworkUri(Uri.parse(audio.album?.cover ?: "") ?: Uri.EMPTY)
                         .build()
                 )
                 .build()
@@ -113,17 +120,46 @@ class AudioViewModel @Inject constructor(
         }
     }
 
+    fun getFileNameFromUri(uri: Uri): String? {
+        var fileName: String? = null
+        val contentResolver: ContentResolver = context.contentResolver
+        val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
+    }
+
+    fun getFileMetadata(uri: Uri): Pair<String?, String?> {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(context, uri)
+        val artistName = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+        val fileId = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
+        retriever.release()
+        return Pair(fileId, artistName)
+    }
+
     fun loadLocalTrack(trackUri: String) {
         viewModelScope.launch {
-            _uiState.value = UIState.Loading
-            val mediaItem = MediaItem.Builder()
-                .setUri(Uri.parse(trackUri))
-                .build()
-            audioServiceHandler.setMediaItemList(listOf(mediaItem))
-            _uiState.value = UIState.Ready
-            audioServiceHandler.onPlayerEvents(
-                PlayerEvent.PlayPause
+            val uri = Uri.parse(trackUri)
+            val fileName = getFileNameFromUri(uri) ?: "Unknown Title"
+            val (fileId, artistName) = getFileMetadata(uri)
+            val track = Track(
+                id = fileId?.toLongOrNull() ?: 0,
+                title = fileName,
+                artistName = artistName ?: "Unknown Artist",
+                preview = trackUri,
+                album = null,
+                uri = uri
             )
+            audioList = listOf(track)
+            setMediaItem()
+            audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
         }
     }
 

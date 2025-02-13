@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
+    <string name="read_media_audio_required">Необходимо предоставить разрешение для доступа к музыке</string>
 </resources>
