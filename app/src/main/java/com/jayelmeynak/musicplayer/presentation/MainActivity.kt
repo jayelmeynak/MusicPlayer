@@ -1,5 +1,6 @@
-package com.jayelmeynak.musicplayer
+package com.jayelmeynak.musicplayer.presentation
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,9 +11,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
+import androidx.navigation.compose.rememberNavController
 import com.example.compose.AppTheme
-import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
+import com.jayelmeynak.musicplayer.R
+import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
+import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
+import com.jayelmeynak.player.presentation.PlayerActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -26,38 +32,50 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         checkPermissions()
         setContent {
             AppTheme {
-//                ChartTracksScreen(
-//                    onTrackClicked = { trackId ->
-//                        val uri = Uri.parse("multiplayer://player?source=api&trackId=$trackId")
-//                        val parentIntent = Intent("com.jayelmeynak.musicplayer.action.HOME").apply {
-//                            addCategory(Intent.CATEGORY_DEFAULT)
-//                        }
-//                        val playerIntent = Intent(this, PlayerActivity::class.java).apply {
-//                            action = Intent.ACTION_VIEW
-//                            data = uri
-//                        }
-//
-//                        TaskStackBuilder.create(this)
-//                            .addNextIntent(parentIntent)
-//                            .addNextIntent(playerIntent)
-//                            .startActivities()
-//                    }
-//                )
-                DownloadTrackScreen { trackUri ->
-                    val trackUriString = Uri.encode(trackUri.toString())
-                    val deepLinkUri =
-                        Uri.parse("multiplayer://player?source=local&trackUri=$trackUriString")
-                    val intent = Intent(Intent.ACTION_VIEW, deepLinkUri)
-                    startActivity(intent)
+                val navController = rememberNavController()
+                Scaffold(
+                    bottomBar = {
+                        BottomNavigationBar(navController)
+                    }
+                ) {
+                    Navigation(
+
+                        navController = navController
+                    ) {
+                        handleTrackClick(it)
+                    }
                 }
             }
         }
+    }
+
+    private fun handleTrackClick(deepLinkUri: Uri) {
+        val intent = Intent(this, PlayerActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            val source = deepLinkUri.getQueryParameter("source")
+            source?.let {
+                if(it == "local") {
+                    val trackUriStringEncoded = deepLinkUri.getQueryParameter("trackUri")
+                    val trackUriStringDecoded = trackUriStringEncoded?.let { Uri.decode(it) }
+                    putExtra("source", source)
+                    putExtra("trackUri", trackUriStringDecoded)
+                }
+
+                if(it == "api") {
+                    val trackIdString = deepLinkUri.getQueryParameter("trackId")
+                    putExtra("source", source)
+                    putExtra("trackId", trackIdString)
+                }
+            }
+        }
+        startActivity(intent)
     }
 
     private fun checkPermissions() {

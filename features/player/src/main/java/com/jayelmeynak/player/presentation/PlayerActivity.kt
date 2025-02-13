@@ -22,16 +22,15 @@ class PlayerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val data = intent?.data
-        val source = data?.getQueryParameter("source")
+        val source = intent.getStringExtra("source")
 
         if (source == "local") {
-            val trackUri = data.getQueryParameter("trackUri")
+            val trackUri = intent.getStringExtra("trackUri")
             if (!trackUri.isNullOrEmpty()) {
                 viewModel.loadLocalTrack(trackUri)
             }
         } else {
-            val trackId = data?.getQueryParameter("trackId")
+            val trackId = intent.getStringExtra("trackId")
             if (!trackId.isNullOrEmpty()) {
                 viewModel.loadRemoteTrack(trackId)
             }

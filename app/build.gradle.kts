@@ -47,7 +47,7 @@ dependencies {
     implementation(project(":features:search-tracks"))
     implementation(project(":features:player"))
     implementation(project(":features:download-tracks"))
-
+    implementation ("androidx.compose.material:material-icons-extended")
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation (libs.androidx.hilt.navigation.compose)
