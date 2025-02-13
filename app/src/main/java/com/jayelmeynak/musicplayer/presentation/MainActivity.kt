@@ -1,6 +1,5 @@
 package com.jayelmeynak.musicplayer.presentation
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -32,7 +31,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -44,9 +42,9 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         BottomNavigationBar(navController)
                     }
-                ) {
+                ) { scaffoldPadding ->
                     Navigation(
-
+                        scaffoldPadding = scaffoldPadding,
                         navController = navController
                     ) {
                         handleTrackClick(it)

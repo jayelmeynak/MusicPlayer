@@ -4,9 +4,10 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,11 +26,13 @@ import com.jayelmeynak.download_tracks.presentation.components.TrackSearchBar
 
 @Composable
 fun DownloadTrackScreen(
+    scaffoldPadding: PaddingValues,
     viewModel: DownloadTracksViewModel = hiltViewModel(),
     onTrackClicked: (Uri) -> Unit,
 ) {
     val state = viewModel.state.value
     DownloadTracks(
+        scaffoldPadding = scaffoldPadding,
         state = state,
         onTrackClicked = onTrackClicked,
         onSearchQueryChange = { query ->
@@ -41,6 +44,7 @@ fun DownloadTrackScreen(
 
 @Composable
 fun DownloadTracks(
+    scaffoldPadding: PaddingValues,
     state: DownloadTracksState,
     onTrackClicked: (Uri) -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -52,7 +56,7 @@ fun DownloadTracks(
     when {
         state.isLoading -> {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -61,7 +65,7 @@ fun DownloadTracks(
 
         state.errorMessage != null -> {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -74,8 +78,8 @@ fun DownloadTracks(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .statusBarsPadding(),
+                    .padding(scaffoldPadding)
+                    .background(MaterialTheme.colorScheme.background),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TrackSearchBar(
