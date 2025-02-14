@@ -3,7 +3,10 @@ package com.jayelmeynak.player.player.notification
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -53,6 +56,16 @@ class MusicNotificationManager @Inject constructor(
 
     @UnstableApi
     private fun buildNotification(mediaSession: MediaSession) {
+
+        val deepLinkUriMainActivity = Uri.parse("multiplayer://main")
+        val intent = Intent(Intent.ACTION_VIEW, deepLinkUriMainActivity)
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         PlayerNotificationManager.Builder(
             context,
             NOTIFICATION_ID,
@@ -61,7 +74,7 @@ class MusicNotificationManager @Inject constructor(
             .setMediaDescriptionAdapter(
                 MusicNotificationAdapter(
                     context = context,
-                    pendingIntent = mediaSession.sessionActivity
+                    pendingIntent = pendingIntent
                 )
             )
             .build()
