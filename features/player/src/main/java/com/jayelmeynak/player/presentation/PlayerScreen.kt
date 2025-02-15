@@ -93,7 +93,7 @@ fun PlayerScreen(
                     Text(
                         text = currentTrack.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Start
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -102,7 +102,7 @@ fun PlayerScreen(
                         text = currentTrack.artistName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Start
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
