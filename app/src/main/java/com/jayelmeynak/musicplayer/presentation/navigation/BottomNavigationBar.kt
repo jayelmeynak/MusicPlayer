@@ -23,6 +23,7 @@ fun BottomNavigationBar(
     val selectedIcons =
         listOf(Icons.Filled.Wifi, Icons.Filled.SdStorage)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    var isNavigateNow = false
     val currentRoute =
         when (navBackStackEntry?.destination?.route) {
             Screen.ROUTE_API_TRACKS -> 0
@@ -42,9 +43,12 @@ fun BottomNavigationBar(
                 label = { Text(item.name) },
                 selected = currentRoute == index,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(item.route) {
-                            inclusive = true
+                    if(!isNavigateNow && currentRoute != index) {
+                        isNavigateNow = true
+                        navController.navigate(item.route) {
+                            popUpTo(item.route) {
+                                inclusive = true
+                            }
                         }
                     }
                 }

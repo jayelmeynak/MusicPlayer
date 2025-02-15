@@ -83,6 +83,7 @@ fun DownloadTracks(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TrackSearchBar(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     searchQuery = state.query,
                     onSearchQueryChange = { onSearchQueryChange(it) },
                     onImeSearch = {
@@ -92,7 +93,8 @@ fun DownloadTracks(
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
                     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                 ) {
                     LazyColumn(
