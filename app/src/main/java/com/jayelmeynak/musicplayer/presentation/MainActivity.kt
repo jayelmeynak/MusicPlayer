@@ -13,11 +13,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
-import com.example.compose.AppTheme
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
 import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
 import com.jayelmeynak.player.presentation.PlayerActivity
+import com.jayelmeynak.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
