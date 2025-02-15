@@ -3,9 +3,10 @@ package com.jayelmeynak.search_tracks.presentation
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import com.jayelmeynak.search_tracks.presentation.components.TrackSearchBar
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun ChartTracksScreen(
+    scaffoldPadding: PaddingValues,
     viewModel: ChartTracksViewModel = hiltViewModel(),
     onTrackClicked: (String) -> Unit
 ) {
@@ -33,8 +35,8 @@ fun ChartTracksScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding(),
+            .padding(scaffoldPadding)
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TrackSearchBar(

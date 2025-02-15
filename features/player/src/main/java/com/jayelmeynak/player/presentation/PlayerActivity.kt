@@ -48,9 +48,8 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
-    // Я привык что если закрыть приложение, то музыка тоже останавливается
     override fun onDestroy() {
-        stopService()
+//        stopService()
         super.onDestroy()
     }
 
