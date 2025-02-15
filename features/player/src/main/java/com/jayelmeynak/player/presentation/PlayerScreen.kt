@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -88,12 +90,12 @@ fun PlayerScreen(
                 )
 
                 Column(
-                    modifier = Modifier.padding(start = 16.dp)
+                    modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
                 ) {
                     Text(
                         text = currentTrack.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Start
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -102,7 +104,7 @@ fun PlayerScreen(
                         text = currentTrack.artistName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Start
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -115,19 +117,51 @@ fun PlayerScreen(
                         valueRange = 0f..100f,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = viewModel.progressString,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        Text(
+                            text = viewModel.formatDuration(viewModel.duration),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
                         onClick = {
+                            viewModel.onUiEvents(UIEvents.Backward)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.FastRewind,
+                            contentDescription = "Пролистать назад"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
                             viewModel.onUiEvents(UIEvents.SeekToPrevious)
                         }
                     ) {
-                        Icon(imageVector = Icons.Filled.SkipPrevious, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Filled.SkipPrevious,
+                            contentDescription = "Предыдущий трек"
+                        )
                     }
 
                     IconButton(
@@ -137,7 +171,7 @@ fun PlayerScreen(
                     ) {
                         Icon(
                             imageVector = if (viewModel.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = null
+                            contentDescription = if (viewModel.isPlaying) "Пауза" else "Воспроизведение"
                         )
                     }
 
@@ -146,7 +180,21 @@ fun PlayerScreen(
                             viewModel.onUiEvents(UIEvents.SeekToNext)
                         }
                     ) {
-                        Icon(imageVector = Icons.Filled.SkipNext, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Filled.SkipNext,
+                            contentDescription = "Следующий трек"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            viewModel.onUiEvents(UIEvents.Forward)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.FastForward,
+                            contentDescription = "Пролистать вперед"
+                        )
                     }
                 }
             }

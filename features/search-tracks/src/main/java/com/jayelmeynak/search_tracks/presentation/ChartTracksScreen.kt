@@ -40,6 +40,7 @@ fun ChartTracksScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TrackSearchBar(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             searchQuery = state.query,
             onSearchQueryChange = { viewModel.onAction(ChartTracksAction.OnSearchQueryChange(it)) },
             onImeSearch = {
@@ -49,11 +50,12 @@ fun ChartTracksScreen(
         Surface(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(top = 8.dp),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp, start = 8.dp, end = 8.dp),
             ) {
                 LazyColumn {
                     items(listToDisplay) { track ->

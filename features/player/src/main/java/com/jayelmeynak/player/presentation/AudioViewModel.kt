@@ -72,7 +72,8 @@ class AudioViewModel @Inject constructor(
                     is MusicState.Playing -> isPlaying = mediaState.isPlaying
                     is MusicState.Progress -> calculateProgressValue(mediaState.progress)
                     is MusicState.CurrentPlaying -> {
-                        currentSelectedAudio = audioList[mediaState.mediaItemIndex]
+                        currentSelectedAudio =
+                            audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
                     }
 
                     is MusicState.Ready -> {
@@ -89,12 +90,34 @@ class AudioViewModel @Inject constructor(
             _uiState.value = UIState.Loading
             musicRemoteRepository.getTrack(id).also { result ->
                 result.onSuccess { track ->
+                    currentSelectedAudio = track
                     audioList = listOf(track)
-                    setMediaItem()
+                    track.album?.id?.let { loadRemoteAlbum(it) }
+                    if (audioList.size == 1) {
+                        setMediaItem()
+                    }
                     _uiState.value = UIState.Ready
                     audioServiceHandler.onPlayerEvents(
                         PlayerEvent.PlayPause
                     )
+                }
+                    .onError { error ->
+                        _uiState.value = UIState.Error(error.toUiText())
+                    }
+            }
+        }
+    }
+
+    private fun loadRemoteAlbum(albumId: Int) {
+        viewModelScope.launch {
+            _uiState.value = UIState.Loading
+            musicRemoteRepository.getAlbum(albumId.toString()).also { result ->
+                result.onSuccess { albumTracks ->
+                    val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
+                    currentSelectedAudio.let { track ->
+                        audioList = listOf(track) + filteredTracks
+                    }
+                    setMediaItem()
                 }
                     .onError { error ->
                         _uiState.value = UIState.Error(error.toUiText())
@@ -210,9 +233,9 @@ class AudioViewModel @Inject constructor(
 
     @SuppressLint("DefaultLocale")
     fun formatDuration(duration: Long): String {
-        val minute = TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS)
-        val seconds = (minute) - minute * TimeUnit.SECONDS.convert(1, TimeUnit.MINUTES)
-        return String.format("%02d:%02d", minute, seconds)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(duration)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(duration) - TimeUnit.MINUTES.toSeconds(minutes)
+        return String.format("%02d:%02d", minutes, seconds)
     }
 
     override fun onCleared() {
