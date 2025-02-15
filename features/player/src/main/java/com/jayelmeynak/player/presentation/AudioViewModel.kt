@@ -72,7 +72,8 @@ class AudioViewModel @Inject constructor(
                     is MusicState.Playing -> isPlaying = mediaState.isPlaying
                     is MusicState.Progress -> calculateProgressValue(mediaState.progress)
                     is MusicState.CurrentPlaying -> {
-                        currentSelectedAudio = audioList[mediaState.mediaItemIndex]
+                        currentSelectedAudio =
+                            audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
                     }
 
                     is MusicState.Ready -> {
@@ -89,12 +90,34 @@ class AudioViewModel @Inject constructor(
             _uiState.value = UIState.Loading
             musicRemoteRepository.getTrack(id).also { result ->
                 result.onSuccess { track ->
+                    currentSelectedAudio = track
                     audioList = listOf(track)
-                    setMediaItem()
+                    track.album?.id?.let { loadRemoteAlbum(it) }
+                    if (audioList.size == 1) {
+                        setMediaItem()
+                    }
                     _uiState.value = UIState.Ready
                     audioServiceHandler.onPlayerEvents(
                         PlayerEvent.PlayPause
                     )
+                }
+                    .onError { error ->
+                        _uiState.value = UIState.Error(error.toUiText())
+                    }
+            }
+        }
+    }
+
+    private fun loadRemoteAlbum(albumId: Int) {
+        viewModelScope.launch {
+            _uiState.value = UIState.Loading
+            musicRemoteRepository.getAlbum(albumId.toString()).also { result ->
+                result.onSuccess { albumTracks ->
+                    val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
+                    currentSelectedAudio.let { track ->
+                        audioList = listOf(track) + filteredTracks
+                    }
+                    setMediaItem()
                 }
                     .onError { error ->
                         _uiState.value = UIState.Error(error.toUiText())
