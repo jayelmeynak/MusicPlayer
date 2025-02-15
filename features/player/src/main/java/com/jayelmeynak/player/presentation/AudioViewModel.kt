@@ -233,9 +233,9 @@ class AudioViewModel @Inject constructor(
 
     @SuppressLint("DefaultLocale")
     fun formatDuration(duration: Long): String {
-        val minute = TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS)
-        val seconds = (minute) - minute * TimeUnit.SECONDS.convert(1, TimeUnit.MINUTES)
-        return String.format("%02d:%02d", minute, seconds)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(duration)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(duration) - TimeUnit.MINUTES.toSeconds(minutes)
+        return String.format("%02d:%02d", minutes, seconds)
     }
 
     override fun onCleared() {
