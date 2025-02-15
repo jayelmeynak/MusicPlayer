@@ -95,7 +95,7 @@ MusicPlayer — это модульное Android-приложение, напи
 1. **Клонирование репозитория:**
 
    ```bash
-   git clone https://github.com/your_username/MusicPlayer.git
+   git clone https://github.com/jayelmeynak/MusicPlayer.git
     ```
 2. **Открытие проекта:**
 
