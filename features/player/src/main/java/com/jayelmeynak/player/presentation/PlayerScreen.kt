@@ -53,10 +53,12 @@ fun PlayerScreen(
     val state = viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit){
-        if(source == "local"){
-            viewModel.loadLocalTrack(idOrUri)
-        } else {
-            viewModel.loadRemoteTrack(idOrUri)
+        if(!viewModel.isPlaying){
+            if(source == "local"){
+                viewModel.loadLocalTrack(idOrUri)
+            } else {
+                viewModel.loadRemoteTrack(idOrUri)
+            }
         }
     }
 

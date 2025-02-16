@@ -3,9 +3,11 @@ package com.jayelmeynak.player.player.service
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,7 +90,7 @@ class MusicServiceHandler @Inject constructor(
         _audioState.value = MusicState.Playing(isPlaying = isPlaying)
         _audioState.value = MusicState.CurrentPlaying(exoPlayer.currentMediaItemIndex)
         if (isPlaying) {
-            GlobalScope.launch(Dispatchers.Main) {
+            GlobalScope.launch(Dispatchers.IO) {
                 startProgressUpdate()
             }
         } else {
@@ -99,13 +101,11 @@ class MusicServiceHandler @Inject constructor(
     private suspend fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
-            stopProgressUpdate()
         } else {
             exoPlayer.play()
             _audioState.value = MusicState.Playing(
                 isPlaying = true
             )
-            startProgressUpdate()
         }
     }
 

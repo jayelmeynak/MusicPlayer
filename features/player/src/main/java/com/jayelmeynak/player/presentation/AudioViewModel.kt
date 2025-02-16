@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -68,16 +69,18 @@ class AudioViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             audioServiceHandler.audioState.collectLatest { mediaState ->
+                Log.d("MyLog","CurrentMediaState $mediaState")
                 when (mediaState) {
-                    MusicState.Initial -> _uiState.value = UIState.Initial
+                    is MusicState.Initial -> _uiState.value = UIState.Initial
                     is MusicState.Buffering -> calculateProgressValue(mediaState.progress)
                     is MusicState.Playing -> isPlaying = mediaState.isPlaying
                     is MusicState.Progress -> calculateProgressValue(mediaState.progress)
                     is MusicState.CurrentPlaying -> {
-                        currentSelectedAudio =
-                            audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
-                    }
+                        val track = audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
+                        currentSelectedAudio = track
 
+                        Log.d("MyLog", "init ${audioList}")
+                    }
                     is MusicState.Ready -> {
                         duration = mediaState.duration
                         _uiState.value = UIState.Ready
@@ -88,6 +91,7 @@ class AudioViewModel @Inject constructor(
     }
 
     fun loadRemoteTrack(id: String) {
+        Log.d("MyLog","loadRemoteTrack ${audioList}")
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) { musicRemoteRepository.getTrack(id) }
@@ -113,6 +117,7 @@ class AudioViewModel @Inject constructor(
     }
 
     private fun loadRemoteAlbum(albumId: Int) {
+        Log.d("MyLog","loadRemoteAlbum ${audioList}")
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) {
@@ -121,7 +126,7 @@ class AudioViewModel @Inject constructor(
             result.onSuccess { albumTracks ->
                 val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
                 currentSelectedAudio.let { track ->
-                    audioList = listOf(track) + filteredTracks
+                    audioList = audioList + filteredTracks
                 }
                 setMediaItem()
             }
@@ -173,6 +178,11 @@ class AudioViewModel @Inject constructor(
     }
 
     fun loadLocalTrack(trackUri: String) {
+        Log.d("MyLog","loadLocalTrack ${audioList}")
+        if (audioList.any { it.preview == trackUri }) {
+            Log.d("MyLog", "Track already loaded, skipping loadLocalTrack")
+            return
+        }
         viewModelScope.launch {
             val track = withContext(Dispatchers.IO) {
                 val uri = Uri.parse(trackUri)
