@@ -4,16 +4,19 @@ import android.net.Uri
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
+import com.jayelmeynak.player.presentation.PlayerScreen
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 
 @Composable
 fun Navigation(
     scaffoldPadding: PaddingValues,
     navController: NavHostController,
-    onTrackClicked: (Uri) -> Unit
+    startService: () -> Unit
 ) {
 
     NavHost(
@@ -24,21 +27,41 @@ fun Navigation(
             ChartTracksScreen(
                 scaffoldPadding = scaffoldPadding
             ) { trackId ->
-                val source = "api"
-                val deepLinkUri =
-                    Uri.parse("multiplayer://player?source=${source}&trackId=${trackId}")
-                onTrackClicked(deepLinkUri)
+                navController.navigate(Screen.ROUTE_PLAYER + "/api/${trackId}")
             }
         }
         composable(Screen.ROUTE_DOWNLOADED_TRACKS) {
             DownloadTrackScreen(
                 scaffoldPadding = scaffoldPadding
             ) { trackUri ->
-                val source = "local"
-                val deepLinkUri =
-                    Uri.parse("multiplayer://player?source=${source}&trackUri=${Uri.encode(trackUri.toString())}")
-                onTrackClicked(deepLinkUri)
+                navController.navigate(Screen.ROUTE_PLAYER + "/local/${Uri.encode(trackUri.toString())}")
             }
+        }
+        composable(
+            route = Screen.ROUTE_PLAYER + "/api/{trackId}",
+            arguments = listOf(
+                navArgument("trackId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            startService()
+            PlayerScreen(
+                scaffoldPadding = scaffoldPadding,
+                source = "api",
+                idOrUri = backStackEntry.arguments?.getString("trackId") ?: ""
+            )
+        }
+        composable(
+            route = Screen.ROUTE_PLAYER + "/local/{trackUri}",
+            arguments = listOf(
+                navArgument("trackUri") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            startService()
+            PlayerScreen(
+                scaffoldPadding = scaffoldPadding,
+                source = "local",
+                idOrUri = backStackEntry.arguments?.getString("trackUri") ?: ""
+            )
         }
     }
 }
