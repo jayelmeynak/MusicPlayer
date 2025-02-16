@@ -37,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.player.R
 
@@ -46,14 +45,14 @@ fun PlayerScreen(
     scaffoldPadding: PaddingValues,
     source: String,
     idOrUri: String,
-    viewModel: AudioViewModel = hiltViewModel()
+    viewModel: AudioViewModel
 ) {
 
     val currentTrack = viewModel.currentSelectedAudio
     val state = viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit){
-        if(source == "local"){
+    LaunchedEffect(Unit) {
+        if (source == "local") {
             viewModel.loadLocalTrack(idOrUri)
         } else {
             viewModel.loadRemoteTrack(idOrUri)
@@ -67,7 +66,9 @@ fun PlayerScreen(
 
         is UIState.Loading -> {
             Box(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -76,7 +77,9 @@ fun PlayerScreen(
 
         is UIState.Error -> {
             Box(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = (state.value as UIState.Error).errorMessage.asString())
