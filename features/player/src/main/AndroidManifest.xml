@@ -6,18 +6,6 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <application>
-        <activity
-            android:name=".presentation.PlayerActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data
-                    android:scheme="multiplayer"
-                    android:host="player" />
-            </intent-filter>
-        </activity>
-
         <service
             android:name=".player.service.PlayBackService"
             android:foregroundServiceType="mediaPlayback"

@@ -28,7 +28,7 @@ fun BottomNavigationBar(
         when (navBackStackEntry?.destination?.route) {
             Screen.ROUTE_API_TRACKS -> 0
             Screen.ROUTE_DOWNLOADED_TRACKS -> 1
-            else -> 0
+            else -> 3
         }
 
     NavigationBar {

@@ -2,7 +2,6 @@ package com.jayelmeynak.musicplayer.presentation
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -16,12 +15,14 @@ import androidx.navigation.compose.rememberNavController
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
 import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
-import com.jayelmeynak.player.presentation.PlayerActivity
+import com.jayelmeynak.player.player.service.PlayBackService
 import com.jayelmeynak.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private var isServiceRunning = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -45,35 +46,14 @@ class MainActivity : ComponentActivity() {
                 ) { scaffoldPadding ->
                     Navigation(
                         scaffoldPadding = scaffoldPadding,
-                        navController = navController
-                    ) {
-                        handleTrackClick(it)
-                    }
+                        navController = navController,
+                        startService = {
+                            startService()
+                        }
+                    )
                 }
             }
         }
-    }
-
-    private fun handleTrackClick(deepLinkUri: Uri) {
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            action = Intent.ACTION_VIEW
-            val source = deepLinkUri.getQueryParameter("source")
-            source?.let {
-                if(it == "local") {
-                    val trackUriStringEncoded = deepLinkUri.getQueryParameter("trackUri")
-                    val trackUriStringDecoded = trackUriStringEncoded?.let { Uri.decode(it) }
-                    putExtra("source", source)
-                    putExtra("trackUri", trackUriStringDecoded)
-                }
-
-                if(it == "api") {
-                    val trackIdString = deepLinkUri.getQueryParameter("trackId")
-                    putExtra("source", source)
-                    putExtra("trackId", trackIdString)
-                }
-            }
-        }
-        startActivity(intent)
     }
 
     private fun checkPermissions() {
@@ -98,5 +78,25 @@ class MainActivity : ComponentActivity() {
     private fun handlePermissionResult() {
         Toast.makeText(this, this.getString(R.string.read_media_audio_required), Toast.LENGTH_LONG)
             .show()
+    }
+
+    private fun startService() {
+        if (!isServiceRunning) {
+            val intent = Intent(this, PlayBackService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+            isServiceRunning = true
+        }
+    }
+
+    private fun stopService() {
+        if (isServiceRunning) {
+            val intent = Intent(this, PlayBackService::class.java)
+            stopService(intent)
+            isServiceRunning = false
+        }
     }
 }

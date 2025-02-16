@@ -26,11 +26,13 @@ import com.jayelmeynak.player.player.service.PlayerEvent
 import com.jayelmeynak.ui.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -88,22 +90,24 @@ class AudioViewModel @Inject constructor(
     fun loadRemoteTrack(id: String) {
         viewModelScope.launch {
             _uiState.value = UIState.Loading
-            musicRemoteRepository.getTrack(id).also { result ->
-                result.onSuccess { track ->
+            val result = withContext(Dispatchers.IO) { musicRemoteRepository.getTrack(id) }
+            result.onSuccess { track ->
+                withContext(Dispatchers.Main) {
                     currentSelectedAudio = track
                     audioList = listOf(track)
-                    track.album?.id?.let { loadRemoteAlbum(it) }
+                }
+                track.album?.id?.let { loadRemoteAlbum(it) }
+                withContext(Dispatchers.Main) {
                     if (audioList.size == 1) {
                         setMediaItem()
                     }
                     _uiState.value = UIState.Ready
-                    audioServiceHandler.onPlayerEvents(
-                        PlayerEvent.PlayPause
-                    )
+                    audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
                 }
-                    .onError { error ->
-                        _uiState.value = UIState.Error(error.toUiText())
-                    }
+            }.onError { error ->
+                withContext(Dispatchers.Main) {
+                    _uiState.value = UIState.Error(error.toUiText())
+                }
             }
         }
     }
@@ -111,18 +115,19 @@ class AudioViewModel @Inject constructor(
     private fun loadRemoteAlbum(albumId: Int) {
         viewModelScope.launch {
             _uiState.value = UIState.Loading
-            musicRemoteRepository.getAlbum(albumId.toString()).also { result ->
-                result.onSuccess { albumTracks ->
-                    val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
-                    currentSelectedAudio.let { track ->
-                        audioList = listOf(track) + filteredTracks
-                    }
-                    setMediaItem()
-                }
-                    .onError { error ->
-                        _uiState.value = UIState.Error(error.toUiText())
-                    }
+            val result = withContext(Dispatchers.IO) {
+                musicRemoteRepository.getAlbum(albumId.toString())
             }
+            result.onSuccess { albumTracks ->
+                val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
+                currentSelectedAudio.let { track ->
+                    audioList = listOf(track) + filteredTracks
+                }
+                setMediaItem()
+            }
+                .onError { error ->
+                    _uiState.value = UIState.Error(error.toUiText())
+                }
         }
     }
 
@@ -169,22 +174,26 @@ class AudioViewModel @Inject constructor(
 
     fun loadLocalTrack(trackUri: String) {
         viewModelScope.launch {
-            val uri = Uri.parse(trackUri)
-            val fileName = getFileNameFromUri(uri) ?: "Unknown Title"
-            val (fileId, artistName) = getFileMetadata(uri)
-            val track = Track(
-                id = fileId?.toLongOrNull() ?: 0,
-                title = fileName,
-                artistName = artistName ?: "Unknown Artist",
-                preview = trackUri,
-                album = null,
-                uri = uri
-            )
+            val track = withContext(Dispatchers.IO) {
+                val uri = Uri.parse(trackUri)
+                val fileName = getFileNameFromUri(uri) ?: "Unknown Title"
+                val (fileId, artistName) = getFileMetadata(uri)
+                Track(
+                    id = fileId?.toLongOrNull() ?: 0,
+                    title = fileName,
+                    artistName = artistName ?: "Unknown Artist",
+                    preview = trackUri,
+                    album = null,
+                    uri = uri
+                )
+            }
+            currentSelectedAudio = track
             audioList = listOf(track)
             setMediaItem()
             audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
         }
     }
+
 
     private fun calculateProgressValue(currentProgress: Long) {
         progress =
@@ -234,7 +243,8 @@ class AudioViewModel @Inject constructor(
     @SuppressLint("DefaultLocale")
     fun formatDuration(duration: Long): String {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(duration)
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(duration) - TimeUnit.MINUTES.toSeconds(minutes)
+        val seconds =
+            TimeUnit.MILLISECONDS.toSeconds(duration) - TimeUnit.MINUTES.toSeconds(minutes)
         return String.format("%02d:%02d", minutes, seconds)
     }
 
