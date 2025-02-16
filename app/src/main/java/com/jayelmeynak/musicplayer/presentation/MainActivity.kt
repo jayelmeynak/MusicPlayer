@@ -11,11 +11,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
 import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
 import com.jayelmeynak.player.player.service.PlayBackService
+import com.jayelmeynak.player.presentation.AudioViewModel
 import com.jayelmeynak.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -37,14 +39,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkPermissions()
         setContent {
+            val viewModel: AudioViewModel = hiltViewModel()
             AppTheme {
                 val navController = rememberNavController()
                 Scaffold(
                     bottomBar = {
-                        BottomNavigationBar(navController)
+                        BottomNavigationBar(
+                            viewModel,
+                            navController
+                        )
                     }
                 ) { scaffoldPadding ->
                     Navigation(
+                        viewModel = viewModel,
                         scaffoldPadding = scaffoldPadding,
                         navController = navController,
                         startService = {

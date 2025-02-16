@@ -1,13 +1,12 @@
 package com.jayelmeynak.player.player.service
 
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,50 +27,34 @@ class MusicServiceHandler @Inject constructor(
         exoPlayer.addListener(this)
     }
 
-    fun addMediaItem(mediaItem: MediaItem) {
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-    }
+//    fun addMediaItem(mediaItem: MediaItem) {
+//        exoPlayer.setMediaItem(mediaItem)
+//        exoPlayer.prepare()
+//    }
 
     fun setMediaItemList(mediaItems: List<MediaItem>) {
         exoPlayer.setMediaItems(mediaItems)
         exoPlayer.prepare()
     }
 
-    suspend fun onPlayerEvents(
+    fun onPlayerEvents(
         playerEvent: PlayerEvent,
-        selectedAudioIndex: Int = -1,
         seekPosition: Long = 0,
     ) {
         when (playerEvent) {
-            PlayerEvent.Backward -> exoPlayer.seekBack()
-            PlayerEvent.Forward -> exoPlayer.seekForward()
-            PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
-            PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
-            PlayerEvent.PlayPause -> playOrPause()
-            PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
-            PlayerEvent.SelectedAudioChange -> {
-                when (selectedAudioIndex) {
-                    exoPlayer.currentMediaItemIndex -> {
-                        playOrPause()
-                    }
-
-                    else -> {
-                        exoPlayer.seekToDefaultPosition(selectedAudioIndex)
-                        _audioState.value = MusicState.Playing(
-                            isPlaying = true
-                        )
-                        exoPlayer.playWhenReady = true
-                        startProgressUpdate()
-                    }
-                }
-            }
-
-            PlayerEvent.Stop -> stopProgressUpdate()
+            is PlayerEvent.Backward -> exoPlayer.seekBack()
+            is PlayerEvent.Forward -> exoPlayer.seekForward()
+            is PlayerEvent.SeekToNext -> exoPlayer.seekToNext()
+            is PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
+            is PlayerEvent.PlayPause -> playOrPause()
+            is PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
+            is PlayerEvent.Stop -> stopProgressUpdate()
             is PlayerEvent.UpdateProgress -> {
                 exoPlayer.seekTo(
                     (exoPlayer.duration * playerEvent.newProgress).toLong()
                 )
+            }
+            else -> {
             }
         }
     }
@@ -83,33 +66,41 @@ class MusicServiceHandler @Inject constructor(
 
             ExoPlayer.STATE_READY -> _audioState.value =
                 MusicState.Ready(exoPlayer.duration)
+            else -> {
+
+            }
         }
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        _audioState.value = MusicState.Playing(isPlaying = isPlaying)
-        _audioState.value = MusicState.CurrentPlaying(exoPlayer.currentMediaItemIndex)
-        if (isPlaying) {
-            GlobalScope.launch(Dispatchers.IO) {
-                startProgressUpdate()
-            }
-        } else {
+        if (!isPlaying) {
+            _audioState.value = MusicState.Playing(
+                isPlaying = false
+            )
             stopProgressUpdate()
+            return
+        }
+        _audioState.value = MusicState.CurrentPlaying(exoPlayer.currentMediaItemIndex)
+        _audioState.value = MusicState.Playing(
+            isPlaying = true
+        )
+        job = GlobalScope.launch(Dispatchers.Main) {
+            startProgressUpdate()
         }
     }
 
-    private suspend fun playOrPause() {
+    private fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
-        } else {
-            exoPlayer.play()
-            _audioState.value = MusicState.Playing(
-                isPlaying = true
-            )
+            return
         }
+        exoPlayer.play()
     }
 
-    private suspend fun startProgressUpdate() = job.run {
+
+
+    private suspend fun startProgressUpdate() {
+        Log.d("MyLog", "Job running")
         while (true) {
             delay(500)
             _audioState.value = MusicState.Progress(exoPlayer.currentPosition)
@@ -117,7 +108,7 @@ class MusicServiceHandler @Inject constructor(
     }
 
     private fun stopProgressUpdate() {
+        Log.d("MyLog", "Job ID ${job?.key}")
         job?.cancel()
-        _audioState.value = MusicState.Playing(isPlaying = false)
     }
 }

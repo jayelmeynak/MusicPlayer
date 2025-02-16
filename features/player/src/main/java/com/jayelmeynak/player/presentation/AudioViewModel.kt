@@ -69,18 +69,13 @@ class AudioViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             audioServiceHandler.audioState.collectLatest { mediaState ->
-                Log.d("MyLog","CurrentMediaState $mediaState")
+                Log.d("MyLog", "CurrentMediaState $mediaState")
                 when (mediaState) {
                     is MusicState.Initial -> _uiState.value = UIState.Initial
                     is MusicState.Buffering -> calculateProgressValue(mediaState.progress)
+                    is MusicState.CurrentPlaying -> currentSelectedAudio = audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
                     is MusicState.Playing -> isPlaying = mediaState.isPlaying
                     is MusicState.Progress -> calculateProgressValue(mediaState.progress)
-                    is MusicState.CurrentPlaying -> {
-                        val track = audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
-                        currentSelectedAudio = track
-
-                        Log.d("MyLog", "init ${audioList}")
-                    }
                     is MusicState.Ready -> {
                         duration = mediaState.duration
                         _uiState.value = UIState.Ready
@@ -231,13 +226,6 @@ class AudioViewModel @Inject constructor(
                 )
             }
 
-            is UIEvents.SelectedAudioChange -> {
-                audioServiceHandler.onPlayerEvents(
-                    PlayerEvent.SelectedAudioChange,
-                    selectedAudioIndex = uiEvents.index
-                )
-            }
-
             is UIEvents.UpdateProgress -> {
                 audioServiceHandler.onPlayerEvents(
                     PlayerEvent.UpdateProgress(
@@ -245,6 +233,10 @@ class AudioViewModel @Inject constructor(
                     )
                 )
                 progress = uiEvents.newProgress
+            }
+
+            else -> {
+
             }
         }
     }

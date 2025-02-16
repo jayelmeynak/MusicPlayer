@@ -1,10 +1,12 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -18,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.jayelmeynak.player.presentation.AudioViewModel
@@ -34,8 +36,8 @@ import com.jayelmeynak.player.presentation.UIEvents
 
 @Composable
 fun BottomNavigationBar(
+    viewModel: AudioViewModel,
     navController: NavHostController,
-    viewModel: AudioViewModel = hiltViewModel(),
 ) {
     val unselectedIcons =
         listOf(Icons.Outlined.Wifi, Icons.Outlined.SdStorage)
@@ -51,8 +53,8 @@ fun BottomNavigationBar(
         }
 
     Column {
-        if (viewModel.isPlaying && currentRoute != 3) {
-            MiniPlayer()
+        if (viewModel.audioList.isNotEmpty() && currentRoute != 3) {
+            MiniPlayer(viewModel)
         }
 
         NavigationBar {
@@ -82,48 +84,65 @@ fun BottomNavigationBar(
     }
 }
 
+
 @Composable
 fun MiniPlayer(
-    viewModel: AudioViewModel = hiltViewModel()
+    viewModel: AudioViewModel
 ) {
-//    var isPlaying = viewModel.isPlaying
-//    var currentTrack = viewModel.currentSelectedAudio
+    Log.d("MyLog", "MiniPlayer ${viewModel.currentSelectedAudio}")
 
-    Row(
+    Column(
         modifier = Modifier
+            .background(MaterialTheme.colorScheme.surface)
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 8.dp)
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = viewModel.currentSelectedAudio.title,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = viewModel.currentSelectedAudio.artistName,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp)
+            ) {
+                Text(
+                    text = viewModel.currentSelectedAudio.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = viewModel.currentSelectedAudio.artistName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-        IconButton(onClick = { viewModel.onUiEvents(UIEvents.PlayPause) }) {
-            Icon(
-                imageVector = if (viewModel.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (viewModel.isPlaying) "Пауза" else "Воспроизведение"
-            )
+            }
+
+
+            IconButton(onClick = { viewModel.onUiEvents(UIEvents.PlayPause) }) {
+                Icon(
+                    imageVector = if (viewModel.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (viewModel.isPlaying) "Пауза" else "Воспроизведение"
+                )
+            }
         }
+        Slider(
+            value = viewModel.progress,
+            onValueChange = {
+                viewModel.onUiEvents(UIEvents.SeekTo(it))
+            },
+            valueRange = 0f..100f,
+            modifier = Modifier.fillMaxWidth().height(18.dp).padding(8.dp)
+        )
+
     }
+
 }
