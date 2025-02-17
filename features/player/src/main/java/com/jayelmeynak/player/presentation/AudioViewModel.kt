@@ -62,6 +62,7 @@ class AudioViewModel @Inject constructor(
     var isPlaying by savedStateHandle.saveable { mutableStateOf(false) }
     var currentSelectedAudio by savedStateHandle.saveable { mutableStateOf(audioDummy) }
     var audioList by savedStateHandle.saveable { mutableStateOf(listOf<Track>()) }
+    var sourceIdorUri by savedStateHandle.saveable { mutableStateOf("") }
 
     private val _uiState: MutableStateFlow<UIState> = MutableStateFlow(UIState.Initial)
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
@@ -86,6 +87,10 @@ class AudioViewModel @Inject constructor(
     }
 
     fun loadRemoteTrack(id: String) {
+        if (sourceIdorUri == id) {
+            return
+        }
+        sourceIdorUri = id
         Log.d("MyLog","loadRemoteTrack ${audioList}")
         viewModelScope.launch {
             _uiState.value = UIState.Loading
@@ -173,6 +178,10 @@ class AudioViewModel @Inject constructor(
     }
 
     fun loadLocalTrack(trackUri: String) {
+        if (sourceIdorUri == trackUri) {
+            return
+        }
+        sourceIdorUri = trackUri
         Log.d("MyLog","loadLocalTrack ${audioList}")
         if (audioList.any { it.preview == trackUri }) {
             Log.d("MyLog", "Track already loaded, skipping loadLocalTrack")
