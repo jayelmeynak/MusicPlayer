@@ -1,7 +1,6 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -30,7 +29,6 @@ fun Navigation(
             ChartTracksScreen(
                 scaffoldPadding = scaffoldPadding
             ) { trackId ->
-                Log.d("MyLog", "Navigation: ChartTracksScreen trackId = $trackId")
                 navController.navigate(Screen.ROUTE_PLAYER + "/api/${trackId}")
             }
         }
@@ -38,7 +36,6 @@ fun Navigation(
             DownloadTrackScreen(
                 scaffoldPadding = scaffoldPadding
             ) { trackUri ->
-                Log.d("MyLog", "Navigation: DownloadTrackScreen trackUri = $trackUri")
                 navController.navigate(Screen.ROUTE_PLAYER + "/local/${Uri.encode(trackUri.toString())}")
             }
         }
@@ -49,7 +46,6 @@ fun Navigation(
             )
         ) { backStackEntry ->
             startService()
-            Log.d("MyLog", "Navigation: trackId = ${backStackEntry.arguments?.getString("trackId")}")
             PlayerScreen(
                 viewModel = viewModel,
                 scaffoldPadding = scaffoldPadding,
@@ -64,7 +60,6 @@ fun Navigation(
             )
         ) { backStackEntry ->
             startService()
-            Log.d("MyLog", "Navigation: trackUri = ${backStackEntry.arguments?.getString("trackUri")}")
             PlayerScreen(
                 viewModel = viewModel,
                 scaffoldPadding = scaffoldPadding,

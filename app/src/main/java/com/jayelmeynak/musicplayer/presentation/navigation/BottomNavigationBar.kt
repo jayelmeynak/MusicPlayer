@@ -1,7 +1,8 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
-import android.util.Log
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,7 +55,13 @@ fun BottomNavigationBar(
 
     Column {
         if (viewModel.audioList.isNotEmpty() && currentRoute != 3) {
-            MiniPlayer(viewModel)
+            MiniPlayer(viewModel){ source, id ->
+                if(source == "local"){
+                    navController.navigate(Screen.ROUTE_PLAYER + "/${source}/${Uri.encode(id)}")
+                }else{
+                    navController.navigate(Screen.ROUTE_PLAYER + "/${source}/${id}")
+                }
+            }
         }
 
         NavigationBar {
@@ -87,14 +94,21 @@ fun BottomNavigationBar(
 
 @Composable
 fun MiniPlayer(
-    viewModel: AudioViewModel
+    viewModel: AudioViewModel,
+    onPlayerClick: (String, String) -> Unit
 ) {
-    Log.d("MyLog", "MiniPlayer ${viewModel.currentSelectedAudio}")
 
     Column(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.surface)
             .fillMaxWidth()
+            .clickable {
+                if(viewModel.source == "api"){
+                    onPlayerClick("api", viewModel.currentSelectedAudio.id.toString())
+                } else {
+                    onPlayerClick("local", viewModel.currentSelectedAudio.preview)
+                }
+            }
     ) {
         Row(
             modifier = Modifier

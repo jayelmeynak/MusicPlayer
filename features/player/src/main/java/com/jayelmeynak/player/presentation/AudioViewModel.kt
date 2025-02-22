@@ -57,7 +57,7 @@ class AudioViewModel @Inject constructor(
     var isPlaying by savedStateHandle.saveable { mutableStateOf(false) }
     var currentSelectedAudio by savedStateHandle.saveable { mutableStateOf(audioDummy) }
     var audioList by savedStateHandle.saveable { mutableStateOf(listOf<Track>()) }
-    var sourceIdorUri by savedStateHandle.saveable { mutableStateOf("") }
+    var source by savedStateHandle.saveable { mutableStateOf("") }
 
     private val _uiState: MutableStateFlow<UIState> = MutableStateFlow(UIState.Initial)
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
@@ -85,6 +85,7 @@ class AudioViewModel @Inject constructor(
         if (currentSelectedAudio.id.toString() == id) {
             return
         }
+        source = "api"
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) { musicRemoteRepository.getTrack(id) }
@@ -151,7 +152,7 @@ class AudioViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.value = UIState.Loading
-            sourceIdorUri = trackUri
+            source = "local"
             audioList = musicLocalRepository.getTracksList()
             setMediaItem()
             currentSelectedAudio = audioList.find { it.preview == trackUri } ?: audioDummy
