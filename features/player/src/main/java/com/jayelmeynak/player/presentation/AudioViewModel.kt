@@ -1,12 +1,7 @@
 package com.jayelmeynak.player.presentation
 
 import android.annotation.SuppressLint
-import android.content.ContentResolver
-import android.content.Context
-import android.database.Cursor
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.OpenableColumns
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
@@ -20,13 +15,13 @@ import com.jayelmeynak.network.utils.onError
 import com.jayelmeynak.network.utils.onSuccess
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
+import com.jayelmeynak.player.domain.repository.MusicLocalRepository
 import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
 import com.jayelmeynak.player.player.service.MusicServiceHandler
 import com.jayelmeynak.player.player.service.MusicState
 import com.jayelmeynak.player.player.service.PlayerEvent
 import com.jayelmeynak.ui.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,8 +47,8 @@ private val audioDummy = Track(
 class AudioViewModel @Inject constructor(
     private val audioServiceHandler: MusicServiceHandler,
     private val musicRemoteRepository: MusicRemoteRepository,
-    savedStateHandle: SavedStateHandle,
-    @ApplicationContext private val context: Context
+    private val musicLocalRepository: MusicLocalRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     var duration by savedStateHandle.saveable { mutableStateOf(0L) }
@@ -74,12 +69,12 @@ class AudioViewModel @Inject constructor(
                 when (mediaState) {
                     is MusicState.Initial -> _uiState.value = UIState.Initial
                     is MusicState.Buffering -> calculateProgressValue(mediaState.progress)
-                    is MusicState.CurrentPlaying -> currentSelectedAudio = audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
+                    is MusicState.CurrentPlaying -> currentSelectedAudio =
+                        audioList.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
                     is MusicState.Playing -> isPlaying = mediaState.isPlaying
                     is MusicState.Progress -> calculateProgressValue(mediaState.progress)
                     is MusicState.Ready -> {
                         duration = mediaState.duration
-                        _uiState.value = UIState.Ready
                     }
                 }
             }
@@ -87,11 +82,9 @@ class AudioViewModel @Inject constructor(
     }
 
     fun loadRemoteTrack(id: String) {
-        if (sourceIdorUri == id) {
+        if (currentSelectedAudio.id.toString() == id) {
             return
         }
-        sourceIdorUri = id
-        Log.d("MyLog","loadRemoteTrack ${audioList}")
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) { musicRemoteRepository.getTrack(id) }
@@ -105,8 +98,8 @@ class AudioViewModel @Inject constructor(
                     if (audioList.size == 1) {
                         setMediaItem()
                     }
-                    _uiState.value = UIState.Ready
                     audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
+                    _uiState.value = UIState.Ready
                 }
             }.onError { error ->
                 withContext(Dispatchers.Main) {
@@ -117,7 +110,6 @@ class AudioViewModel @Inject constructor(
     }
 
     private fun loadRemoteAlbum(albumId: Int) {
-        Log.d("MyLog","loadRemoteAlbum ${audioList}")
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) {
@@ -153,58 +145,22 @@ class AudioViewModel @Inject constructor(
         }
     }
 
-    fun getFileNameFromUri(uri: Uri): String? {
-        var fileName: String? = null
-        val contentResolver: ContentResolver = context.contentResolver
-        val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) {
-                    fileName = it.getString(nameIndex)
-                }
-            }
-        }
-        return fileName
-    }
-
-    fun getFileMetadata(uri: Uri): Pair<String?, String?> {
-        val retriever = MediaMetadataRetriever()
-        retriever.setDataSource(context, uri)
-        val artistName = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-        val fileId = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
-        retriever.release()
-        return Pair(fileId, artistName)
-    }
-
     fun loadLocalTrack(trackUri: String) {
-        if (sourceIdorUri == trackUri) {
-            return
-        }
-        sourceIdorUri = trackUri
-        Log.d("MyLog","loadLocalTrack ${audioList}")
-        if (audioList.any { it.preview == trackUri }) {
-            Log.d("MyLog", "Track already loaded, skipping loadLocalTrack")
+        if (currentSelectedAudio.preview == trackUri) {
             return
         }
         viewModelScope.launch {
-            val track = withContext(Dispatchers.IO) {
-                val uri = Uri.parse(trackUri)
-                val fileName = getFileNameFromUri(uri) ?: "Unknown Title"
-                val (fileId, artistName) = getFileMetadata(uri)
-                Track(
-                    id = fileId?.toLongOrNull() ?: 0,
-                    title = fileName,
-                    artistName = artistName ?: "Unknown Artist",
-                    preview = trackUri,
-                    album = null,
-                    uri = uri
-                )
-            }
-            currentSelectedAudio = track
-            audioList = listOf(track)
+            _uiState.value = UIState.Loading
+            sourceIdorUri = trackUri
+            audioList = musicLocalRepository.getTracksList()
             setMediaItem()
-            audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
+            currentSelectedAudio = audioList.find { it.preview == trackUri } ?: audioDummy
+            val currentTrackIndex = audioList.indexOf(currentSelectedAudio)
+            _uiState.value = UIState.Ready
+            audioServiceHandler.onPlayerEvents(
+                PlayerEvent.SelectedAudioChange,
+                selectedAudioIndex = currentTrackIndex
+            )
         }
     }
 

@@ -37,8 +37,9 @@ class MusicServiceHandler @Inject constructor(
         exoPlayer.prepare()
     }
 
-    fun onPlayerEvents(
+    suspend fun onPlayerEvents(
         playerEvent: PlayerEvent,
+        selectedAudioIndex: Int = -1,
         seekPosition: Long = 0,
     ) {
         when (playerEvent) {
@@ -54,7 +55,21 @@ class MusicServiceHandler @Inject constructor(
                     (exoPlayer.duration * playerEvent.newProgress).toLong()
                 )
             }
-            else -> {
+            is PlayerEvent.SelectedAudioChange -> {
+                when (selectedAudioIndex) {
+                    exoPlayer.currentMediaItemIndex -> {
+                        playOrPause()
+                    }
+
+                    else -> {
+                        exoPlayer.seekToDefaultPosition(selectedAudioIndex)
+                        _audioState.value = MusicState.Playing(
+                            isPlaying = true
+                        )
+                        exoPlayer.playWhenReady = true
+                        startProgressUpdate()
+                    }
+                }
             }
         }
     }
@@ -73,6 +88,7 @@ class MusicServiceHandler @Inject constructor(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        Log.d("MyLog", "IsPlaying: $isPlaying")
         if (!isPlaying) {
             _audioState.value = MusicState.Playing(
                 isPlaying = false
@@ -84,7 +100,7 @@ class MusicServiceHandler @Inject constructor(
         _audioState.value = MusicState.Playing(
             isPlaying = true
         )
-        job = GlobalScope.launch(Dispatchers.Main) {
+        GlobalScope.launch(Dispatchers.Main) {
             startProgressUpdate()
         }
     }
@@ -99,7 +115,7 @@ class MusicServiceHandler @Inject constructor(
 
 
 
-    private suspend fun startProgressUpdate() {
+    private suspend fun startProgressUpdate() = job.run {
         Log.d("MyLog", "Job running")
         while (true) {
             delay(500)
@@ -108,7 +124,6 @@ class MusicServiceHandler @Inject constructor(
     }
 
     private fun stopProgressUpdate() {
-        Log.d("MyLog", "Job ID ${job?.key}")
         job?.cancel()
     }
 }
