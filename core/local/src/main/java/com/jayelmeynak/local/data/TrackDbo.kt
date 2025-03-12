@@ -1,4 +1,4 @@
-package com.jayelmeynak.download_tracks.data
+package com.jayelmeynak.local.data
 
 import android.net.Uri
 

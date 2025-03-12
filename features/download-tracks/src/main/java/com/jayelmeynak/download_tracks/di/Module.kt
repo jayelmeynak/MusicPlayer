@@ -1,8 +1,8 @@
 package com.jayelmeynak.download_tracks.di
 
-import com.jayelmeynak.download_tracks.data.ContentResolverHelper
 import com.jayelmeynak.download_tracks.data.MusicLocalRepositoryImpl
 import com.jayelmeynak.download_tracks.domain.MusicLocalRepository
+import com.jayelmeynak.local.data.LocalTracksDataSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,7 +17,7 @@ object Module {
     @Provides
     @Singleton
     fun providesMusicLocalRepository(
-        contentResolver: ContentResolverHelper
-    ): MusicLocalRepository = MusicLocalRepositoryImpl(contentResolver)
+        localTracksDataSource: LocalTracksDataSource
+    ): MusicLocalRepository = MusicLocalRepositoryImpl(localTracksDataSource)
 
 }

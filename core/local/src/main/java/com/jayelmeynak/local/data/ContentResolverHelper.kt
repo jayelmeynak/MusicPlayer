@@ -1,8 +1,10 @@
-package com.jayelmeynak.download_tracks.data
+package com.jayelmeynak.local.data
+
 
 import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
+import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.WorkerThread
@@ -30,6 +32,43 @@ constructor(@ApplicationContext val context: Context) {
     @WorkerThread
     fun getAudioData(): List<TrackDbo> {
         return getCursorData()
+    }
+
+    @WorkerThread
+    fun getTrackByUri(uriString: String): TrackDbo? {
+        val uri = Uri.parse(uriString)
+
+        mCursor = context.contentResolver.query(
+            uri,
+            projection,
+            selectionClause,
+            selectionArg,
+            sortOrder
+        )
+
+        mCursor?.use { cursor ->
+            val idColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
+            val artistColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
+            val durationColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
+            val titleColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.TITLE)
+
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(idColumn)
+                val artist = cursor.getString(artistColumn)
+                val duration = cursor.getInt(durationColumn)
+                val title = cursor.getString(titleColumn)
+                val trackUri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    id
+                )
+                return TrackDbo(trackUri, id, artist, duration, title)
+            }
+        }
+        return null
     }
 
 

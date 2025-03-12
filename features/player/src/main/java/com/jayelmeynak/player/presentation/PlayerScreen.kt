@@ -2,6 +2,7 @@ package com.jayelmeynak.player.presentation
 
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.player.R
+import com.jayelmeynak.player.presentation.components.PlayPauseIconButton
 
 @Composable
 fun PlayerScreen(
@@ -54,9 +54,9 @@ fun PlayerScreen(
     LaunchedEffect(Unit) {
         if (source == "local") {
             viewModel.loadLocalTrack(idOrUri)
-        } else {
-            viewModel.loadRemoteTrack(idOrUri)
+            return@LaunchedEffect
         }
+        viewModel.loadRemoteTrack(idOrUri)
     }
 
     when (state.value) {
@@ -68,7 +68,8 @@ fun PlayerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(scaffoldPadding),
+                    .padding(scaffoldPadding)
+                    .padding(horizontal = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -79,7 +80,8 @@ fun PlayerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(scaffoldPadding),
+                    .padding(scaffoldPadding)
+                    .padding(horizontal = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = (state.value as UIState.Error).errorMessage.asString())
@@ -111,7 +113,9 @@ fun PlayerScreen(
                     Text(
                         text = currentTrack.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Start
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -120,7 +124,9 @@ fun PlayerScreen(
                         text = currentTrack.artistName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
-                        textAlign = TextAlign.Start
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -180,16 +186,12 @@ fun PlayerScreen(
                         )
                     }
 
-                    IconButton(
-                        onClick = {
+                    PlayPauseIconButton(
+                        isPlaying = viewModel.isPlaying,
+                        onIconButtonClick = {
                             viewModel.onUiEvents(UIEvents.PlayPause)
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (viewModel.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (viewModel.isPlaying) "Пауза" else "Воспроизведение"
-                        )
-                    }
+                    )
 
                     IconButton(
                         onClick = {
