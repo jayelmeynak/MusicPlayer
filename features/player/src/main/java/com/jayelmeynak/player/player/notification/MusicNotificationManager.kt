@@ -58,7 +58,10 @@ class MusicNotificationManager @Inject constructor(
     private fun buildNotification(mediaSession: MediaSession) {
 
         val deepLinkUriMainActivity = Uri.parse("multiplayer://main")
-        val intent = Intent(Intent.ACTION_VIEW, deepLinkUriMainActivity)
+        val intent = Intent(Intent.ACTION_VIEW, deepLinkUriMainActivity).apply {
+            // Предотвращаем создание нового экземпляра Activity
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context,
             0,

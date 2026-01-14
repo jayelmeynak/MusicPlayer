@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         checkPermissions()
+        android.util.Log.d("MyLog", "MainActivity onCreate: ${this.hashCode()}")
         setContent {
             val viewModel: AudioViewModel = hiltViewModel()
             AppTheme {
@@ -61,6 +62,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        android.util.Log.d("MyLog", "MainActivity onNewIntent: ${this.hashCode()}, intent: $intent")
+        // Обновляем intent для текущей Activity
+        setIntent(intent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        android.util.Log.d("MyLog", "MainActivity onDestroy: ${this.hashCode()}")
     }
 
     private fun checkPermissions() {

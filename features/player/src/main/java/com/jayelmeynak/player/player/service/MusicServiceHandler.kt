@@ -4,9 +4,10 @@ import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,9 @@ class MusicServiceHandler @Inject constructor(
         MutableStateFlow(MusicState.Initial)
     val audioState: StateFlow<MusicState> = _audioState.asStateFlow()
 
-    private var job: Job? = null
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Main + job)
+    private var progressJob: Job? = null
 
     init {
         exoPlayer.addListener(this)
@@ -100,9 +103,7 @@ class MusicServiceHandler @Inject constructor(
         _audioState.value = MusicState.Playing(
             isPlaying = true
         )
-        GlobalScope.launch(Dispatchers.Main) {
-            startProgressUpdate()
-        }
+        startProgressUpdate()
     }
 
     private fun playOrPause() {
@@ -115,15 +116,33 @@ class MusicServiceHandler @Inject constructor(
 
 
 
-    private suspend fun startProgressUpdate() = job.run {
-        Log.d("MyLog", "Job running")
-        while (true) {
-            delay(500)
-            _audioState.value = MusicState.Progress(exoPlayer.currentPosition)
+    private fun startProgressUpdate() {
+        // Отменяем предыдущий job если он был
+        stopProgressUpdate()
+
+        progressJob = scope.launch {
+            Log.d("MyLog", "Progress update job started")
+            while (true) {
+                delay(500)
+                _audioState.value = MusicState.Progress(exoPlayer.currentPosition)
+            }
         }
     }
 
     private fun stopProgressUpdate() {
-        job?.cancel()
+        progressJob?.cancel()
+        progressJob = null
+        Log.d("MyLog", "Progress update job stopped")
+    }
+
+    /**
+     * Очистка ресурсов и отмена всех корутин.
+     * Должен вызываться из PlayBackService.onDestroy()
+     */
+    fun onDestroy() {
+        stopProgressUpdate()
+        job.cancel()
+        exoPlayer.removeListener(this)
+        Log.d("MyLog", "MusicServiceHandler destroyed, all coroutines cancelled")
     }
 }

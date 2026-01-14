@@ -54,7 +54,7 @@ fun BottomNavigationBar(
         }
 
     Column {
-        if (viewModel.audioList.isNotEmpty() && currentRoute != 3) {
+        if (viewModel.audioList.value.isNotEmpty() && currentRoute != 3) {
             MiniPlayer(viewModel){ source, id ->
                 if(source == "local"){
                     navController.navigate(Screen.ROUTE_PLAYER + "/${source}/${Uri.encode(id)}")

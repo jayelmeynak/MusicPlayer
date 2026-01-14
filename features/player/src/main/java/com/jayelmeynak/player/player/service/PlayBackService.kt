@@ -18,6 +18,9 @@ class PlayBackService : MediaSessionService() {
     @Inject
     lateinit var notificationManager: MusicNotificationManager
 
+    @Inject
+    lateinit var musicServiceHandler: MusicServiceHandler
+
     @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -34,6 +37,10 @@ class PlayBackService : MediaSessionService() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        // Очистка MusicServiceHandler - отмена всех корутин
+        musicServiceHandler.onDestroy()
+
         mediaSession.apply {
             release()
             if (player.playbackState != Player.STATE_IDLE) {
