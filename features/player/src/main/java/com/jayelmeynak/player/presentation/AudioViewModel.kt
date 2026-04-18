@@ -2,7 +2,6 @@ package com.jayelmeynak.player.presentation
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -15,8 +14,9 @@ import com.jayelmeynak.network.utils.onError
 import com.jayelmeynak.network.utils.onSuccess
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
-import com.jayelmeynak.player.domain.repository.MusicLocalRepository
-import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
+import com.jayelmeynak.player.domain.useсase.GetLocalTrackListUseCase
+import com.jayelmeynak.player.domain.useсase.GetRemoteAlbumUseCase
+import com.jayelmeynak.player.domain.useсase.GetRemoteTrackUseCase
 import com.jayelmeynak.player.player.service.MusicServiceHandler
 import com.jayelmeynak.player.player.service.MusicState
 import com.jayelmeynak.player.player.service.PlayerEvent
@@ -46,8 +46,9 @@ private val audioDummy = Track(
 @HiltViewModel
 class AudioViewModel @Inject constructor(
     private val audioServiceHandler: MusicServiceHandler,
-    private val musicRemoteRepository: MusicRemoteRepository,
-    private val musicLocalRepository: MusicLocalRepository,
+    private val getLocalTrackListUseCase: GetLocalTrackListUseCase,
+    private val getRemoteTrackUseCase: GetRemoteTrackUseCase,
+    private val getRemoteAlbumUseCase: GetRemoteAlbumUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -65,7 +66,6 @@ class AudioViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             audioServiceHandler.audioState.collectLatest { mediaState ->
-                Log.d("MyLog", "CurrentMediaState $mediaState")
                 when (mediaState) {
                     is MusicState.Initial -> _uiState.value = UIState.Initial
                     is MusicState.Buffering -> calculateProgressValue(mediaState.progress)
@@ -88,7 +88,7 @@ class AudioViewModel @Inject constructor(
         source = "api"
         viewModelScope.launch {
             _uiState.value = UIState.Loading
-            val result = withContext(Dispatchers.IO) { musicRemoteRepository.getTrack(id) }
+            val result = withContext(Dispatchers.IO) { getRemoteTrackUseCase(id) }
             result.onSuccess { track ->
                 withContext(Dispatchers.Main) {
                     currentSelectedAudio = track
@@ -114,7 +114,7 @@ class AudioViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             val result = withContext(Dispatchers.IO) {
-                musicRemoteRepository.getAlbum(albumId.toString())
+                getRemoteAlbumUseCase(albumId.toString())
             }
             result.onSuccess { albumTracks ->
                 val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
@@ -137,7 +137,8 @@ class AudioViewModel @Inject constructor(
                     MediaMetadata.Builder()
                         .setTitle(audio.title)
                         .setArtist(audio.artistName)
-                        .setArtworkUri(Uri.parse(audio.album?.cover ?: "") ?: Uri.EMPTY)
+                        .setArtworkUri(audio.album?.cover?.takeIf { it.isNotEmpty() }
+                            ?.let { Uri.parse(it) })
                         .build()
                 )
                 .build()
@@ -153,7 +154,7 @@ class AudioViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UIState.Loading
             source = "local"
-            audioList = musicLocalRepository.getTracksList()
+            audioList = getLocalTrackListUseCase()
             setMediaItem()
             currentSelectedAudio = audioList.find { it.preview == trackUri } ?: audioDummy
             val currentTrackIndex = audioList.indexOf(currentSelectedAudio)

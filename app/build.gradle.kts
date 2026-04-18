@@ -8,11 +8,11 @@ plugins {
 
 android {
     namespace = "com.jayelmeynak.musicplayer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.jayelmeynak.musicplayer"
-        minSdk = 24
+        minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"

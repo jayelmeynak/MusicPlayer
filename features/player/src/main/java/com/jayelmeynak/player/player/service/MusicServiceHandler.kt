@@ -1,6 +1,5 @@
 package com.jayelmeynak.player.player.service
 
-import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -88,7 +87,6 @@ class MusicServiceHandler @Inject constructor(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        Log.d("MyLog", "IsPlaying: $isPlaying")
         if (!isPlaying) {
             _audioState.value = MusicState.Playing(
                 isPlaying = false
@@ -116,7 +114,6 @@ class MusicServiceHandler @Inject constructor(
 
 
     private suspend fun startProgressUpdate() = job.run {
-        Log.d("MyLog", "Job running")
         while (true) {
             delay(500)
             _audioState.value = MusicState.Progress(exoPlayer.currentPosition)

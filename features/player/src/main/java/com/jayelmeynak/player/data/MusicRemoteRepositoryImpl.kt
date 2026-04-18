@@ -8,7 +8,7 @@ import com.jayelmeynak.player.domain.models.Track
 import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
 import javax.inject.Inject
 
-class MusicRemoteRepositoryImpl @Inject constructor(
+internal class MusicRemoteRepositoryImpl @Inject constructor(
     private val remoteTrackDataSource: RemoteTrackDataSource
 ) : MusicRemoteRepository {
     override suspend fun getTrack(id: String): Result<Track, DataError.Remote> {

@@ -11,8 +11,9 @@ import androidx.annotation.WorkerThread
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-class ContentResolverHelper @Inject
-constructor(@ApplicationContext val context: Context) {
+class ContentResolverHelper @Inject constructor(
+    @ApplicationContext val context: Context
+) {
     private var mCursor: Cursor? = null
 
     private val projection: Array<String> = arrayOf(
@@ -106,9 +107,7 @@ constructor(@ApplicationContext val context: Context) {
                             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                             id
                         )
-                        audioList += TrackDbo(
-                            uri, id, artist, duration, title
-                        )
+                        audioList += TrackDbo(uri, id, artist, duration, title)
                     }
                 }
             }

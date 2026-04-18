@@ -16,11 +16,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jayelmeynak.download_tracks.presentation.components.TrackItem
 import com.jayelmeynak.download_tracks.presentation.components.TrackSearchBar
 
@@ -30,7 +32,7 @@ fun DownloadTrackScreen(
     viewModel: DownloadTracksViewModel = hiltViewModel(),
     onTrackClicked: (Uri) -> Unit,
 ) {
-    val state = viewModel.state.value
+    val state by viewModel.state.collectAsStateWithLifecycle()
     DownloadTracks(
         scaffoldPadding = scaffoldPadding,
         state = state,
@@ -50,13 +52,15 @@ fun DownloadTracks(
     onSearchQueryChange: (String) -> Unit,
 ) {
 
-    val listToDisplay = if (state.searchList.isNotEmpty()) state.searchList else state.tracks
+    val listToDisplay = state.searchList.ifEmpty { state.tracks }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     when {
         state.isLoading -> {
             Box(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -65,7 +69,9 @@ fun DownloadTracks(
 
         state.errorMessage != null -> {
             Box(
-                modifier = Modifier.fillMaxSize().padding(scaffoldPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -83,7 +89,9 @@ fun DownloadTracks(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TrackSearchBar(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
                     searchQuery = state.query,
                     onSearchQueryChange = { onSearchQueryChange(it) },
                     onImeSearch = {
@@ -94,15 +102,16 @@ fun DownloadTracks(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp),
                     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(listToDisplay) { track ->
+                        items(listToDisplay, key = { it.id }) { track ->
                             TrackItem(
                                 track = track,
+                                artwork = state.artworks[track.id],
                                 onTrackClick = {
                                     onTrackClicked(track.uri)
                                 }
@@ -113,5 +122,4 @@ fun DownloadTracks(
             }
         }
     }
-
 }

@@ -1,12 +1,13 @@
 package com.jayelmeynak.download_tracks.presentation
 
-import com.jayelmeynak.download_tracks.domain.models.Track
+import com.jayelmeynak.local.domain.model.LocalTrack
 import com.jayelmeynak.ui.UiText
 
 data class DownloadTracksState(
-    val tracks: List<Track> = emptyList(),
+    val tracks: List<LocalTrack> = emptyList(),
+    val artworks: Map<Long, ByteArray?> = emptyMap(),
     val isLoading: Boolean = true,
     val errorMessage: UiText? = null,
     val query: String = "",
-    val searchList: List<Track> = emptyList()
+    val searchList: List<LocalTrack> = emptyList()
 )

@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.presentation
 
-
+import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
@@ -29,16 +29,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.jayelmeynak.player.R
 import com.jayelmeynak.player.presentation.components.PlayPauseIconButton
+import com.jayelmeynak.ui.R
 
 @Composable
 fun PlayerScreen(
@@ -96,9 +98,22 @@ fun PlayerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceEvenly
             ) {
+                val context = LocalContext.current
+                val artworkModel = remember(currentTrack.id) {
+                    val coverUrl = currentTrack.album?.cover?.takeIf { it.isNotEmpty() }
+                    coverUrl
+                        ?: currentTrack.uri?.let { uri ->
+                            runCatching {
+                                MediaMetadataRetriever().use { retriever ->
+                                    retriever.setDataSource(context, uri)
+                                    retriever.embeddedPicture
+                                }
+                            }.getOrNull()
+                        }
+                }
                 Image(
                     painter = rememberAsyncImagePainter(
-                        model = currentTrack.album?.cover ?: R.drawable.track_place_holder
+                        model = artworkModel ?: R.drawable.track_place_holder
                     ),
                     contentDescription = null,
                     modifier = Modifier

@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.data
 
-import com.jayelmeynak.local.data.TrackDbo
+import com.jayelmeynak.local.domain.model.LocalTrack
 import com.jayelmeynak.network.data.dto.AlbumDto
 import com.jayelmeynak.network.data.dto.TrackDto
 import com.jayelmeynak.player.domain.models.Album
@@ -23,12 +23,12 @@ fun AlbumDto.toAlbum() = Album(
     type = type
 )
 
-fun TrackDbo.toTrack() = Track(
+fun LocalTrack.toTrack() = Track(
     preview = uri.toString(),
     title = title,
     id = id,
-    artistName = artist,
+    artistName = artistName,
     duration = duration,
-    uri = null,
+    uri = uri,
     album = null
 )

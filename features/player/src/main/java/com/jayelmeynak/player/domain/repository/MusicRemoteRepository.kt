@@ -4,7 +4,7 @@ import com.jayelmeynak.network.utils.DataError
 import com.jayelmeynak.network.utils.Result
 import com.jayelmeynak.player.domain.models.Track
 
-interface MusicRemoteRepository {
+internal interface MusicRemoteRepository {
 
     suspend fun getTrack(id: String): Result<Track, DataError.Remote>
 

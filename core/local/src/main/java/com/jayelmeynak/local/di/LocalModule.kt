@@ -1,22 +1,28 @@
 package com.jayelmeynak.local.di
 
-import com.jayelmeynak.local.data.ContentResolverHelper
-import com.jayelmeynak.local.data.LocalTracksDataSource
-import com.jayelmeynak.local.data.LocalTracksDataSourceImpl
+import com.jayelmeynak.local.data.LocalTracksRepositoryImpl
+import com.jayelmeynak.local.data.source.LocalTracksDataSource
+import com.jayelmeynak.local.data.source.LocalTracksDataSourceImpl
+import com.jayelmeynak.local.domain.repository.LocalTracksRepository
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-
 @Module
 @InstallIn(SingletonComponent::class)
-object LocalModule {
+internal abstract class LocalModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideLocalTracksDataSource(contentResolverHelper: ContentResolverHelper): LocalTracksDataSource {
-        return LocalTracksDataSourceImpl(contentResolverHelper)
-    }
+    abstract fun bindLocalTracksRepository(
+        impl: LocalTracksRepositoryImpl
+    ): LocalTracksRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalTracksDataSource(
+        impl: LocalTracksDataSourceImpl
+    ): LocalTracksDataSource
 }
