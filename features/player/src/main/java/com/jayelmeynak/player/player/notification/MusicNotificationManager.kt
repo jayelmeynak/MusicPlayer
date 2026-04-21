@@ -6,11 +6,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -31,9 +31,7 @@ class MusicNotificationManager @Inject constructor(
         NotificationManagerCompat.from(context)
 
     init {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel()
-        }
+        createNotificationChannel()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -57,7 +55,7 @@ class MusicNotificationManager @Inject constructor(
     @UnstableApi
     private fun buildNotification(mediaSession: MediaSession) {
 
-        val deepLinkUriMainActivity = Uri.parse("multiplayer://main")
+        val deepLinkUriMainActivity = "multiplayer://main".toUri()
         val intent = Intent(Intent.ACTION_VIEW, deepLinkUriMainActivity)
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
             context,
@@ -79,7 +77,6 @@ class MusicNotificationManager @Inject constructor(
             )
             .build()
             .also {
-                it.setMediaSessionToken(mediaSession.sessionCompatToken)
                 it.setUseFastForwardActionInCompactView(true)
                 it.setUseRewindActionInCompactView(true)
                 it.setUseNextActionInCompactView(true)

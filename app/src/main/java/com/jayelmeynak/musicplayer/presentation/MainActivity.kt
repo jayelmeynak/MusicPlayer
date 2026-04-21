@@ -93,11 +93,7 @@ class MainActivity : ComponentActivity() {
     private fun startService() {
         if (!isServiceRunning) {
             val intent = Intent(this, PlayBackService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
+            startForegroundService(intent)
             isServiceRunning = true
         }
     }

@@ -1,7 +1,6 @@
 package com.jayelmeynak.player.player.service
 
 import android.content.Intent
-import android.os.Build
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
@@ -20,12 +19,10 @@ class PlayBackService : MediaSessionService() {
 
     @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.startNotificationService(
-                mediaSession = mediaSession,
-                mediaSessionService = this
-            )
-        }
+        notificationManager.startNotificationService(
+            mediaSession = mediaSession,
+            mediaSessionService = this
+        )
         return super.onStartCommand(intent, flags, startId)
     }
 
