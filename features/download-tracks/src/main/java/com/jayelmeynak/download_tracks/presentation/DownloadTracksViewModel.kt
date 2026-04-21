@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
 import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
+import com.jayelmeynak.local.domain.usecase.PruneArtworkCacheUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -21,6 +22,7 @@ import javax.inject.Inject
 class DownloadTracksViewModel @Inject constructor(
     private val getLocalTracksUseCase: GetLocalTracksUseCase,
     private val getTrackArtworkUseCase: GetTrackArtworkUseCase,
+    private val pruneArtworkCacheUseCase: PruneArtworkCacheUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DownloadTracksState())
@@ -58,13 +60,15 @@ class DownloadTracksViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             val tracks = getLocalTracksUseCase()
-            _state.value = _state.value.copy(tracks = tracks, isLoading = false)
+            _state.value = _state.value.copy(tracks = tracks)
+
+            pruneArtworkCacheUseCase(tracks.map { it.id })
 
             val artworks = tracks
-                .map { track -> async { track.id to getTrackArtworkUseCase(track.uri) } }
+                .map { track -> async { track.id to getTrackArtworkUseCase(track.id, track.uri) } }
                 .awaitAll()
                 .toMap()
-            _state.value = _state.value.copy(artworks = artworks)
+            _state.value = _state.value.copy(artworks = artworks, isLoading = false)
         }
     }
 

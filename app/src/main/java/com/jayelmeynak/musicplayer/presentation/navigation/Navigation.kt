@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
+import com.jayelmeynak.download_tracks.presentation.DownloadTracksViewModel
 import com.jayelmeynak.player.presentation.AudioViewModel
 import com.jayelmeynak.player.presentation.PlayerScreen
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
@@ -16,6 +17,7 @@ import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 @Composable
 fun Navigation(
     viewModel: AudioViewModel,
+    downloadTracksViewModel: DownloadTracksViewModel,
     scaffoldPadding: PaddingValues,
     navController: NavHostController,
     startService: () -> Unit
@@ -34,7 +36,8 @@ fun Navigation(
         }
         composable(Screen.ROUTE_DOWNLOADED_TRACKS) {
             DownloadTrackScreen(
-                scaffoldPadding = scaffoldPadding
+                scaffoldPadding = scaffoldPadding,
+                viewModel = downloadTracksViewModel,
             ) { trackUri ->
                 navController.navigate(Screen.ROUTE_PLAYER + "/local/${Uri.encode(trackUri.toString())}")
             }

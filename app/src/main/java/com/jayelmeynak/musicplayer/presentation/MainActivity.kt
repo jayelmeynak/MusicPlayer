@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.jayelmeynak.download_tracks.presentation.DownloadTracksViewModel
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
 import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
@@ -39,19 +40,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkPermissions()
         setContent {
-            val viewModel: AudioViewModel = hiltViewModel()
+            val audioViewModel: AudioViewModel = hiltViewModel()
+            val downloadTracksViewModel: DownloadTracksViewModel = hiltViewModel()
             AppTheme {
                 val navController = rememberNavController()
                 Scaffold(
                     bottomBar = {
                         BottomNavigationBar(
-                            viewModel,
+                            audioViewModel,
                             navController
                         )
                     }
                 ) { scaffoldPadding ->
                     Navigation(
-                        viewModel = viewModel,
+                        viewModel = audioViewModel,
+                        downloadTracksViewModel = downloadTracksViewModel,
                         scaffoldPadding = scaffoldPadding,
                         navController = navController,
                         startService = {

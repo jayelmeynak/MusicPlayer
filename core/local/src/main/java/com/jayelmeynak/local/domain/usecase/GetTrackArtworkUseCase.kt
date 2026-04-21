@@ -7,5 +7,6 @@ import javax.inject.Inject
 class GetTrackArtworkUseCase @Inject internal constructor(
     private val repository: LocalTracksRepository
 ) {
-    suspend operator fun invoke(uri: Uri): ByteArray? = repository.getArtwork(uri)
+    suspend operator fun invoke(trackId: Long, uri: Uri): ByteArray? =
+        repository.getArtwork(trackId, uri)
 }

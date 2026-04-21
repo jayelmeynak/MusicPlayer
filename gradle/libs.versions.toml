@@ -32,6 +32,7 @@ appcompat = "1.6.1"
 material = "1.12.0"
 ksp = "2.0.20-1.0.24"
 jetbrainsKotlinJvm = "2.0.20"
+room = "2.7.1"
 uiTextGoogleFonts = "1.7.7"
 
 [libraries]
@@ -79,6 +80,9 @@ accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-
 accompanist-swiperefresh = { module = "com.google.accompanist:accompanist-swiperefresh", version.ref = "accompanist-swiperefresh" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

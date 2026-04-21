@@ -13,9 +13,11 @@ internal class LocalTracksRepositoryImpl @Inject constructor(
     override suspend fun getTracksList(): List<LocalTrack> =
         dataSource.getTracksList().map { it.toLocalTrack() }
 
-    override suspend fun getArtwork(uri: Uri): ByteArray? {
-        return dataSource.getArtwork(uri)
-    }
+    override suspend fun getArtwork(trackId: Long, uri: Uri): ByteArray? =
+        dataSource.getArtwork(trackId, uri)
+
+    override suspend fun pruneArtworkCache(activeTrackIds: List<Long>) =
+        dataSource.pruneArtworkCache(activeTrackIds)
 }
 
 private fun TrackDbo.toLocalTrack() = LocalTrack(

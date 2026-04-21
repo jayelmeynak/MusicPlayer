@@ -6,5 +6,7 @@ import com.jayelmeynak.local.domain.model.LocalTrack
 internal interface LocalTracksRepository {
     suspend fun getTracksList(): List<LocalTrack>
 
-    suspend fun getArtwork(uri: Uri): ByteArray?
+    suspend fun getArtwork(trackId: Long, uri: Uri): ByteArray?
+
+    suspend fun pruneArtworkCache(activeTrackIds: List<Long>)
 }

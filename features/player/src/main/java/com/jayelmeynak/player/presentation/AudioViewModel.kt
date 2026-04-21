@@ -170,8 +170,9 @@ class AudioViewModel @Inject constructor(
 
     private fun loadArtworkForCurrentTrack() {
         val uri = currentSelectedAudio.uri ?: return
+        val trackId = currentSelectedAudio.id
         viewModelScope.launch {
-            _trackArtwork.value = getTrackArtworkUseCase(uri)
+            _trackArtwork.value = getTrackArtworkUseCase(trackId, uri)
         }
     }
 
