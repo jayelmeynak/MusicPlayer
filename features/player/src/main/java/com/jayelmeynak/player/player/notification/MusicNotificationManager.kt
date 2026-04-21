@@ -30,6 +30,8 @@ class MusicNotificationManager @Inject constructor(
     private val notificationManager: NotificationManagerCompat =
         NotificationManagerCompat.from(context)
 
+    private var playerNotificationManager: PlayerNotificationManager? = null
+
     init {
         createNotificationChannel()
     }
@@ -64,7 +66,7 @@ class MusicNotificationManager @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        PlayerNotificationManager.Builder(
+        playerNotificationManager = PlayerNotificationManager.Builder(
             context,
             NOTIFICATION_ID,
             NOTIFICATION_CHANNEL_ID

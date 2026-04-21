@@ -138,8 +138,11 @@ class AudioViewModel @Inject constructor(
                     MediaMetadata.Builder()
                         .setTitle(audio.title)
                         .setArtist(audio.artistName)
-                        .setArtworkUri(audio.album?.cover?.takeIf { it.isNotEmpty() }
-                            ?.let { Uri.parse(it) })
+                        .setArtworkUri(
+                            audio.album?.cover?.takeIf { it.isNotEmpty() }
+                                ?.let { Uri.parse(it) }
+                                ?: audio.uri
+                        )
                         .build()
                 )
                 .build()
