@@ -1,6 +1,5 @@
 package com.jayelmeynak.player.presentation
 
-import android.media.MediaMetadataRetriever
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
@@ -28,16 +27,15 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.player.presentation.components.PlayPauseIconButton
 import com.jayelmeynak.ui.R
@@ -49,9 +47,9 @@ fun PlayerScreen(
     idOrUri: String,
     viewModel: AudioViewModel
 ) {
-
     val currentTrack = viewModel.currentSelectedAudio
-    val state = viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val trackArtwork by viewModel.trackArtwork.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         if (source == "local") {
@@ -61,10 +59,8 @@ fun PlayerScreen(
         viewModel.loadRemoteTrack(idOrUri)
     }
 
-    when (state.value) {
-        is UIState.Initial -> {
-
-        }
+    when (state) {
+        is UIState.Initial -> Unit
 
         is UIState.Loading -> {
             Box(
@@ -86,7 +82,7 @@ fun PlayerScreen(
                     .padding(horizontal = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = (state.value as UIState.Error).errorMessage.asString())
+                Text(text = (state as UIState.Error).errorMessage.asString())
             }
         }
 
@@ -98,19 +94,9 @@ fun PlayerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceEvenly
             ) {
-                val context = LocalContext.current
-                val artworkModel = remember(currentTrack.id) {
-                    val coverUrl = currentTrack.album?.cover?.takeIf { it.isNotEmpty() }
-                    coverUrl
-                        ?: currentTrack.uri?.let { uri ->
-                            runCatching {
-                                MediaMetadataRetriever().use { retriever ->
-                                    retriever.setDataSource(context, uri)
-                                    retriever.embeddedPicture
-                                }
-                            }.getOrNull()
-                        }
-                }
+                val artworkModel = currentTrack.album?.cover?.takeIf { it.isNotEmpty() }
+                    ?: trackArtwork
+
                 Image(
                     painter = rememberAsyncImagePainter(
                         model = artworkModel ?: R.drawable.track_place_holder
@@ -155,8 +141,7 @@ fun PlayerScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -164,7 +149,6 @@ fun PlayerScreen(
                             text = viewModel.progressString,
                             style = MaterialTheme.typography.bodySmall,
                         )
-
                         Text(
                             text = viewModel.formatDuration(viewModel.duration),
                             style = MaterialTheme.typography.bodySmall,
@@ -179,51 +163,29 @@ fun PlayerScreen(
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = {
-                            viewModel.onUiEvents(UIEvents.Backward)
-                        }
-                    ) {
+                    IconButton(onClick = { viewModel.onUiEvents(UIEvents.Backward) }) {
                         Icon(
                             imageVector = Icons.Filled.FastRewind,
                             contentDescription = "Пролистать назад"
                         )
                     }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.onUiEvents(UIEvents.SeekToPrevious)
-                        }
-                    ) {
+                    IconButton(onClick = { viewModel.onUiEvents(UIEvents.SeekToPrevious) }) {
                         Icon(
                             imageVector = Icons.Filled.SkipPrevious,
                             contentDescription = "Предыдущий трек"
                         )
                     }
-
                     PlayPauseIconButton(
                         isPlaying = viewModel.isPlaying,
-                        onIconButtonClick = {
-                            viewModel.onUiEvents(UIEvents.PlayPause)
-                        }
+                        onIconButtonClick = { viewModel.onUiEvents(UIEvents.PlayPause) }
                     )
-
-                    IconButton(
-                        onClick = {
-                            viewModel.onUiEvents(UIEvents.SeekToNext)
-                        }
-                    ) {
+                    IconButton(onClick = { viewModel.onUiEvents(UIEvents.SeekToNext) }) {
                         Icon(
                             imageVector = Icons.Filled.SkipNext,
                             contentDescription = "Следующий трек"
                         )
                     }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.onUiEvents(UIEvents.Forward)
-                        }
-                    ) {
+                    IconButton(onClick = { viewModel.onUiEvents(UIEvents.Forward) }) {
                         Icon(
                             imageVector = Icons.Filled.FastForward,
                             contentDescription = "Пролистать вперед"

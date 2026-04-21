@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.SavedStateHandleSaveableApi
 import androidx.lifecycle.viewmodel.compose.saveable
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.network.utils.onError
 import com.jayelmeynak.network.utils.onSuccess
 import com.jayelmeynak.player.domain.models.Album
@@ -22,13 +23,11 @@ import com.jayelmeynak.player.player.service.MusicState
 import com.jayelmeynak.player.player.service.PlayerEvent
 import com.jayelmeynak.ui.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -49,6 +48,7 @@ class AudioViewModel @Inject constructor(
     private val getLocalTrackListUseCase: GetLocalTrackListUseCase,
     private val getRemoteTrackUseCase: GetRemoteTrackUseCase,
     private val getRemoteAlbumUseCase: GetRemoteAlbumUseCase,
+    private val getTrackArtworkUseCase: GetTrackArtworkUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -63,7 +63,11 @@ class AudioViewModel @Inject constructor(
     private val _uiState: MutableStateFlow<UIState> = MutableStateFlow(UIState.Initial)
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
 
+    private val _trackArtwork = MutableStateFlow<ByteArray?>(null)
+    val trackArtwork: StateFlow<ByteArray?> = _trackArtwork.asStateFlow()
+
     init {
+        restoreStateIfPlaying()
         viewModelScope.launch {
             audioServiceHandler.audioState.collectLatest { mediaState ->
                 when (mediaState) {
@@ -81,6 +85,19 @@ class AudioViewModel @Inject constructor(
         }
     }
 
+    private fun restoreStateIfPlaying() {
+        val playlist = audioServiceHandler.restorePlaylist()
+        if (playlist.isEmpty()) return
+        audioList = playlist
+        currentSelectedAudio = playlist.getOrNull(audioServiceHandler.currentMediaItemIndex())
+            ?: audioDummy
+        isPlaying = audioServiceHandler.isCurrentlyPlaying()
+        duration = audioServiceHandler.duration()
+        calculateProgressValue(audioServiceHandler.currentPosition())
+        loadArtworkForCurrentTrack()
+        _uiState.value = UIState.Ready
+    }
+
     fun loadRemoteTrack(id: String) {
         if (currentSelectedAudio.id.toString() == id) {
             return
@@ -88,50 +105,34 @@ class AudioViewModel @Inject constructor(
         source = "api"
         viewModelScope.launch {
             _uiState.value = UIState.Loading
-            val result = withContext(Dispatchers.IO) { getRemoteTrackUseCase(id) }
+            val result = getRemoteTrackUseCase(id)
             result.onSuccess { track ->
-                withContext(Dispatchers.Main) {
-                    currentSelectedAudio = track
-                    audioList = listOf(track)
-                }
+                currentSelectedAudio = track
+                audioList = listOf(track)
                 track.album?.id?.let { loadRemoteAlbum(it) }
-                withContext(Dispatchers.Main) {
-                    if (audioList.size == 1) {
-                        setMediaItem()
-                    }
-                    audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
-                    _uiState.value = UIState.Ready
-                }
+                setMediaItem()
+                audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
+                _uiState.value = UIState.Ready
             }.onError { error ->
-                withContext(Dispatchers.Main) {
-                    _uiState.value = UIState.Error(error.toUiText())
-                }
+                _uiState.value = UIState.Error(error.toUiText())
             }
         }
     }
 
-    private fun loadRemoteAlbum(albumId: Int) {
-        viewModelScope.launch {
-            _uiState.value = UIState.Loading
-            val result = withContext(Dispatchers.IO) {
-                getRemoteAlbumUseCase(albumId.toString())
-            }
-            result.onSuccess { albumTracks ->
-                val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
-                currentSelectedAudio.let { track ->
-                    audioList = audioList + filteredTracks
-                }
-                setMediaItem()
-            }
-                .onError { error ->
-                    _uiState.value = UIState.Error(error.toUiText())
-                }
+    private suspend fun loadRemoteAlbum(albumId: Int) {
+        val result = getRemoteAlbumUseCase(albumId.toString())
+        result.onSuccess { albumTracks ->
+            val filteredTracks = albumTracks.filter { it.id != currentSelectedAudio.id }
+            audioList = audioList + filteredTracks
+        }.onError { error ->
+            _uiState.value = UIState.Error(error.toUiText())
         }
     }
 
     private fun setMediaItem() {
         audioList.map { audio ->
             MediaItem.Builder()
+                .setMediaId(audio.id.toString())
                 .setUri(audio.preview)
                 .setMediaMetadata(
                     MediaMetadata.Builder()
@@ -158,11 +159,19 @@ class AudioViewModel @Inject constructor(
             setMediaItem()
             currentSelectedAudio = audioList.find { it.preview == trackUri } ?: audioDummy
             val currentTrackIndex = audioList.indexOf(currentSelectedAudio)
+            loadArtworkForCurrentTrack()
             _uiState.value = UIState.Ready
             audioServiceHandler.onPlayerEvents(
                 PlayerEvent.SelectedAudioChange,
                 selectedAudioIndex = currentTrackIndex
             )
+        }
+    }
+
+    private fun loadArtworkForCurrentTrack() {
+        val uri = currentSelectedAudio.uri ?: return
+        viewModelScope.launch {
+            _trackArtwork.value = getTrackArtworkUseCase(uri)
         }
     }
 
