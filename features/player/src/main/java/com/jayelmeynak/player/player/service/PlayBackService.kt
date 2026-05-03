@@ -9,6 +9,7 @@ import com.jayelmeynak.player.player.notification.MusicNotificationManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+@UnstableApi
 @AndroidEntryPoint
 class PlayBackService : MediaSessionService() {
     @Inject
@@ -17,10 +18,12 @@ class PlayBackService : MediaSessionService() {
     @Inject
     lateinit var notificationManager: MusicNotificationManager
 
+    @Inject
+    lateinit var musicServiceHandler: MusicServiceHandler
+
     @UnstableApi
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         notificationManager.startNotificationService(
-            mediaSession = mediaSession,
             mediaSessionService = this
         )
         return super.onStartCommand(intent, flags, startId)
@@ -30,7 +33,7 @@ class PlayBackService : MediaSessionService() {
         mediaSession
 
     override fun onDestroy() {
-        super.onDestroy()
+        musicServiceHandler.release()
         mediaSession.apply {
             release()
             if (player.playbackState != Player.STATE_IDLE) {
@@ -39,5 +42,6 @@ class PlayBackService : MediaSessionService() {
                 player.stop()
             }
         }
+        super.onDestroy()
     }
 }

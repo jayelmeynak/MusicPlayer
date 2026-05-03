@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.player.service
 
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -45,7 +45,7 @@ class MusicServiceHandler @Inject constructor(
             artistName = meta.artist?.toString().orEmpty(),
             preview = item.localConfiguration?.uri?.toString().orEmpty(),
             album = Album(0, "", artworkUri, "", ""),
-            uri = item.localConfiguration?.uri?.let { Uri.parse(it.toString()) },
+            uri = item.localConfiguration?.uri?.toString()?.toUri(),
         )
     }
 
@@ -58,7 +58,7 @@ class MusicServiceHandler @Inject constructor(
 
     fun isCurrentlyPlaying(): Boolean = exoPlayer.isPlaying
 
-    suspend fun onPlayerEvents(
+    fun onPlayerEvents(
         playerEvent: PlayerEvent,
         selectedAudioIndex: Int = -1,
         seekPosition: Long = 0,
@@ -70,7 +70,6 @@ class MusicServiceHandler @Inject constructor(
             is PlayerEvent.SeekToPrevious -> exoPlayer.seekToPrevious()
             is PlayerEvent.PlayPause -> playOrPause()
             is PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
-            is PlayerEvent.Stop -> stopProgressUpdate()
             is PlayerEvent.UpdateProgress -> {
                 exoPlayer.seekTo(
                     (exoPlayer.duration * playerEvent.newProgress).toLong()
@@ -134,5 +133,10 @@ class MusicServiceHandler @Inject constructor(
     private fun stopProgressUpdate() {
         job?.cancel()
         job = null
+    }
+
+    fun release() {
+        stopProgressUpdate()
+        exoPlayer.removeListener(this)
     }
 }

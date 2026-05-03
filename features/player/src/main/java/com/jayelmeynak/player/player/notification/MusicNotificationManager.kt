@@ -6,14 +6,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,6 +20,7 @@ private const val NOTIFICATION_ID = 101
 private const val NOTIFICATION_CHANNEL_NAME = "notification channel 1"
 private const val NOTIFICATION_CHANNEL_ID = "notification channel id 1"
 
+@UnstableApi
 class MusicNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exoPlayer: ExoPlayer,
@@ -36,17 +34,14 @@ class MusicNotificationManager @Inject constructor(
         createNotificationChannel()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @UnstableApi
     fun startNotificationService(
         mediaSessionService: MediaSessionService,
-        mediaSession: MediaSession,
     ) {
-        buildNotification(mediaSession)
+        buildNotification()
         startForeGroundNotificationService(mediaSessionService)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun startForeGroundNotificationService(mediaSessionService: MediaSessionService) {
         val notification = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setCategory(Notification.CATEGORY_SERVICE)
@@ -55,7 +50,7 @@ class MusicNotificationManager @Inject constructor(
     }
 
     @UnstableApi
-    private fun buildNotification(mediaSession: MediaSession) {
+    private fun buildNotification() {
 
         val deepLinkUriMainActivity = "multiplayer://main".toUri()
         val intent = Intent(Intent.ACTION_VIEW, deepLinkUriMainActivity)
@@ -87,7 +82,6 @@ class MusicNotificationManager @Inject constructor(
             }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             NOTIFICATION_CHANNEL_ID,

@@ -9,16 +9,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.rememberNavController
-import com.jayelmeynak.download_tracks.presentation.DownloadTracksViewModel
 import com.jayelmeynak.musicplayer.R
-import com.jayelmeynak.musicplayer.presentation.navigation.BottomNavigationBar
-import com.jayelmeynak.musicplayer.presentation.navigation.Navigation
+import com.jayelmeynak.musicplayer.presentation.navigation.AppNavigation
 import com.jayelmeynak.player.player.service.PlayBackService
-import com.jayelmeynak.player.presentation.AudioViewModel
 import com.jayelmeynak.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -30,9 +24,7 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (!isGranted) {
-            handlePermissionResult()
-        }
+        if (!isGranted) handlePermissionResult()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,41 +32,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkPermissions()
         setContent {
-            val audioViewModel: AudioViewModel = hiltViewModel()
-            val downloadTracksViewModel: DownloadTracksViewModel = hiltViewModel()
             AppTheme {
-                val navController = rememberNavController()
-                Scaffold(
-                    bottomBar = {
-                        BottomNavigationBar(
-                            audioViewModel,
-                            navController
-                        )
-                    }
-                ) { scaffoldPadding ->
-                    Navigation(
-                        viewModel = audioViewModel,
-                        downloadTracksViewModel = downloadTracksViewModel,
-                        scaffoldPadding = scaffoldPadding,
-                        navController = navController,
-                        startService = {
-                            startService()
-                        }
-                    )
-                }
+                AppNavigation(
+                    startService = { startService() },
+                )
             }
         }
     }
 
     private fun checkPermissions() {
         val requiredPermission = getRequiredPermission()
-        when {
-            ContextCompat.checkSelfPermission(
+        if (ContextCompat.checkSelfPermission(
                 this,
                 requiredPermission
-            ) == PackageManager.PERMISSION_DENIED -> {
-                permissionLauncher.launch(requiredPermission)
-            }
+            ) == PackageManager.PERMISSION_DENIED
+        ) {
+            permissionLauncher.launch(requiredPermission)
         }
     }
 
@@ -86,7 +59,7 @@ class MainActivity : ComponentActivity() {
         }
 
     private fun handlePermissionResult() {
-        Toast.makeText(this, this.getString(R.string.read_media_audio_required), Toast.LENGTH_LONG)
+        Toast.makeText(this, getString(R.string.read_media_audio_required), Toast.LENGTH_LONG)
             .show()
     }
 
@@ -95,14 +68,6 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(this, PlayBackService::class.java)
             startForegroundService(intent)
             isServiceRunning = true
-        }
-    }
-
-    private fun stopService() {
-        if (isServiceRunning) {
-            val intent = Intent(this, PlayBackService::class.java)
-            stopService(intent)
-            isServiceRunning = false
         }
     }
 }

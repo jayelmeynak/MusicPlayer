@@ -47,11 +47,15 @@ fun PlayerScreen(
     idOrUri: String,
     viewModel: AudioViewModel
 ) {
-    val currentTrack = viewModel.currentSelectedAudio
+    val currentTrack by viewModel.currentSelectedAudio.collectAsStateWithLifecycle()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val trackArtwork by viewModel.trackArtwork.collectAsStateWithLifecycle()
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
+    val progressString by viewModel.progressString.collectAsStateWithLifecycle()
+    val duration by viewModel.duration.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(idOrUri) {
         if (source == "local") {
             viewModel.loadLocalTrack(idOrUri)
             return@LaunchedEffect
@@ -133,10 +137,8 @@ fun PlayerScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Slider(
-                        value = viewModel.progress,
-                        onValueChange = {
-                            viewModel.onUiEvents(UIEvents.SeekTo(it))
-                        },
+                        value = progress,
+                        onValueChange = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
                         valueRange = 0f..100f,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -146,11 +148,11 @@ fun PlayerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = viewModel.progressString,
+                            text = progressString,
                             style = MaterialTheme.typography.bodySmall,
                         )
                         Text(
-                            text = viewModel.formatDuration(viewModel.duration),
+                            text = viewModel.formatDuration(duration),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -176,7 +178,7 @@ fun PlayerScreen(
                         )
                     }
                     PlayPauseIconButton(
-                        isPlaying = viewModel.isPlaying,
+                        isPlaying = isPlaying,
                         onIconButtonClick = { viewModel.onUiEvents(UIEvents.PlayPause) }
                     )
                     IconButton(onClick = { viewModel.onUiEvents(UIEvents.SeekToNext) }) {

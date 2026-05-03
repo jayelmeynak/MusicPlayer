@@ -1,6 +1,5 @@
 package com.jayelmeynak.search_tracks.presentation
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,23 +12,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jayelmeynak.search_tracks.presentation.components.TrackItem
 import com.jayelmeynak.search_tracks.presentation.components.TrackSearchBar
 
-@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun ChartTracksScreen(
     scaffoldPadding: PaddingValues,
     viewModel: ChartTracksViewModel = hiltViewModel(),
     onTrackClicked: (String) -> Unit
 ) {
-    val state = viewModel.state.value
-    val listToDisplay = if (state.searchList.isNotEmpty()) state.searchList else state.charts
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val listToDisplay = state.searchList.ifEmpty { state.charts }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
@@ -40,7 +40,9 @@ fun ChartTracksScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TrackSearchBar(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             searchQuery = state.query,
             onSearchQueryChange = { viewModel.onAction(ChartTracksAction.OnSearchQueryChange(it)) },
             onImeSearch = {
@@ -55,7 +57,9 @@ fun ChartTracksScreen(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(top = 8.dp, start = 8.dp, end = 8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 8.dp, start = 8.dp, end = 8.dp),
             ) {
                 LazyColumn {
                     items(listToDisplay) { track ->

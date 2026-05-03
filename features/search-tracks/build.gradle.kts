@@ -38,7 +38,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:network"))
 
-    implementation (libs.androidx.lifecycle)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation (libs.androidx.lifecycle.runtime.compose)
     implementation (libs.androidx.hilt.navigation.compose)
     implementation (libs.accompanist.flowlayout)
@@ -67,5 +67,4 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation (libs.androidx.hilt.navigation.compose)
-    implementation (libs.androidx.hilt.navigation.compose.v100alpha01)
 }
