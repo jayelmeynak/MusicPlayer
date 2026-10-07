@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.jayelmeynak.download_tracks"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 29

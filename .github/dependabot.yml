@@ -5,7 +5,31 @@ updates:
     schedule:
       interval: weekly
     groups:
-      gradle-minor-patch:
+      # Kotlin, KSP, Compose compiler, AGP and Gradle move together and can break the build.
+      toolchain:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp"
+          - "com.android.*"
+          - "gradle-wrapper"
+        update-types:
+          - minor
+          - patch
+      androidx:
+        patterns:
+          - "androidx.*"
+          - "com.google.android.material:*"
+        update-types:
+          - minor
+          - patch
+      other-minor-patch:
+        exclude-patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp"
+          - "com.android.*"
+          - "gradle-wrapper"
+          - "androidx.*"
+          - "com.google.android.material:*"
         update-types:
           - minor
           - patch
