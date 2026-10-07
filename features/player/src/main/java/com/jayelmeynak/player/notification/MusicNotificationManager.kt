@@ -1,6 +1,6 @@
 @file:OptIn(UnstableApi::class)
 
-package com.jayelmeynak.player.player.notification
+package com.jayelmeynak.player.notification
 
 import android.app.Notification
 import android.app.NotificationChannel

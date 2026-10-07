@@ -9,8 +9,8 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.session.MediaSession
 import com.jayelmeynak.player.data.MusicRemoteRepositoryImpl
 import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
-import com.jayelmeynak.player.player.notification.MusicNotificationManager
-import com.jayelmeynak.player.player.service.MusicServiceHandler
+import com.jayelmeynak.player.notification.MusicNotificationManager
+import com.jayelmeynak.player.service.MusicServiceHandler
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

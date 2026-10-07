@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.player.service
+package com.jayelmeynak.player.service
 
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem

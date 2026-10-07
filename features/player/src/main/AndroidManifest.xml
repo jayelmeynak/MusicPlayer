@@ -7,7 +7,7 @@
         android:maxSdkVersion="32" />
     <application>
         <service
-            android:name=".player.service.PlayBackService"
+            android:name=".service.PlayBackService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="true">
             <intent-filter>
