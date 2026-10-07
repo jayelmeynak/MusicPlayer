@@ -1,5 +1,6 @@
 package com.jayelmeynak.network.di
 
+import com.jayelmeynak.network.BuildConfig
 import com.jayelmeynak.network.data.ApiService
 import com.jayelmeynak.network.data.RemoteChartDataSource
 import com.jayelmeynak.network.data.RemoteChartDataSourceImpl
@@ -26,15 +27,19 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
+        val builder = OkHttpClient.Builder()
             .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT, TimeUnit.SECONDS)
-            .build()
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
+        }
+
+        return builder.build()
     }
     @Provides
     @Singleton

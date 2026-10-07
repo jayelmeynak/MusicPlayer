@@ -24,6 +24,9 @@ android {
             )
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     kotlin {
         jvmToolchain(17)
     }
