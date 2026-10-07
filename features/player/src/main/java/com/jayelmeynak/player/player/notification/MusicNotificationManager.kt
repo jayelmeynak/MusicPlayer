@@ -1,3 +1,5 @@
+@file:OptIn(UnstableApi::class)
+
 package com.jayelmeynak.player.player.notification
 
 import android.app.Notification
@@ -6,6 +8,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -20,7 +23,6 @@ private const val NOTIFICATION_ID = 101
 private const val NOTIFICATION_CHANNEL_NAME = "notification channel 1"
 private const val NOTIFICATION_CHANNEL_ID = "notification channel id 1"
 
-@UnstableApi
 class MusicNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exoPlayer: ExoPlayer,
@@ -34,7 +36,6 @@ class MusicNotificationManager @Inject constructor(
         createNotificationChannel()
     }
 
-    @UnstableApi
     fun startNotificationService(
         mediaSessionService: MediaSessionService,
     ) {
@@ -49,7 +50,7 @@ class MusicNotificationManager @Inject constructor(
         mediaSessionService.startForeground(NOTIFICATION_ID, notification)
     }
 
-    @UnstableApi
+    @OptIn(UnstableApi::class)
     private fun buildNotification() {
 
         val deepLinkUriMainActivity = "multiplayer://main".toUri()
