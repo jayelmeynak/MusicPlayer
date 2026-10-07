@@ -57,6 +57,10 @@ lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewm
 material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite", version = "1.4.0" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
+# Dependencies of the included build-logic
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
@@ -64,3 +68,14 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 android-library = { id = "com.android.library", version.ref = "agp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+# Plugins defined by build-logic
+musicplayer-application = { id = "musicplayer.application" }
+musicplayer-android-library = { id = "musicplayer.android.library" }
+musicplayer-feature-api = { id = "musicplayer.feature.api" }
+musicplayer-feature-impl = { id = "musicplayer.feature.impl" }
+musicplayer-feature-ui = { id = "musicplayer.feature.ui" }
+musicplayer-feature-di = { id = "musicplayer.feature.di" }
+musicplayer-lib = { id = "musicplayer.lib" }
+musicplayer-util = { id = "musicplayer.util" }
+musicplayer-room = { id = "musicplayer.room" }
