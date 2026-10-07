@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: Lint, unit tests, debug build
+    name: lint-test-assemble
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
