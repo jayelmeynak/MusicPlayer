@@ -1,6 +1,6 @@
 @file:OptIn(UnstableApi::class)
 
-package com.jayelmeynak.player.player.notification
+package com.jayelmeynak.player.notification
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -18,11 +18,13 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val NOTIFICATION_ID = 101
 private const val NOTIFICATION_CHANNEL_NAME = "notification channel 1"
 private const val NOTIFICATION_CHANNEL_ID = "notification channel id 1"
 
+@Singleton
 class MusicNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exoPlayer: ExoPlayer,

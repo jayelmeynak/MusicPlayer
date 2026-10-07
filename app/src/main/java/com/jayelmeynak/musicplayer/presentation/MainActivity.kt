@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.AppNavigation
-import com.jayelmeynak.player.player.service.PlayBackService
+import com.jayelmeynak.player.service.PlayBackService
 import com.jayelmeynak.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 

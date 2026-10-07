@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.domain.useсase
+package com.jayelmeynak.player.domain.usecase
 
 import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
 import com.jayelmeynak.player.data.toTrack

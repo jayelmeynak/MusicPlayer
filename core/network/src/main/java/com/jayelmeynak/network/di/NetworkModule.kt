@@ -1,10 +1,12 @@
 package com.jayelmeynak.network.di
 
+import com.jayelmeynak.network.BuildConfig
 import com.jayelmeynak.network.data.ApiService
 import com.jayelmeynak.network.data.RemoteChartDataSource
 import com.jayelmeynak.network.data.RemoteChartDataSourceImpl
 import com.jayelmeynak.network.data.RemoteTrackDataSource
 import com.jayelmeynak.network.data.RemoteTrackDataSourceImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,15 +28,19 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
+        val builder = OkHttpClient.Builder()
             .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(TIMEOUT, TimeUnit.SECONDS)
-            .build()
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
+        }
+
+        return builder.build()
     }
     @Provides
     @Singleton
@@ -46,16 +52,17 @@ object NetworkModule {
             .build()
             .create(ApiService::class.java)
     }
+}
 
-    @Provides
-    @Singleton
-    fun provideRemoteChartDataSource(apiService: ApiService): RemoteChartDataSource {
-        return RemoteChartDataSourceImpl(apiService)
-    }
+@Module
+@InstallIn(SingletonComponent::class)
+internal abstract class NetworkBindsModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideRemoteTrackDataSource(apiService: ApiService): RemoteTrackDataSource {
-        return RemoteTrackDataSourceImpl(apiService)
-    }
+    abstract fun bindRemoteChartDataSource(impl: RemoteChartDataSourceImpl): RemoteChartDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindRemoteTrackDataSource(impl: RemoteTrackDataSourceImpl): RemoteTrackDataSource
 }

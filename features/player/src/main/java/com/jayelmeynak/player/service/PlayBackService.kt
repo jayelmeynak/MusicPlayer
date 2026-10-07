@@ -1,11 +1,11 @@
-package com.jayelmeynak.player.player.service
+package com.jayelmeynak.player.service
 
 import android.content.Intent
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import com.jayelmeynak.player.player.notification.MusicNotificationManager
+import com.jayelmeynak.player.notification.MusicNotificationManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

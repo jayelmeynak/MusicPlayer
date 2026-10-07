@@ -9,8 +9,6 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.session.MediaSession
 import com.jayelmeynak.player.data.MusicRemoteRepositoryImpl
 import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
-import com.jayelmeynak.player.player.notification.MusicNotificationManager
-import com.jayelmeynak.player.player.service.MusicServiceHandler
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -28,7 +26,7 @@ annotation class ApplicationScope
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class Module {
+internal abstract class PlayerModule {
 
     @Binds
     @Singleton
@@ -64,24 +62,7 @@ internal abstract class Module {
 
         @Provides
         @Singleton
-        fun provideNotificationManager(
-            @ApplicationContext context: Context,
-            player: ExoPlayer,
-        ): MusicNotificationManager = MusicNotificationManager(
-            context = context,
-            exoPlayer = player
-        )
-
-        @Provides
-        @Singleton
         @ApplicationScope
         fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob())
-
-        @Provides
-        @Singleton
-        fun provideServiceHandler(
-            exoPlayer: ExoPlayer,
-            @ApplicationScope applicationScope: CoroutineScope,
-        ): MusicServiceHandler = MusicServiceHandler(exoPlayer, applicationScope)
     }
 }

@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.player.service
+package com.jayelmeynak.player.service
 
 sealed class PlayerEvent {
     object PlayPause : PlayerEvent()

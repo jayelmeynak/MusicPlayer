@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.player.notification
+package com.jayelmeynak.player.notification
 
 import android.app.PendingIntent
 import android.content.Context

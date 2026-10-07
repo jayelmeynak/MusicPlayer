@@ -13,7 +13,7 @@ android {
         minSdk = 29
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
+    consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -38,21 +38,13 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:network"))
 
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation (libs.androidx.lifecycle.runtime.compose)
-    implementation (libs.androidx.hilt.navigation.compose)
-    implementation (libs.accompanist.flowlayout)
-    implementation (libs.coil.compose)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.coil.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation (libs.androidx.paging.compose)
-    implementation(libs.androidx.ui.util)
     implementation(libs.androidx.material.icons.extended)
 
     testImplementation(libs.junit)
@@ -60,11 +52,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation (libs.androidx.hilt.navigation.compose)
 }

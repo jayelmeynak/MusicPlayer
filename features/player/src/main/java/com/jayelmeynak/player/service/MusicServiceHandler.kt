@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.player.service
+package com.jayelmeynak.player.service
 
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
@@ -6,6 +6,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
+import com.jayelmeynak.player.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,10 +16,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MusicServiceHandler @Inject constructor(
     private val exoPlayer: ExoPlayer,
-    private val applicationScope: CoroutineScope,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) : Player.Listener {
     private val _audioState: MutableStateFlow<MusicState> =
         MutableStateFlow(MusicState.Initial)

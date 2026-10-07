@@ -1,4 +1,4 @@
-package com.jayelmeynak.player.domain.useсase
+package com.jayelmeynak.player.domain.usecase
 
 import com.jayelmeynak.network.utils.DataError
 import com.jayelmeynak.network.utils.Result
