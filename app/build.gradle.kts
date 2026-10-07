@@ -1,6 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.musicplayer.application)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
@@ -8,34 +7,12 @@ plugins {
 
 android {
     namespace = "com.jayelmeynak.musicplayer"
-    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jayelmeynak.musicplayer"
-        minSdk = 29
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-    kotlin {
-        jvmToolchain(17)
-    }
-    buildFeatures {
-        compose = true
-    }
-
 }
 
 dependencies {
