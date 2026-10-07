@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.jayelmeynak.musicplayer"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jayelmeynak.musicplayer"
