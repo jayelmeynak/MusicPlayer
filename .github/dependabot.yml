@@ -1,43 +1,10 @@
 version: 2
 updates:
-  - package-ecosystem: gradle
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      # Kotlin, KSP, Compose compiler, AGP and Gradle move together and can break the build.
-      toolchain:
-        patterns:
-          - "org.jetbrains.kotlin*"
-          - "com.google.devtools.ksp"
-          - "com.android.*"
-          - "gradle-wrapper"
-        update-types:
-          - minor
-          - patch
-      androidx:
-        patterns:
-          - "androidx.*"
-          - "com.google.android.material:*"
-        update-types:
-          - minor
-          - patch
-      other-minor-patch:
-        exclude-patterns:
-          - "org.jetbrains.kotlin*"
-          - "com.google.devtools.ksp"
-          - "com.android.*"
-          - "gradle-wrapper"
-          - "androidx.*"
-          - "com.google.android.material:*"
-        update-types:
-          - minor
-          - patch
-
+  # Library versions (gradle) are updated manually as a planned task, not by Dependabot.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       actions-minor-patch:
         update-types:
