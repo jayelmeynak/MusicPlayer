@@ -6,8 +6,9 @@ import com.jayelmeynak.network.utils.Result
 import com.jayelmeynak.network.utils.map
 import com.jayelmeynak.search_tracks.domain.models.Track
 import com.jayelmeynak.search_tracks.domain.repositories.MusicChartsRepository
+import javax.inject.Inject
 
-class MusicChartsRepositoryImpl(
+class MusicChartsRepositoryImpl @Inject constructor(
     private val remoteMusicDataSource: RemoteChartDataSource
 ) : MusicChartsRepository {
 

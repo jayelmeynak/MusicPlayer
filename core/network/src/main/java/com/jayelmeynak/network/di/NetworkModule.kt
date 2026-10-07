@@ -6,6 +6,7 @@ import com.jayelmeynak.network.data.RemoteChartDataSource
 import com.jayelmeynak.network.data.RemoteChartDataSourceImpl
 import com.jayelmeynak.network.data.RemoteTrackDataSource
 import com.jayelmeynak.network.data.RemoteTrackDataSourceImpl
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -51,16 +52,17 @@ object NetworkModule {
             .build()
             .create(ApiService::class.java)
     }
+}
 
-    @Provides
-    @Singleton
-    fun provideRemoteChartDataSource(apiService: ApiService): RemoteChartDataSource {
-        return RemoteChartDataSourceImpl(apiService)
-    }
+@Module
+@InstallIn(SingletonComponent::class)
+internal abstract class NetworkBindsModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideRemoteTrackDataSource(apiService: ApiService): RemoteTrackDataSource {
-        return RemoteTrackDataSourceImpl(apiService)
-    }
+    abstract fun bindRemoteChartDataSource(impl: RemoteChartDataSourceImpl): RemoteChartDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindRemoteTrackDataSource(impl: RemoteTrackDataSourceImpl): RemoteTrackDataSource
 }
