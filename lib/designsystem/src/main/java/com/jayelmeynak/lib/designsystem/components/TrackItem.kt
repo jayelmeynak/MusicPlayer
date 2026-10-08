@@ -21,13 +21,14 @@ public fun TrackItem(
     title: String,
     artistName: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     image: @Composable () -> Unit
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         image()
