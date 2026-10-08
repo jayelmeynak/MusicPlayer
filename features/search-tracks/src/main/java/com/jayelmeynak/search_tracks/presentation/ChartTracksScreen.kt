@@ -19,8 +19,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jayelmeynak.search_tracks.presentation.components.TrackItem
-import com.jayelmeynak.search_tracks.presentation.components.TrackSearchBar
+import com.jayelmeynak.lib.designsystem.components.RemoteTrackImage
+import com.jayelmeynak.lib.designsystem.components.TrackItem
+import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
 
 @Composable
 fun ChartTracksScreen(
@@ -64,15 +65,17 @@ fun ChartTracksScreen(
                 LazyColumn {
                     items(listToDisplay) { track ->
                         TrackItem(
-                            track = track,
-                            onTrackClick = {
+                            title = track.title,
+                            artistName = track.artistName,
+                            onClick = {
                                 viewModel.onAction(
                                     ChartTracksAction.OnTrackClicked(
                                         track.id.toString()
                                     )
                                 )
                                 onTrackClicked(track.id.toString())
-                            }
+                            },
+                            image = { RemoteTrackImage(track.album.cover) }
                         )
                     }
                 }

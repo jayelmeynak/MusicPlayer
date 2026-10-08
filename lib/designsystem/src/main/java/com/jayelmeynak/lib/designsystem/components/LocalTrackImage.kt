@@ -1,5 +1,6 @@
-package com.jayelmeynak.download_tracks.presentation.components
+package com.jayelmeynak.lib.designsystem.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,10 +10,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.jayelmeynak.ui.R
+import com.jayelmeynak.lib.designsystem.R
 
 @Composable
-fun TrackImage(
+public fun LocalTrackImage(
     artwork: ByteArray?,
     modifier: Modifier = Modifier,
 ) {
@@ -25,6 +26,8 @@ fun TrackImage(
             .build(),
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = modifier.clip(RoundedCornerShape(8.dp))
+        modifier = modifier
+            .size(56.dp)
+            .clip(RoundedCornerShape(8.dp))
     )
 }

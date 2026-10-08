@@ -7,8 +7,8 @@ import com.jayelmeynak.search_tracks.data.toTrack
 import com.jayelmeynak.search_tracks.data.trackDto
 import com.jayelmeynak.search_tracks.domain.usecase.GetChartUseCase
 import com.jayelmeynak.search_tracks.domain.usecase.SearchTrackUseCase
-import com.jayelmeynak.ui.R
-import com.jayelmeynak.ui.UiText
+import com.jayelmeynak.lib.designsystem.R
+import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest

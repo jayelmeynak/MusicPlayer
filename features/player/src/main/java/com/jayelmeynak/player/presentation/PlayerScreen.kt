@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.player.presentation.components.PlayPauseIconButton
-import com.jayelmeynak.ui.R
+import com.jayelmeynak.lib.designsystem.R
 
 @Composable
 fun PlayerScreen(

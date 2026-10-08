@@ -20,7 +20,7 @@ dependencies {
     implementation(project(":features:search-tracks"))
     implementation(project(":features:player"))
     implementation(project(":features:download-tracks"))
-    implementation(project(":core:ui"))
+    implementation(project(":lib:designsystem"))
     implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.hilt.android)

@@ -1,7 +1,7 @@
 package com.jayelmeynak.download_tracks.presentation
 
 import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
-import com.jayelmeynak.ui.UiText
+import com.jayelmeynak.lib.designsystem.UiText
 
 data class DownloadTracksState(
     val tracks: List<LocalTrack> = emptyList(),

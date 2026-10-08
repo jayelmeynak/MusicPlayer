@@ -30,7 +30,7 @@ dependencies {
     implementation(libs.media3.ui)
     implementation(libs.glide)
 
-    implementation(project(":core:ui"))
+    implementation(project(":lib:designsystem"))
     implementation(project(":lib:network"))
     implementation(project(":util:result"))
     implementation(project(":util:coroutines"))

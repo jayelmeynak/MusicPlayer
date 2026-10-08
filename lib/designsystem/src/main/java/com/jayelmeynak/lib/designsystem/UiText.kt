@@ -1,19 +1,19 @@
-package com.jayelmeynak.ui
+package com.jayelmeynak.lib.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 
-sealed interface UiText {
-    data class DynamicString(val value: String) : UiText
+public sealed interface UiText {
+    public data class DynamicString(public val value: String) : UiText
 
-    class StringResourceId(
-        @StringRes val id: Int,
-        vararg val args: Any
+    public class StringResourceId(
+        @StringRes public val id: Int,
+        public vararg val args: Any
     ) : UiText
 
     @Composable
-    fun asString(): String {
+    public fun asString(): String {
         return when (this) {
             is DynamicString -> value
             is StringResourceId -> stringResource(id, *args)

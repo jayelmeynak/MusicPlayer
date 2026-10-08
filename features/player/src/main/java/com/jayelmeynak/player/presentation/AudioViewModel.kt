@@ -17,8 +17,8 @@ import com.jayelmeynak.player.domain.usecase.GetRemoteTrackUseCase
 import com.jayelmeynak.player.service.MusicServiceHandler
 import com.jayelmeynak.player.service.MusicState
 import com.jayelmeynak.player.service.PlayerEvent
-import com.jayelmeynak.ui.UiText
-import com.jayelmeynak.ui.toUiText
+import com.jayelmeynak.lib.designsystem.UiText
+import com.jayelmeynak.lib.designsystem.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
