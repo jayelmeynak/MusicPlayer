@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-class PruneArtworkCacheUseCase @Inject internal constructor(
+class PruneArtworkCacheUseCase @Inject constructor(
     private val repository: LocalTracksRepository
 ) {
     suspend operator fun invoke(activeTrackIds: List<Long>) = withContext(Dispatchers.IO) {
