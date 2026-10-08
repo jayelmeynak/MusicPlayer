@@ -6,11 +6,14 @@ import com.jayelmeynak.lib.network.data.RemoteChartDataSource
 import com.jayelmeynak.lib.network.data.RemoteChartDataSourceImpl
 import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
 import com.jayelmeynak.lib.network.data.RemoteTrackDataSourceImpl
+import com.jayelmeynak.lib.network.http.DeezerErrorConverterFactory
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -45,13 +48,18 @@ internal object NetworkModule {
     @Provides
     @Singleton
     fun provideApi(okHttpClient: OkHttpClient): ApiService {
-        return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
+        return createApiService(BASE_URL.toHttpUrl(), okHttpClient)
     }
+}
+
+internal fun createApiService(baseUrl: HttpUrl, client: OkHttpClient): ApiService {
+    return Retrofit.Builder()
+        .baseUrl(baseUrl)
+        .client(client)
+        .addConverterFactory(DeezerErrorConverterFactory)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(ApiService::class.java)
 }
 
 @Module

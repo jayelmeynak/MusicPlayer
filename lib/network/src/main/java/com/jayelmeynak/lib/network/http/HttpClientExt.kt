@@ -17,6 +17,8 @@ internal suspend inline fun <reified T> safeCall(
         return Result.Error(DataError.Remote.REQUEST_TIMEOUT)
     } catch (e: UnknownHostException) {
         return Result.Error(DataError.Remote.NO_INTERNET)
+    } catch (e: DeezerApiException) {
+        return Result.Error(deezerErrorToRemote(e.code))
     } catch (e: Exception) {
         coroutineContext.ensureActive()
         return Result.Error(DataError.Remote.UNKNOWN)

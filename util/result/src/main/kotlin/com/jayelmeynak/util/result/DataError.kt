@@ -8,6 +8,7 @@ public sealed interface DataError: Error {
         NO_INTERNET,
         SERVER,
         SERIALIZATION,
+        NOT_FOUND,
         UNKNOWN
     }
 
