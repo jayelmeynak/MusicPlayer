@@ -7,7 +7,8 @@ import com.jayelmeynak.local.domain.model.LocalTrack
 import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
 import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.local.domain.usecase.PruneArtworkCacheUseCase
-import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -42,7 +43,7 @@ class DownloadTracksViewModelTest {
     )
 
     @Test
-    fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest {
+    fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest(ownScheduler()) {
         viewModel().state.test {
             val state = awaitLoaded()
             assertEquals(listOf(yesterday, numb, help), state.tracks)
@@ -55,7 +56,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `нет треков - пустое состояние, кэш чистится пустым списком`() = runTest {
+    fun `нет треков - пустое состояние, кэш чистится пустым списком`() = runTest(ownScheduler()) {
         repository.tracks = emptyList()
 
         viewModel().state.test {
@@ -67,7 +68,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `поиск по исполнителю без учёта регистра после паузы 500 мс`() = runTest {
+    fun `поиск по исполнителю без учёта регистра после паузы 500 мс`() = runTest(ownScheduler()) {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -75,43 +76,49 @@ class DownloadTracksViewModelTest {
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("beatles"))
             assertEquals("beatles", expectMostRecentItem().query)
 
-            advanceTimeBy(499)
+            mainRule.dispatcher.scheduler.advanceTimeBy(499)
             assertTrue(viewModel.state.value.searchList.isEmpty())
 
-            advanceTimeBy(2)
+            mainRule.dispatcher.scheduler.advanceTimeBy(2)
             assertEquals(listOf(yesterday, help), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `поиск по подстроке названия без учёта регистра`() = runTest {
+    fun `поиск по подстроке названия без учёта регистра`() = runTest(ownScheduler()) {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("NUM"))
-            advanceTimeBy(501)
+            mainRule.dispatcher.scheduler.advanceTimeBy(501)
 
             assertEquals(listOf(numb), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `пустой запрос очищает searchList`() = runTest {
+    fun `пустой запрос очищает searchList`() = runTest(ownScheduler()) {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            advanceTimeBy(501)
+            mainRule.dispatcher.scheduler.advanceTimeBy(501)
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange(""))
-            advanceTimeBy(501)
+            mainRule.dispatcher.scheduler.advanceTimeBy(501)
 
             val state = expectMostRecentItem()
             assertTrue(state.searchList.isEmpty())
             assertEquals("", state.query)
         }
     }
+
+    // runTest must not share the Main scheduler: while it waits for the IO hop it would advance
+    // virtual time and fire the initial debounce concurrently with loadData. Debounce time is
+    // moved explicitly through mainRule. StandardTestDispatcher() without an argument would
+    // take the Main scheduler.
+    private fun ownScheduler() = StandardTestDispatcher(TestCoroutineScheduler())
 
     // PruneArtworkCacheUseCase hops to the real Dispatchers.IO, so wait for the loaded state.
     private suspend fun ReceiveTurbine<DownloadTracksState>.awaitLoaded(): DownloadTracksState {

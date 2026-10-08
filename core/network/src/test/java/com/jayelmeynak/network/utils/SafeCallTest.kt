@@ -1,14 +1,14 @@
 package com.jayelmeynak.network.utils
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -87,16 +87,19 @@ class SafeCallTest {
     }
 
     @Test
-    fun `отменённая корутина - CancellationException пробрасывается, не UNKNOWN`() = runTest {
-        val call = async {
+    fun `отменённая корутина - отмена пробрасывается, код после safeCall не выполняется`() = runTest {
+        var reachedAfterCall = false
+        val job = launch {
             safeCall<Item> {
                 currentCoroutineContext().cancel()
                 throw IOException()
             }
+            reachedAfterCall = true
         }
 
-        val thrown = runCatching { call.await() }.exceptionOrNull()
+        job.join()
 
-        assertTrue(thrown is CancellationException)
+        assertTrue(job.isCancelled)
+        assertFalse(reachedAfterCall)
     }
 }

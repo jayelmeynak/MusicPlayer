@@ -90,12 +90,14 @@ class ChartTracksViewModelTest {
     }
 
     @Test
-    fun `тот же запрос после паузы не ищется повторно`() = runTest {
+    fun `возврат к прежнему запросу внутри паузы не ищется повторно`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
             advanceTimeBy(501)
+            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abcd"))
+            advanceTimeBy(100)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
             advanceTimeBy(501)
 

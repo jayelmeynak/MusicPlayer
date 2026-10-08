@@ -192,8 +192,10 @@ class MusicServiceHandlerTest {
         handler.onPlayerEvents(PlayerEvent.SeekTo, seekPosition = 1_000)
         assertEquals(1_000, player.currentPosition)
 
+        // FakeMediaSourceFactory items last 10 s.
+        assertEquals(10_000L, player.duration)
         handler.onPlayerEvents(PlayerEvent.UpdateProgress(0.5f))
-        assertEquals((player.duration * 0.5f).toLong(), player.currentPosition)
+        assertEquals(5_000L, player.currentPosition)
     }
 
     @Test
