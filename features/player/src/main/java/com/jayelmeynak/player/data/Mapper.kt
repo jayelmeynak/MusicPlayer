@@ -13,7 +13,8 @@ fun TrackDto.toTrack(): Track? {
         title = title ?: return null,
         preview = preview ?: return null,
         artistName = artist?.name.orEmpty(),
-        album = album?.toAlbum(),
+        // Without an id the album can't be loaded, so the track gets no album at all.
+        album = album?.takeIf { it.id != null }?.toAlbum(),
         uri = null
     )
 }

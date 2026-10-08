@@ -117,6 +117,22 @@ class DeezerErrorResponseTest {
     }
 
     @Test
+    fun `не-ASCII название в UTF-8 доходит без искажений`() = runTest {
+        server.enqueue(
+            MockResponse.Builder()
+                .code(200)
+                .setHeader("Content-Type", "application/json; charset=utf-8")
+                .body("""{"id":7,"title":"Кино — Группа крови 🎸","preview":"p"}""")
+                .build()
+        )
+
+        val track = (trackSource.getTrack("7") as Result.Success).data
+
+        assertEquals(7L, track.id)
+        assertEquals("Кино — Группа крови 🎸", track.title)
+    }
+
+    @Test
     fun `битый JSON - UNKNOWN, как и раньше`() = runTest {
         enqueue("""{"tracks":""")
 

@@ -13,7 +13,7 @@ fun TrackDto.toTrack(): Track? {
         title = title ?: return null,
         preview = preview ?: return null,
         artistName = artist?.name.orEmpty(),
-        album = album?.toAlbum() ?: AlbumDto().toAlbum()
+        album = album?.toAlbum() ?: EMPTY_ALBUM
     )
 }
 
@@ -24,3 +24,5 @@ fun AlbumDto.toAlbum() = Album(
     trackList = trackList.orEmpty(),
     type = type.orEmpty()
 )
+
+private val EMPTY_ALBUM = Album(id = 0, title = "", cover = "", trackList = "", type = "")

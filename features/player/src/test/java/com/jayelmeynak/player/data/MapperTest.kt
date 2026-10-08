@@ -76,6 +76,11 @@ class MapperTest {
     }
 
     @Test
+    fun `TrackDto с альбомом без id - альбом null, лишний запрос альбома не уходит`() {
+        assertNull(trackDto().copy(album = albumDto().copy(id = null)).toTrack()?.album)
+    }
+
+    @Test
     fun `AlbumDto без полей переводится в Album с пустыми значениями`() {
         assertEquals(Album(id = 0, title = "", cover = "", trackList = "", type = ""), AlbumDto().toAlbum())
     }
