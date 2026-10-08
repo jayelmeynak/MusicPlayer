@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.presentation
 
-import com.jayelmeynak.ui.UiText
+import com.jayelmeynak.lib.designsystem.UiText
 
 sealed class UIState {
     object Initial : UIState()

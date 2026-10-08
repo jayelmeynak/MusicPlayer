@@ -15,18 +15,16 @@ android {
 
 dependencies {
 
-    implementation(project(":core:ui"))
+    implementation(project(":lib:designsystem"))
     implementation(project(":lib:network"))
     implementation(project(":util:result"))
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.coil.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
 
     testImplementation(libs.junit)
     testImplementation(project(":util:testing"))

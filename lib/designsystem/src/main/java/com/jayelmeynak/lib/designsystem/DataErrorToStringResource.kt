@@ -1,8 +1,8 @@
-package com.jayelmeynak.ui
+package com.jayelmeynak.lib.designsystem
 
 import com.jayelmeynak.util.result.DataError
 
-fun DataError.toUiText(): UiText {
+public fun DataError.toUiText(): UiText {
     val stringRes = when(this) {
         DataError.Local.DISK_FULL -> R.string.error_disk_full
         DataError.Local.UNKNOWN -> R.string.error_unknown

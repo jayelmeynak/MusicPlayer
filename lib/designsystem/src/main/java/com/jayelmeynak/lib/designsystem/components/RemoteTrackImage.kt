@@ -1,4 +1,4 @@
-package com.jayelmeynak.search_tracks.presentation.components
+package com.jayelmeynak.lib.designsystem.components
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -16,7 +16,10 @@ import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 
 @Composable
-fun TrackImage(imageUrl: String) {
+public fun RemoteTrackImage(
+    imageUrl: String,
+    modifier: Modifier = Modifier,
+) {
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(imageUrl)
@@ -29,7 +32,7 @@ fun TrackImage(imageUrl: String) {
         contentDescription = null,
         contentScale = ContentScale.Crop,
         filterQuality = FilterQuality.None,
-        modifier = Modifier
+        modifier = modifier
             .height(100.dp)
             .width(100.dp)
             .clip(RoundedCornerShape(10.dp))

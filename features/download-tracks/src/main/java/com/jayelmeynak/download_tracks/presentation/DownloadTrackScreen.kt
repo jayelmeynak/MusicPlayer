@@ -23,8 +23,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jayelmeynak.download_tracks.presentation.components.TrackItem
-import com.jayelmeynak.download_tracks.presentation.components.TrackSearchBar
+import com.jayelmeynak.lib.designsystem.components.LocalTrackImage
+import com.jayelmeynak.lib.designsystem.components.TrackItem
+import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
 
 @Composable
 fun DownloadTrackScreen(
@@ -110,11 +111,12 @@ fun DownloadTracks(
                     ) {
                         items(listToDisplay, key = { it.id }) { track ->
                             TrackItem(
-                                track = track,
-                                artwork = state.artworks[track.id],
-                                onTrackClick = {
+                                title = track.title,
+                                artistName = track.artistName,
+                                onClick = {
                                     onTrackClicked(track.uri)
-                                }
+                                },
+                                image = { LocalTrackImage(state.artworks[track.id]) }
                             )
                         }
                     }

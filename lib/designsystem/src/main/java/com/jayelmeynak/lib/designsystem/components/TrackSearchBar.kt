@@ -1,4 +1,4 @@
-package com.jayelmeynak.download_tracks.presentation.components
+package com.jayelmeynak.lib.designsystem.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -22,10 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import com.jayelmeynak.download_tracks.R
+import com.jayelmeynak.lib.designsystem.R
 
 @Composable
-fun TrackSearchBar(
+public fun TrackSearchBar(
     modifier: Modifier = Modifier,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,

@@ -6,7 +6,7 @@ import com.jayelmeynak.util.result.onError
 import com.jayelmeynak.util.result.onSuccess
 import com.jayelmeynak.search_tracks.domain.usecase.GetChartUseCase
 import com.jayelmeynak.search_tracks.domain.usecase.SearchTrackUseCase
-import com.jayelmeynak.ui.toUiText
+import com.jayelmeynak.lib.designsystem.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
