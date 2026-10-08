@@ -26,7 +26,7 @@ class MapperTest {
     }
 
     @Test
-    fun `TrackDto переводится в Track без uri и с duration 30, а не из DTO`() {
+    fun `TrackDto переводится в Track без uri, длительность полного трека в мс`() {
         assertEquals(
             Track(
                 id = 42L,
@@ -34,7 +34,7 @@ class MapperTest {
                 album = albumDto().toAlbum(),
                 artistName = "Artist",
                 preview = "https://preview",
-                duration = 30,
+                duration = 180_000,
                 uri = null,
             ),
             trackDto().toTrack(),
@@ -42,9 +42,14 @@ class MapperTest {
     }
 
     @Test
+    fun `TrackDto без длительности - длительность 0`() {
+        assertEquals(0, trackDto().copy(duration = null).toTrack()?.duration)
+    }
+
+    @Test
     fun `LocalTrack переводится в Track с uri в preview и без альбома`() {
         val uri = Uri.parse("content://media/external/audio/media/5")
-        val localTrack = LocalTrack(id = 5, title = "Local", artistName = "Me", duration = 215, uri = uri)
+        val localTrack = LocalTrack(id = 5, title = "Local", artistName = "Me", duration = 215_000, uri = uri)
 
         assertEquals(
             Track(
@@ -53,7 +58,7 @@ class MapperTest {
                 album = null,
                 artistName = "Me",
                 preview = "content://media/external/audio/media/5",
-                duration = 215,
+                duration = 215_000,
                 uri = uri,
             ),
             localTrack.toTrack(),

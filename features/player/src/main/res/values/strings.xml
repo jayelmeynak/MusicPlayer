@@ -1,0 +1,4 @@
+<resources>
+    <string name="player_preview_label">Превью 30 с</string>
+    <string name="player_preview_label_with_length">Превью 30 с · трек %1$s</string>
+</resources>

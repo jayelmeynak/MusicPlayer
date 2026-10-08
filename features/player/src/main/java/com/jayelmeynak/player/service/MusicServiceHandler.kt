@@ -48,6 +48,7 @@ class MusicServiceHandler @Inject constructor(
             artistName = meta.artist?.toString().orEmpty(),
             preview = item.localConfiguration?.uri?.toString().orEmpty(),
             album = Album(0, "", artworkUri, "", ""),
+            duration = meta.extras?.getInt(EXTRA_TRACK_DURATION_MS) ?: 0,
             uri = item.localConfiguration?.uri?.toString()?.toUri(),
         )
     }

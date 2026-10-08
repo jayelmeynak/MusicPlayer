@@ -23,7 +23,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,12 +32,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.player.presentation.components.PlayPauseIconButton
+import com.jayelmeynak.player.presentation.components.SeekSlider
 import com.jayelmeynak.lib.designsystem.R
+import com.jayelmeynak.player.R as PlayerR
 
 @Composable
 fun PlayerScreen(
@@ -134,13 +136,29 @@ fun PlayerScreen(
                         modifier = Modifier.basicMarquee()
                     )
 
+                    if (source == "api") {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (currentTrack.duration > 0) {
+                                stringResource(
+                                    PlayerR.string.player_preview_label_with_length,
+                                    viewModel.formatDuration(currentTrack.duration.toLong())
+                                )
+                            } else {
+                                stringResource(PlayerR.string.player_preview_label)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    Slider(
-                        value = progress,
-                        onValueChange = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
-                        valueRange = 0f..100f,
-                        modifier = Modifier.fillMaxWidth()
+                    SeekSlider(
+                        progress = progress,
+                        onSeek = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        trackKey = currentTrack.id
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
