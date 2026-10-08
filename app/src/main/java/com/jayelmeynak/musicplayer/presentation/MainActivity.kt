@@ -1,6 +1,5 @@
 package com.jayelmeynak.musicplayer.presentation
 
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,16 +9,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.jayelmeynak.feature.player.api.MiniPlayerHost
+import com.jayelmeynak.feature.player.api.PlayerOpener
+import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.AppNavigation
-import com.jayelmeynak.player.service.PlayBackService
 import com.jayelmeynak.lib.designsystem.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private var isServiceRunning = false
+    @Inject
+    lateinit var entryInstallers: Set<@JvmSuppressWildcards EntryInstaller>
+
+    @Inject
+    lateinit var playerOpener: PlayerOpener
+
+    @Inject
+    lateinit var miniPlayerHost: MiniPlayerHost
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -36,7 +45,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 AppNavigation(
-                    startService = { startService() },
+                    entryInstallers = entryInstallers,
+                    playerOpener = playerOpener,
+                    miniPlayerHost = miniPlayerHost,
                 )
             }
         }
@@ -66,13 +77,5 @@ class MainActivity : ComponentActivity() {
     private fun handlePermissionResult() {
         Toast.makeText(this, getString(R.string.read_media_audio_required), Toast.LENGTH_LONG)
             .show()
-    }
-
-    private fun startService() {
-        if (!isServiceRunning) {
-            val intent = Intent(this, PlayBackService::class.java)
-            startForegroundService(intent)
-            isServiceRunning = true
-        }
     }
 }
