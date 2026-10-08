@@ -74,9 +74,8 @@ class MusicServiceHandler @Inject constructor(
             is PlayerEvent.PlayPause -> playOrPause()
             is PlayerEvent.SeekTo -> exoPlayer.seekTo(seekPosition)
             is PlayerEvent.UpdateProgress -> {
-                exoPlayer.seekTo(
-                    (exoPlayer.duration * playerEvent.newProgress).toLong()
-                )
+                val duration = duration()
+                if (duration > 0) exoPlayer.seekTo((duration * playerEvent.newProgress).toLong())
             }
             is PlayerEvent.SelectedAudioChange -> {
                 when (selectedAudioIndex) {
@@ -99,7 +98,7 @@ class MusicServiceHandler @Inject constructor(
             ExoPlayer.STATE_BUFFERING -> _audioState.value =
                 MusicState.Buffering(exoPlayer.currentPosition)
             ExoPlayer.STATE_READY -> _audioState.value =
-                MusicState.Ready(exoPlayer.duration)
+                MusicState.Ready(duration())
             else -> Unit
         }
     }

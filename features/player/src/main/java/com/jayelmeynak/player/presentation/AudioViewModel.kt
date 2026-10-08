@@ -1,6 +1,7 @@
 package com.jayelmeynak.player.presentation
 
 import android.annotation.SuppressLint
+import android.content.ContentResolver
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,6 +21,7 @@ import com.jayelmeynak.player.service.PlayerEvent
 import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.designsystem.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,6 +77,8 @@ class AudioViewModel @Inject constructor(
     private val _trackArtwork = MutableStateFlow<ByteArray?>(null)
     val trackArtwork: StateFlow<ByteArray?> = _trackArtwork.asStateFlow()
 
+    private var artworkJob: Job? = null
+
     init {
         restoreStateIfPlaying()
         viewModelScope.launch {
@@ -86,7 +90,6 @@ class AudioViewModel @Inject constructor(
                         val track =
                             _audioList.value.getOrNull(mediaState.mediaItemIndex) ?: audioDummy
                         _currentSelectedAudio.value = track
-                        _trackArtwork.value = null
                         loadArtworkForCurrentTrack()
                     }
 
@@ -102,9 +105,11 @@ class AudioViewModel @Inject constructor(
         val playlist = audioServiceHandler.restorePlaylist()
         if (playlist.isEmpty()) return
         _audioList.value = playlist
-        _currentSelectedAudio.value =
-            playlist.getOrNull(audioServiceHandler.currentMediaItemIndex())
+        val currentTrack = playlist.getOrNull(audioServiceHandler.currentMediaItemIndex())
             ?: audioDummy
+        _currentSelectedAudio.value = currentTrack
+        _source.value =
+            if (currentTrack.uri?.scheme == ContentResolver.SCHEME_CONTENT) "local" else "api"
         _isPlaying.value = audioServiceHandler.isCurrentlyPlaying()
         _duration.value = audioServiceHandler.duration()
         calculateProgressValue(audioServiceHandler.currentPosition())
@@ -121,6 +126,7 @@ class AudioViewModel @Inject constructor(
                 .onSuccess { track ->
                     _currentSelectedAudio.value = track
                     _audioList.value = listOf(track)
+                    loadArtworkForCurrentTrack()
                     track.album?.id?.let { loadRemoteAlbum(it) }
                     setMediaItem()
                     audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
@@ -188,17 +194,20 @@ class AudioViewModel @Inject constructor(
     }
 
     private fun loadArtworkForCurrentTrack() {
+        artworkJob?.cancel()
+        _trackArtwork.value = null
         val track = _currentSelectedAudio.value
         val uri = track.uri ?: return
-        viewModelScope.launch {
+        artworkJob = viewModelScope.launch {
             _trackArtwork.value = getTrackArtworkUseCase(track.id, uri)
         }
     }
 
 
     private fun calculateProgressValue(currentProgress: Long) {
+        val duration = _duration.value
         _progress.value =
-            if (currentProgress > 0) ((currentProgress.toFloat() / _duration.value.toFloat()) * 100f)
+            if (currentProgress > 0 && duration > 0) (currentProgress.toFloat() / duration.toFloat()) * 100f
             else 0f
         _progressString.value = formatDuration(currentProgress)
     }
@@ -216,6 +225,7 @@ class AudioViewModel @Inject constructor(
             }
 
             is UIEvents.SeekTo -> {
+                if (_duration.value <= 0) return@launch
                 audioServiceHandler.onPlayerEvents(
                     PlayerEvent.SeekTo,
                     seekPosition = ((_duration.value * uiEvents.position) / 100f).toLong()

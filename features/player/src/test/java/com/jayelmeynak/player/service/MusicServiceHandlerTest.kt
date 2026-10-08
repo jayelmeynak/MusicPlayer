@@ -200,6 +200,15 @@ class MusicServiceHandlerTest {
     }
 
     @Test
+    fun `UpdateProgress без известной длительности - позиция не меняется`() {
+        player.setMediaItems(mediaItems(3), 0, 5_000)
+
+        handler.onPlayerEvents(PlayerEvent.UpdateProgress(0.5f))
+
+        assertEquals(5_000L, player.currentPosition)
+    }
+
+    @Test
     fun `во время воспроизведения каждые 500 мс публикуется Progress`() {
         handler.setMediaItemList(mediaItems(3))
         player.play()
