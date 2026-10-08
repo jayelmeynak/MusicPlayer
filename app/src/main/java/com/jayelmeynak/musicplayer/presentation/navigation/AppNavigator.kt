@@ -1,10 +1,11 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
 import androidx.navigation3.runtime.NavKey
+import com.jayelmeynak.lib.navigation.Navigator
 
-class AppNavigator(private val state: NavigationState) {
+class AppNavigator(private val state: NavigationState) : Navigator {
 
-    fun navigateTo(destination: NavKey) {
+    override fun navigateTo(destination: NavKey) {
         if (destination is TopLevelDestination) {
             if (state.topLevelRoute != destination) {
                 state.topLevelRoute = destination
@@ -12,6 +13,11 @@ class AppNavigator(private val state: NavigationState) {
         } else {
             state.backStacks[state.currentTopLevel]?.add(destination)
         }
+    }
+
+    override fun navigateToRoot(destination: NavKey) {
+        require(destination is TopLevelDestination) { "Only a top-level destination can be a root: $destination" }
+        navigateToRoot(destination)
     }
 
     fun navigateToRoot(destination: TopLevelDestination) {
@@ -26,7 +32,7 @@ class AppNavigator(private val state: NavigationState) {
         }
     }
 
-    fun goBack() {
+    override fun goBack() {
         val currentStack = state.backStacks[state.currentTopLevel] ?: return
         when {
             currentStack.size > 1 -> {
