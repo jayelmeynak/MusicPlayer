@@ -4,25 +4,25 @@ import com.google.gson.annotations.SerializedName
 
 public data class Artist(
     @SerializedName("id")
-    public val id: Int,
+    public val id: Int? = null,
     @SerializedName("link")
-    public val link: String,
+    public val link: String? = null,
     @SerializedName("name")
-    public val name: String,
+    public val name: String? = null,
     @SerializedName("picture")
-    public val picture: String,
+    public val picture: String? = null,
     @SerializedName("picture_big")
-    public val pictureBig: String,
+    public val pictureBig: String? = null,
     @SerializedName("picture_medium")
-    public val pictureMedium: String,
+    public val pictureMedium: String? = null,
     @SerializedName("picture_small")
-    public val pictureSmall: String,
+    public val pictureSmall: String? = null,
     @SerializedName("picture_xl")
-    public val pictureXl: String,
+    public val pictureXl: String? = null,
     @SerializedName("radio")
-    public val radio: Boolean,
+    public val radio: Boolean? = null,
     @SerializedName("tracklist")
-    public val trackList: String,
+    public val trackList: String? = null,
     @SerializedName("type")
-    public val type: String
+    public val type: String? = null,
 )

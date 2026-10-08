@@ -2,7 +2,9 @@ package com.jayelmeynak.search_tracks.data
 
 import com.jayelmeynak.search_tracks.domain.models.Album
 import com.jayelmeynak.search_tracks.domain.models.Track
+import com.jayelmeynak.lib.network.data.dto.AlbumDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MappersTest {
@@ -31,5 +33,25 @@ class MappersTest {
             ),
             track,
         )
+    }
+
+    @Test
+    fun `трек без id, title или preview отбрасывается`() {
+        assertNull(trackDto().copy(id = null).toTrack())
+        assertNull(trackDto().copy(title = null).toTrack())
+        assertNull(trackDto().copy(preview = null).toTrack())
+    }
+
+    @Test
+    fun `трек без исполнителя и альбома получает пустые значения`() {
+        val track = trackDto().copy(artist = null, album = null).toTrack()
+
+        assertEquals("", track?.artistName)
+        assertEquals(Album(id = 0, title = "", cover = "", trackList = "", type = ""), track?.album)
+    }
+
+    @Test
+    fun `альбом без полей переводится в Album с пустыми значениями`() {
+        assertEquals(Album(id = 0, title = "", cover = "", trackList = "", type = ""), AlbumDto().toAlbum())
     }
 }

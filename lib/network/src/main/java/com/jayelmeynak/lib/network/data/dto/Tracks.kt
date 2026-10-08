@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 public data class Tracks(
     @SerializedName("data")
-    public val tracks: List<TrackDto>
+    public val tracks: List<TrackDto?>? = null,
 )

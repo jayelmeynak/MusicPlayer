@@ -6,18 +6,21 @@ import com.jayelmeynak.search_tracks.domain.models.Album
 import com.jayelmeynak.search_tracks.domain.models.Track
 
 
-fun TrackDto.toTrack() = Track(
-    id = id,
-    title = title,
-    preview = preview,
-    artistName = artist.name,
-    album = album.toAlbum()
-)
+// Null when Deezer sent a track without id, title or preview: such a track can't be shown or played.
+fun TrackDto.toTrack(): Track? {
+    return Track(
+        id = id ?: return null,
+        title = title ?: return null,
+        preview = preview ?: return null,
+        artistName = artist?.name.orEmpty(),
+        album = album?.toAlbum() ?: AlbumDto().toAlbum()
+    )
+}
 
 fun AlbumDto.toAlbum() = Album(
-    id = id,
-    title = title,
-    cover = cover,
-    trackList = trackList,
-    type = type
+    id = id ?: 0,
+    title = title.orEmpty(),
+    cover = cover.orEmpty(),
+    trackList = trackList.orEmpty(),
+    type = type.orEmpty()
 )

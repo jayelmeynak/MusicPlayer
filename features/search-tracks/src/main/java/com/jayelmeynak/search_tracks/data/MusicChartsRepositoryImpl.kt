@@ -16,7 +16,7 @@ class MusicChartsRepositoryImpl @Inject constructor(
         return remoteMusicDataSource
             .getChartSongs()
             .map { response ->
-                response.tracks.tracks.map { it.toTrack() }
+                response.tracks?.tracks.orEmpty().mapNotNull { it?.toTrack() }
             }
     }
 
@@ -24,7 +24,7 @@ class MusicChartsRepositoryImpl @Inject constructor(
         return remoteMusicDataSource
             .searchTrack(q)
             .map { response ->
-                response.tracks.map { it.toTrack() }
+                response.tracks.orEmpty().mapNotNull { it?.toTrack() }
             }
     }
 
