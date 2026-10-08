@@ -8,5 +8,6 @@ data class ChartTracksState(
     val isLoading: Boolean = true,
     val errorMessage: UiText? = null,
     val query: String = "",
-    val searchList: List<Track> = emptyList()
+    /** Null while no search is active; empty when the search found nothing. */
+    val searchList: List<Track>? = null
 )
