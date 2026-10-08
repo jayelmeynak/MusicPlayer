@@ -11,6 +11,9 @@ import org.junit.Test
 
 class AppNavigatorTest {
 
+    /** A screen pushed over a tab root; feature keys live in feature modules. */
+    private data class Screen(val id: String) : NavKey
+
     private lateinit var state: NavigationState
     private lateinit var navigator: AppNavigator
 
@@ -42,10 +45,10 @@ class AppNavigatorTest {
     @Test
     fun `navigateTo screen pushes onto current tab stack`() {
         navigator.navigateTo(TopLevelDestination.DownloadTracks)
-        navigator.navigateTo(AppDestination.PlayerLocal("content://1"))
+        navigator.navigateTo(Screen("content://1"))
 
         assertEquals(
-            listOf(TopLevelDestination.DownloadTracks, AppDestination.PlayerLocal("content://1")),
+            listOf(TopLevelDestination.DownloadTracks, Screen("content://1")),
             local,
         )
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
@@ -53,18 +56,18 @@ class AppNavigatorTest {
 
     @Test
     fun `switching tabs keeps pushed screen in previous tab stack`() {
-        navigator.navigateTo(AppDestination.PlayerApi("1"))
+        navigator.navigateTo(Screen("1"))
         navigator.navigateToRoot(TopLevelDestination.DownloadTracks)
         navigator.navigateTo(TopLevelDestination.ApiTracks)
 
         assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
-        assertEquals(listOf(TopLevelDestination.ApiTracks, AppDestination.PlayerApi("1")), api)
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
     }
 
     @Test
     fun `navigateToRoot resets stack of the tab`() {
-        navigator.navigateTo(AppDestination.PlayerApi("1"))
-        navigator.navigateTo(AppDestination.PlayerApi("2"))
+        navigator.navigateTo(Screen("1"))
+        navigator.navigateTo(Screen("2"))
 
         navigator.navigateToRoot(TopLevelDestination.ApiTracks)
 
@@ -75,7 +78,7 @@ class AppNavigatorTest {
     @Test
     fun `navigateToRoot of another tab switches to it and resets its stack`() {
         navigator.navigateTo(TopLevelDestination.DownloadTracks)
-        navigator.navigateTo(AppDestination.PlayerLocal("content://1"))
+        navigator.navigateTo(Screen("content://1"))
         navigator.navigateTo(TopLevelDestination.ApiTracks)
 
         navigator.navigateToRoot(TopLevelDestination.DownloadTracks)
@@ -86,13 +89,13 @@ class AppNavigatorTest {
 
     @Test
     fun `goBack from depth pops current tab stack`() {
-        navigator.navigateTo(AppDestination.PlayerApi("1"))
-        navigator.navigateTo(AppDestination.PlayerApi("2"))
+        navigator.navigateTo(Screen("1"))
+        navigator.navigateTo(Screen("2"))
 
         navigator.goBack()
 
         assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
-        assertEquals(listOf(TopLevelDestination.ApiTracks, AppDestination.PlayerApi("1")), api)
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
     }
 
     @Test
@@ -119,7 +122,7 @@ class AppNavigatorTest {
         val asInterface: Navigator = navigator
 
         assertThrows(IllegalArgumentException::class.java) {
-            asInterface.navigateToRoot(AppDestination.PlayerApi("1"))
+            asInterface.navigateToRoot(Screen("1"))
         }
         assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
@@ -128,7 +131,7 @@ class AppNavigatorTest {
     @Test
     fun `goBack from depth of non-start tab pops and stays on that tab`() {
         navigator.navigateToRoot(TopLevelDestination.DownloadTracks)
-        navigator.navigateTo(AppDestination.PlayerLocal("content://1"))
+        navigator.navigateTo(Screen("content://1"))
 
         navigator.goBack()
 
@@ -138,24 +141,54 @@ class AppNavigatorTest {
 
     @Test
     fun `navigateTo current tab keeps its stack`() {
-        navigator.navigateTo(AppDestination.PlayerApi("1"))
+        navigator.navigateTo(Screen("1"))
 
         navigator.navigateTo(TopLevelDestination.ApiTracks)
 
         assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
-        assertEquals(listOf(TopLevelDestination.ApiTracks, AppDestination.PlayerApi("1")), api)
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
+    }
+
+    @Test
+    fun `navigateTo the screen already on top does not push a duplicate`() {
+        navigator.navigateTo(Screen("1"))
+
+        navigator.navigateTo(Screen("1"))
+
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
+    }
+
+    @Test
+    fun `navigateTo a screen open in another tab moves it to the current tab`() {
+        navigator.navigateTo(Screen("1"))
+        navigator.navigateTo(TopLevelDestination.DownloadTracks)
+
+        navigator.navigateTo(Screen("1"))
+
+        assertEquals(listOf(TopLevelDestination.DownloadTracks, Screen("1")), local)
+        assertEquals(listOf(TopLevelDestination.ApiTracks), api)
+    }
+
+    @Test
+    fun `navigateTo a screen deeper in the current stack keeps one copy on top`() {
+        navigator.navigateTo(Screen("1"))
+        navigator.navigateTo(Screen("2"))
+
+        navigator.navigateTo(Screen("1"))
+
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("2"), Screen("1")), api)
     }
 
     @Test
     fun `navigateToRoot does not clear stack whose top is already the root`() {
         // Only the top of the stack is compared with the root, so screens below it survive.
-        navigator.navigateTo(AppDestination.PlayerApi("1"))
+        navigator.navigateTo(Screen("1"))
         state.backStacks.getValue(TopLevelDestination.ApiTracks).add(TopLevelDestination.ApiTracks)
 
         navigator.navigateToRoot(TopLevelDestination.ApiTracks)
 
         assertEquals(
-            listOf(TopLevelDestination.ApiTracks, AppDestination.PlayerApi("1"), TopLevelDestination.ApiTracks),
+            listOf(TopLevelDestination.ApiTracks, Screen("1"), TopLevelDestination.ApiTracks),
             api,
         )
     }

@@ -11,7 +11,12 @@ class AppNavigator(private val state: NavigationState) : Navigator {
                 state.topLevelRoute = destination
             }
         } else {
-            state.backStacks[state.currentTopLevel]?.add(destination)
+            val stack = state.backStacks[state.currentTopLevel] ?: return
+            if (stack.lastOrNull() == destination) return
+            // One key lives in one place: equal entries share a content key in NavDisplay, and so
+            // their saved state and ViewModelStore.
+            state.backStacks.values.forEach { it.removeAll { key -> key == destination } }
+            stack.add(destination)
         }
     }
 

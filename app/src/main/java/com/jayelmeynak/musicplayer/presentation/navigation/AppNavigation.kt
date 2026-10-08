@@ -1,59 +1,41 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
-import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.outlined.SdStorage
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
-import com.jayelmeynak.player.presentation.components.SeekSlider
-import com.jayelmeynak.player.presentation.AudioViewModel
-import com.jayelmeynak.player.presentation.PlayerScreen
-import com.jayelmeynak.player.presentation.UIEvents
+import com.jayelmeynak.feature.player.api.MiniPlayerHost
+import com.jayelmeynak.feature.player.api.PlayerDestination
+import com.jayelmeynak.feature.player.api.PlayerOpener
+import com.jayelmeynak.feature.player.api.TrackSource
+import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 
 @Composable
 fun AppNavigation(
-    startService: () -> Unit,
+    entryInstallers: Set<EntryInstaller>,
+    playerOpener: PlayerOpener,
+    miniPlayerHost: MiniPlayerHost,
 ) {
-    val activity = LocalActivity.current
-    val audioViewModel: AudioViewModel = hiltViewModel(activity as ViewModelStoreOwner)
     val navigationState = rememberNavigationState(
         startRoute = TopLevelDestination.ApiTracks,
         topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
@@ -63,11 +45,7 @@ fun AppNavigation(
     val currentBackStack = navigationState.backStacks[currentTop] ?: emptyList()
     val currentRoute = currentBackStack.lastOrNull()
 
-    val isPlayerScreen = currentRoute is AppDestination.PlayerApi ||
-            currentRoute is AppDestination.PlayerLocal
-
-    val audioList by audioViewModel.audioList.collectAsStateWithLifecycle()
-    val isPlayerVisible = audioList.isNotEmpty() && !isPlayerScreen
+    val isPlayerScreen = currentRoute is PlayerDestination
 
     val entries = navigationState.toEntries(
         entryProvider {
@@ -75,7 +53,8 @@ fun AppNavigation(
                 ChartTracksScreen(
                     scaffoldPadding = PaddingValues(),
                     onTrackClicked = { trackId ->
-                        navigator.navigateTo(AppDestination.PlayerApi(trackId))
+                        playerOpener.open(TrackSource.DEEZER, trackId)
+                        navigator.navigateTo(PlayerDestination)
                     },
                 )
             }
@@ -84,28 +63,12 @@ fun AppNavigation(
                     scaffoldPadding = PaddingValues(),
                     viewModel = hiltViewModel(),
                     onTrackClicked = { trackUri ->
-                        navigator.navigateTo(AppDestination.PlayerLocal(trackUri.toString()))
+                        playerOpener.open(TrackSource.LOCAL, trackUri.toString())
+                        navigator.navigateTo(PlayerDestination)
                     },
                 )
             }
-            entry<AppDestination.PlayerApi> { key ->
-                LaunchedEffect(Unit) { startService() }
-                PlayerScreen(
-                    viewModel = audioViewModel,
-                    scaffoldPadding = PaddingValues(),
-                    source = "api",
-                    idOrUri = key.trackId,
-                )
-            }
-            entry<AppDestination.PlayerLocal> { key ->
-                LaunchedEffect(Unit) { startService() }
-                PlayerScreen(
-                    viewModel = audioViewModel,
-                    scaffoldPadding = PaddingValues(),
-                    source = "local",
-                    idOrUri = key.trackUri,
-                )
-            }
+            entryInstallers.forEach { installer -> with(installer) { install(navigator) } }
         }
     )
 
@@ -151,87 +114,9 @@ fun AppNavigation(
                 )
             }
 
-            if (isPlayerVisible) {
-                MiniPlayer(
-                    viewModel = audioViewModel,
-                    onPlayerClick = { source, id ->
-                        if (source == "local") {
-                            navigator.navigateTo(AppDestination.PlayerLocal(id))
-                        } else {
-                            navigator.navigateTo(AppDestination.PlayerApi(id))
-                        }
-                    },
-                )
+            if (!isPlayerScreen) {
+                miniPlayerHost.MiniPlayer(navigator)
             }
         }
-    }
-}
-
-@Composable
-private fun MiniPlayer(
-    viewModel: AudioViewModel,
-    onPlayerClick: (String, String) -> Unit,
-) {
-    val currentTrack by viewModel.currentSelectedAudio.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val progress by viewModel.progress.collectAsStateWithLifecycle()
-    val source by viewModel.source.collectAsStateWithLifecycle()
-
-    Column(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.surface)
-            .fillMaxWidth()
-            .clickable {
-                if (source == "api") {
-                    onPlayerClick("api", currentTrack.id.toString())
-                } else {
-                    onPlayerClick("local", currentTrack.preview)
-                }
-            },
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
-            ) {
-                Text(
-                    text = currentTrack.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = currentTrack.artistName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            IconButton(onClick = { viewModel.onUiEvents(UIEvents.PlayPause) }) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
-                )
-            }
-        }
-        SeekSlider(
-            progress = progress,
-            onSeek = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(18.dp)
-                .padding(8.dp),
-            trackKey = currentTrack.id,
-        )
     }
 }

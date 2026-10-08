@@ -11,10 +11,3 @@ sealed interface TopLevelDestination : NavKey {
     @Serializable
     data object DownloadTracks : TopLevelDestination
 }
-
-sealed interface AppDestination : NavKey {
-    @Serializable
-    data class PlayerApi(val trackId: String) : AppDestination
-    @Serializable
-    data class PlayerLocal(val trackUri: String) : AppDestination
-}
