@@ -3,6 +3,7 @@ package com.jayelmeynak.lib.database.di
 import android.content.Context
 import androidx.room.Room
 import com.jayelmeynak.lib.database.data.db.ArtworkDao
+import com.jayelmeynak.lib.database.data.db.LOCAL_DATABASE_NAME
 import com.jayelmeynak.lib.database.data.db.LocalDatabase
 import dagger.Module
 import dagger.Provides
@@ -21,7 +22,7 @@ internal object LocalDatabaseModule {
         Room.databaseBuilder(
             context,
             LocalDatabase::class.java,
-            "local_cache.db",
+            LOCAL_DATABASE_NAME,
         ).build()
 
     @Provides

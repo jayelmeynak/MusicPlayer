@@ -11,6 +11,7 @@ android {
 dependencies {
 
     implementation(project(":lib:database"))
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

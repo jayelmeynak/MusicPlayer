@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.musicplayer.lib)
     alias(libs.plugins.musicplayer.room)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
 

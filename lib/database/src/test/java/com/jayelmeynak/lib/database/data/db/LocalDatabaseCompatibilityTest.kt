@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -31,7 +32,7 @@ class LocalDatabaseCompatibilityTest {
 
     @Before
     fun setUp() {
-        dbFile = File(tempFolder.root, "local_cache.db")
+        dbFile = File(tempFolder.root, LOCAL_DATABASE_NAME)
         BundledSQLiteDriver().open(dbFile.absolutePath).use { connection ->
             connection.execSQL(
                 "CREATE TABLE IF NOT EXISTS `artworks` (`track_id` INTEGER NOT NULL, " +
@@ -67,11 +68,17 @@ class LocalDatabaseCompatibilityTest {
             .build()
             .also { db = it }
 
-        val entity = database.artworkDao().getByTrackId(7)!!
+        val entity = database.artworkDao().getByTrackId(7)
+        assertNotNull("закэшированная обложка потеряна", entity)
 
-        assertEquals(7L, entity.trackId)
+        assertEquals(7L, entity!!.trackId)
         assertArrayEquals(byteArrayOf(1, 2, 3), entity.data)
         assertEquals(100L, entity.cachedAt)
+    }
+
+    @Test
+    fun `имя файла базы не меняется`() {
+        assertEquals("local_cache.db", LOCAL_DATABASE_NAME)
     }
 
     private companion object {
