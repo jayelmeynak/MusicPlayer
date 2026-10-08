@@ -5,6 +5,11 @@ plugins {
 
 android {
     namespace = "com.jayelmeynak.lib.designsystem"
+
+    // Compose UI tests on Robolectric need the merged manifest with the test ComponentActivity.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -19,6 +24,10 @@ dependencies {
 
     api(project(":util:result"))
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

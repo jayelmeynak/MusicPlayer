@@ -9,7 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import com.jayelmeynak.feature.player.api.MiniPlayerHost
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.musicplayer.R
@@ -26,9 +25,6 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var playbackController: PlaybackController
-
-    @Inject
-    lateinit var miniPlayerHost: MiniPlayerHost
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -47,7 +43,6 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(
                     entryInstallers = entryInstallers,
                     playbackController = playbackController,
-                    miniPlayerHost = miniPlayerHost,
                 )
             }
         }

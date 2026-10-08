@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.feature.player.impl.presentation.components.PlayPauseIconButton
-import com.jayelmeynak.feature.player.impl.presentation.components.SeekSlider
+import com.jayelmeynak.lib.designsystem.components.SeekSlider
 import com.jayelmeynak.lib.designsystem.R
 import java.util.Locale
 import java.util.concurrent.TimeUnit

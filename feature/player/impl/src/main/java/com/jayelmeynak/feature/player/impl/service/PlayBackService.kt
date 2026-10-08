@@ -2,6 +2,7 @@ package com.jayelmeynak.feature.player.impl.service
 
 import android.app.PendingIntent
 import android.util.Log
+import androidx.core.app.NotificationManagerCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -38,6 +39,8 @@ internal class PlayBackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        // The hand-built notification of earlier versions left its channel in the system settings.
+        NotificationManagerCompat.from(this).deleteNotificationChannel(LEGACY_NOTIFICATION_CHANNEL_ID)
         setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build())
         val player = playerFactory.create()
         setListener(object : Listener {
@@ -83,5 +86,6 @@ internal class PlayBackService : MediaSessionService() {
 
     private companion object {
         const val TAG = "PlayBackService"
+        const val LEGACY_NOTIFICATION_CHANNEL_ID = "notification channel id 1"
     }
 }

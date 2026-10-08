@@ -27,6 +27,7 @@ rootProject.name = "MusicPlayer"
 include(":app")
 include(":feature:player:api")
 include(":feature:player:impl")
+include(":feature:player:ui")
 include(":feature:player:di")
 include(":features:search-tracks")
 include(":features:download-tracks")

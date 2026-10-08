@@ -1,4 +1,4 @@
-package com.jayelmeynak.feature.player.impl.presentation
+package com.jayelmeynak.feature.player.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,37 +22,54 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.jayelmeynak.feature.player.api.PlaybackController
-import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.PlayerDestination
-import com.jayelmeynak.feature.player.impl.presentation.components.SeekSlider
+import com.jayelmeynak.lib.designsystem.components.SeekSlider
 import com.jayelmeynak.lib.navigation.Navigator
 
 /**
  * The current track over the tab content; draws nothing until the playback session is connected
- * and while the queue is empty.
+ * and while the queue is empty. A click opens [PlayerDestination] through [navigator].
  *
- * Reads [PlaybackController] directly until the mini player gets its own view model.
+ * Call it outside the navigation entries: its view model then lives as long as the Activity.
  */
 @Composable
-internal fun MiniPlayer(
-    playbackController: PlaybackController,
+public fun MiniPlayer(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    val playback by playbackController.state.collectAsStateWithLifecycle()
-    val active = playback as? PlaybackState.Active ?: return
-    val currentTrack = active.current ?: return
-    val positionMs by playbackController.positionMs.collectAsStateWithLifecycle()
-    val durationMs = active.durationMs
-    val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs * 100f).coerceIn(0f, 100f) else 0f
+    MiniPlayer(viewModel = hiltViewModel(), navigator = navigator, modifier = modifier)
+}
 
+@Composable
+internal fun MiniPlayer(
+    viewModel: MiniPlayerViewModel,
+    navigator: Navigator,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    if (!state.visible) return
+    MiniPlayerContent(
+        state = state,
+        onAction = viewModel::onAction,
+        onClick = { navigator.navigateTo(PlayerDestination) },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun MiniPlayerContent(
+    state: MiniPlayerUiState,
+    onAction: (MiniPlayerAction) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface)
             .fillMaxWidth()
-            .clickable { navigator.navigateTo(PlayerDestination) },
+            .clickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier
@@ -67,14 +84,14 @@ internal fun MiniPlayer(
                     .padding(end = 8.dp),
             ) {
                 Text(
-                    text = currentTrack.title,
+                    text = state.title,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = currentTrack.artist,
+                    text = state.artist,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     maxLines = 1,
@@ -82,23 +99,21 @@ internal fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = playbackController::togglePlayPause) {
+            IconButton(onClick = { onAction(MiniPlayerAction.TogglePlayPause) }) {
                 Icon(
-                    imageVector = if (active.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (active.isPlaying) "Пауза" else "Воспроизведение",
+                    imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (state.isPlaying) "Пауза" else "Воспроизведение",
                 )
             }
         }
         SeekSlider(
-            progress = progress,
-            onSeek = { percent ->
-                if (durationMs > 0) playbackController.seekTo((durationMs * percent / 100f).toLong())
-            },
+            progress = state.progress,
+            onSeek = { percent -> onAction(MiniPlayerAction.SeekTo(percent)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(18.dp)
                 .padding(8.dp),
-            trackKey = "${currentTrack.source}|${currentTrack.id}",
+            trackKey = state.trackKey,
         )
     }
 }

@@ -23,9 +23,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
-import com.jayelmeynak.feature.player.api.MiniPlayerHost
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlayerDestination
+import com.jayelmeynak.feature.player.ui.MiniPlayer
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 
@@ -33,7 +33,6 @@ import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 fun AppNavigation(
     entryInstallers: Set<EntryInstaller>,
     playbackController: PlaybackController,
-    miniPlayerHost: MiniPlayerHost,
 ) {
     val navigationState = rememberNavigationState(
         startRoute = TopLevelDestination.ApiTracks,
@@ -113,8 +112,9 @@ fun AppNavigation(
                 )
             }
 
+            // Outside NavDisplay: the mini player's view model is scoped to the Activity.
             if (!isPlayerScreen) {
-                miniPlayerHost.MiniPlayer(navigator)
+                MiniPlayer(navigator = navigator)
             }
         }
     }

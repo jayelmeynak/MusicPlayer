@@ -5,6 +5,8 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -25,6 +27,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -129,6 +132,20 @@ class PlayBackServiceTest {
         assertTrue(player.isReleased)
     }
 
+    @Test
+    fun `старт сервиса удаляет канал уведомлений прежней версии приложения`() {
+        val notifications = NotificationManagerCompat.from(application)
+        notifications.createNotificationChannel(
+            NotificationChannelCompat.Builder(LEGACY_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW)
+                .setName("notification channel 1")
+                .build()
+        )
+
+        Robolectric.buildService(PlayBackService::class.java).create().destroy()
+
+        assertNull(notifications.getNotificationChannel(LEGACY_CHANNEL_ID))
+    }
+
     /** The session activity is the package launch intent; the test manifest has no launcher. */
     private fun registerLauncherActivity() {
         val component = ComponentName(application, "${application.packageName}.Launcher")
@@ -189,3 +206,6 @@ class PlayBackServiceTestApplication : Application(), GeneratedComponentManager<
         }
     }
 }
+
+/** Channel id of the notification the app built by hand before the standard Media3 one. */
+private const val LEGACY_CHANNEL_ID = "notification channel id 1"

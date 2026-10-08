@@ -1,7 +1,9 @@
-package com.jayelmeynak.feature.player.impl.presentation
+package com.jayelmeynak.feature.player.ui
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -9,13 +11,17 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.navigation3.runtime.NavKey
 import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
+import com.jayelmeynak.lib.navigation.testing.FakeNavigator
+import com.jayelmeynak.util.testing.MainDispatcherRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +30,9 @@ import org.robolectric.RobolectricTestRunner
 /** Robolectric hosts the Compose test rule. */
 @RunWith(RobolectricTestRunner::class)
 class MiniPlayerTest {
+
+    @get:Rule
+    val mainRule = MainDispatcherRule()
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -69,10 +78,33 @@ class MiniPlayerTest {
         assertEquals(Command.TogglePlayPause, controller.commands.last())
     }
 
+    @Test
+    fun `перетаскивание ползунка - одна перемотка в контроллер`() {
+        val controller = FakePlaybackController().apply {
+            play(listOf(track().copy(durationMs = 200_000L)), 0)
+        }
+        setMiniPlayer(controller)
+
+        val slider = composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
+        // The touch target sticks out of the window by a few pixels: start inside it.
+        slider.performTouchInput {
+            down(percentOffset(0.1f, 0.5f))
+            moveTo(center)
+            moveTo(percentOffset(0.95f, 0.5f))
+        }
+        assertTrue(controller.commands.none { it is Command.SeekTo })
+        slider.performTouchInput { up() }
+
+        val seeks = controller.commands.filterIsInstance<Command.SeekTo>()
+        assertEquals(1, seeks.size)
+        assertTrue("seek=${seeks.single()}", seeks.single().positionMs > 170_000L)
+    }
+
     private fun setMiniPlayer(controller: FakePlaybackController) {
+        val viewModel = MiniPlayerViewModel(controller)
         composeRule.setContent {
             MiniPlayer(
-                playbackController = controller,
+                viewModel = viewModel,
                 navigator = navigator,
                 modifier = Modifier.testTag(TAG),
             )

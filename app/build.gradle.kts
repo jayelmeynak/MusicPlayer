@@ -19,6 +19,7 @@ dependencies {
 
     implementation(project(":features:search-tracks"))
     implementation(project(":feature:player:api"))
+    implementation(project(":feature:player:ui"))
     implementation(project(":feature:player:di"))
     implementation(project(":features:download-tracks"))
     implementation(project(":lib:designsystem"))
