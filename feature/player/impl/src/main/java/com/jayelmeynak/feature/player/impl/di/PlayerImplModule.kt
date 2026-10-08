@@ -6,7 +6,6 @@ import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.session.MediaSession
 import com.jayelmeynak.feature.player.impl.data.MusicRemoteRepositoryImpl
 import com.jayelmeynak.feature.player.impl.domain.repository.MusicRemoteRepository
 import dagger.Binds
@@ -45,12 +44,5 @@ internal abstract class PlayerImplModule {
             .setHandleAudioBecomingNoisy(true)
             .setTrackSelector(DefaultTrackSelector(context))
             .build()
-
-        @Provides
-        @Singleton
-        fun provideMediaSession(
-            @ApplicationContext context: Context,
-            player: ExoPlayer,
-        ): MediaSession = MediaSession.Builder(context, player).build()
     }
 }

@@ -1,5 +1,11 @@
 package com.jayelmeynak.feature.player.impl.presentation
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.test.utils.FakeMediaSourceFactory
@@ -49,12 +55,11 @@ class PlayerRouteTest {
         player = TestExoPlayerBuilder(RuntimeEnvironment.getApplication())
             .setMediaSourceFactory(FakeMediaSourceFactory())
             .build()
-        handler = MusicServiceHandler(player, scope)
+        handler = MusicServiceHandler(player, scope, RuntimeEnvironment.getApplication())
     }
 
     @After
     fun tearDown() {
-        handler.release()
         player.release()
         scope.cancel()
     }
@@ -77,6 +82,42 @@ class PlayerRouteTest {
         assertEquals(0, navigator.backCount)
         val started = shadowOf(RuntimeEnvironment.getApplication()).nextStartedService
         assertEquals(PlayBackService::class.java.name, started.component?.className)
+    }
+
+    @Test
+    fun `с запросом - сервис стартует обычным startService, в foreground его переводит Media3`() {
+        remoteRepository.tracks = mapOf("42" to remoteTrack(42))
+        requests.open(TrackSource.DEEZER, "42")
+        val context = RecordingContext(RuntimeEnvironment.getApplication())
+
+        setPlayerRoute(context)
+
+        assertEquals(listOf("startService"), context.calls)
+    }
+
+    private fun setPlayerRoute(context: Context) {
+        val viewModel = testAudioViewModel(handler, requests, remoteRepository)
+        composeRule.setContent {
+            CompositionLocalProvider(LocalContext provides context) {
+                PlayerRoute(viewModel = viewModel, navigator = navigator)
+            }
+        }
+        composeRule.waitForIdle()
+    }
+
+    /** Records how the route starts the service; the calls still reach Robolectric. */
+    private class RecordingContext(base: Context) : ContextWrapper(base) {
+        val calls = mutableListOf<String>()
+
+        override fun startService(service: Intent): ComponentName? {
+            calls += "startService"
+            return super.startService(service)
+        }
+
+        override fun startForegroundService(service: Intent): ComponentName? {
+            calls += "startForegroundService"
+            return super.startForegroundService(service)
+        }
     }
 
     private fun setPlayerRoute() {
