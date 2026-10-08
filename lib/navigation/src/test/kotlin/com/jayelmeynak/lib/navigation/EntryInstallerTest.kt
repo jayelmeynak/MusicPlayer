@@ -2,6 +2,7 @@ package com.jayelmeynak.lib.navigation
 
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import com.jayelmeynak.lib.navigation.testing.FakeNavigator
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -9,13 +10,6 @@ class EntryInstallerTest {
 
     private data object ListKey : NavKey
     private data class DetailKey(val id: String) : NavKey
-
-    private class FakeNavigator : Navigator {
-        val calls = mutableListOf<String>()
-        override fun navigateTo(destination: NavKey) { calls += "navigateTo($destination)" }
-        override fun navigateToRoot(destination: NavKey) { calls += "navigateToRoot($destination)" }
-        override fun goBack() { calls += "goBack" }
-    }
 
     @Test
     fun `installer registers entry that navigates through the given navigator`() {
@@ -29,7 +23,9 @@ class EntryInstallerTest {
         @Suppress("UNCHECKED_CAST")
         (entry.metadata.getValue(ON_CLICK) as () -> Unit).invoke()
 
-        assertEquals(listOf("navigateTo(${DetailKey("1")})"), navigator.calls)
+        assertEquals(listOf<NavKey>(DetailKey("1")), navigator.destinations)
+        assertEquals(emptyList<NavKey>(), navigator.rootDestinations)
+        assertEquals(0, navigator.backCount)
     }
 
     private companion object {

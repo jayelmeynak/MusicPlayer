@@ -1,4 +1,4 @@
-package com.jayelmeynak.feature.player.impl.presentation
+package com.jayelmeynak.lib.designsystem.components
 
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -9,7 +9,6 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import com.jayelmeynak.feature.player.impl.presentation.components.SeekSlider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

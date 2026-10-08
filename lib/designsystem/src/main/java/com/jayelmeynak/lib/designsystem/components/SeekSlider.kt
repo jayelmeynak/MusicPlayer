@@ -1,4 +1,4 @@
-package com.jayelmeynak.feature.player.impl.presentation.components
+package com.jayelmeynak.lib.designsystem.components
 
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
  * the last finger position. A new [trackKey] drops an unfinished gesture, so it can't seek the next track.
  */
 @Composable
-internal fun SeekSlider(
+public fun SeekSlider(
     progress: Float,
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
