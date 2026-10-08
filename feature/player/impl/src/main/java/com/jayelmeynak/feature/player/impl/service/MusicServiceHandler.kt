@@ -1,12 +1,19 @@
 package com.jayelmeynak.feature.player.impl.service
 
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import com.jayelmeynak.feature.player.impl.domain.models.Album
 import com.jayelmeynak.feature.player.impl.domain.models.Track
 import com.jayelmeynak.util.coroutines.ApplicationScope
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,6 +29,7 @@ import javax.inject.Singleton
 internal class MusicServiceHandler @Inject constructor(
     private val exoPlayer: ExoPlayer,
     @ApplicationScope private val applicationScope: CoroutineScope,
+    @ApplicationContext private val context: Context,
 ) : Player.Listener {
     private val _audioState: MutableStateFlow<MusicState> =
         MutableStateFlow(MusicState.Initial)
@@ -86,7 +94,7 @@ internal class MusicServiceHandler @Inject constructor(
                     else -> {
                         exoPlayer.seekToDefaultPosition(selectedAudioIndex)
                         _audioState.value = MusicState.Playing(isPlaying = true)
-                        exoPlayer.playWhenReady = true
+                        startPlayback()
                         startProgressUpdate()
                     }
                 }
@@ -115,12 +123,37 @@ internal class MusicServiceHandler @Inject constructor(
         startProgressUpdate()
     }
 
+    /** True when the player holds no prepared media, e.g. after the service stopped it. */
+    fun isIdle(): Boolean = exoPlayer.playbackState == Player.STATE_IDLE
+
     private fun playOrPause() {
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
             return
         }
-        exoPlayer.play()
+        startPlayback()
+    }
+
+    /**
+     * Plays from any state: a player stopped by the destroyed service is prepared again, an ended
+     * one starts over. The service is started too, since the session and the notification live
+     * only while it runs; a start that already happened is a no-op.
+     */
+    @OptIn(UnstableApi::class)
+    private fun startPlayback() {
+        Util.handlePlayButtonAction(exoPlayer)
+        startPlaybackService()
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun startPlaybackService() {
+        try {
+            context.startService(Intent(context, PlayBackService::class.java))
+        } catch (e: IllegalStateException) {
+            // The app is in the background: playback goes on, the service starts with the next
+            // command from the UI.
+            Log.w(TAG, "Playback service could not be started", e)
+        }
     }
 
     private fun startProgressUpdate() {
@@ -138,8 +171,7 @@ internal class MusicServiceHandler @Inject constructor(
         job = null
     }
 
-    fun release() {
-        stopProgressUpdate()
-        exoPlayer.removeListener(this)
+    private companion object {
+        const val TAG = "MusicServiceHandler"
     }
 }

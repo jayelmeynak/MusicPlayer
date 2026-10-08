@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -30,6 +31,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 
 /**
  * Characterization tests: they pin the current behavior, known defects included — the current
@@ -52,12 +54,11 @@ class MusicServiceHandlerTest {
         player = TestExoPlayerBuilder(RuntimeEnvironment.getApplication())
             .setMediaSourceFactory(FakeMediaSourceFactory())
             .build()
-        handler = MusicServiceHandler(player, scope)
+        handler = MusicServiceHandler(player, scope, RuntimeEnvironment.getApplication())
     }
 
     @After
     fun tearDown() {
-        handler.release()
         player.release()
         scope.cancel()
     }
@@ -221,42 +222,53 @@ class MusicServiceHandlerTest {
     }
 
     @Test
-    fun `restorePlaylist собирает треки из MediaItem плеера`() {
-        handler.setMediaItemList(mediaItems(2) + MediaItem.Builder().setMediaId("not-a-number").build())
+    fun `PlayPause после остановки плеера сервисом - плеер готовится заново и играет`() {
+        handler.setMediaItemList(mediaItems(3))
+        run(player).untilState(Player.STATE_READY)
+        player.stop()
 
-        val tracks = handler.restorePlaylist()
+        handler.onPlayerEvents(PlayerEvent.PlayPause)
 
-        assertEquals(3, tracks.size)
-        with(tracks[1]) {
-            assertEquals(11L, id)
-            assertEquals("Title 1", title)
-            assertEquals("Artist 1", artistName)
-            assertEquals("https://example.com/1.mp3", preview)
-            assertEquals(Uri.parse("https://example.com/1.mp3"), uri)
-            assertEquals("https://example.com/1.jpg", album?.cover)
-        }
-        with(tracks[2]) {
-            assertEquals(2L, id)
-            assertEquals("", title)
-            assertEquals("", preview)
-            assertEquals(null, uri)
-            assertEquals("", album?.cover)
-        }
+        awaitPlaying()
     }
 
     @Test
-    fun `restorePlaylist берёт длительность трека из метаданных`() {
-        val withDuration = MediaItem.Builder()
-            .setMediaId("1")
-            .setUri("https://example.com/1.mp3")
-            .setMediaMetadata(MediaMetadata.Builder().setExtras(bundleOf(EXTRA_TRACK_DURATION_MS to 225_000)).build())
-            .build()
-        handler.setMediaItemList(listOf(withDuration) + mediaItems(1))
+    fun `PlayPause на паузе - запрошен старт сервиса воспроизведения`() {
+        handler.setMediaItemList(mediaItems(3))
+        player.stop()
 
-        val tracks = handler.restorePlaylist()
+        handler.onPlayerEvents(PlayerEvent.PlayPause)
 
-        assertEquals(225_000, tracks[0].duration)
-        assertEquals(0, tracks[1].duration)
+        assertServiceStartRequested()
+    }
+
+    @Test
+    fun `выбор трека после остановки плеера сервисом - играет и запрошен старт сервиса`() {
+        handler.setMediaItemList(mediaItems(3))
+        run(player).untilState(Player.STATE_READY)
+        player.stop()
+
+        handler.onPlayerEvents(PlayerEvent.SelectedAudioChange, selectedAudioIndex = 1)
+
+        awaitPlaying()
+        assertEquals(1, player.currentMediaItemIndex)
+        assertServiceStartRequested()
+    }
+
+    @Test
+    fun `PlayPause во время воспроизведения - сервис не стартуется`() {
+        handler.setMediaItemList(mediaItems(3))
+        player.play()
+        awaitPlaying()
+
+        handler.onPlayerEvents(PlayerEvent.PlayPause)
+
+        assertNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedService)
+    }
+
+    private fun assertServiceStartRequested() {
+        val started = shadowOf(RuntimeEnvironment.getApplication()).nextStartedService
+        assertEquals(PlayBackService::class.java.name, started?.component?.className)
     }
 
     // The progress loop runs on Dispatchers.Main forever; with a shared scheduler runTest would spin it.

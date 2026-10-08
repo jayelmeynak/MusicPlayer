@@ -52,12 +52,11 @@ class MiniPlayerTest {
         player = TestExoPlayerBuilder(RuntimeEnvironment.getApplication())
             .setMediaSourceFactory(FakeMediaSourceFactory())
             .build()
-        handler = MusicServiceHandler(player, scope)
+        handler = MusicServiceHandler(player, scope, RuntimeEnvironment.getApplication())
     }
 
     @After
     fun tearDown() {
-        handler.release()
         player.release()
         scope.cancel()
     }

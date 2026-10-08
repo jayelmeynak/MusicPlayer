@@ -19,6 +19,7 @@ import com.jayelmeynak.feature.player.impl.domain.usecase.GetRemoteTrackUseCase
 import com.jayelmeynak.feature.player.impl.navigation.PlayerRequestHolder
 import com.jayelmeynak.feature.player.impl.service.EXTRA_TRACK_DURATION_MS
 import com.jayelmeynak.feature.player.impl.service.MusicServiceHandler
+import com.jayelmeynak.feature.player.impl.service.PlayBackService
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +29,7 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,6 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 
 /**
  * AudioViewModel depends on the concrete MusicServiceHandler over ExoPlayer and on android.net.Uri,
@@ -61,12 +64,11 @@ class AudioViewModelTest {
         player = TestExoPlayerBuilder(RuntimeEnvironment.getApplication())
             .setMediaSourceFactory(FakeMediaSourceFactory())
             .build()
-        handler = MusicServiceHandler(player, scope)
+        handler = MusicServiceHandler(player, scope, RuntimeEnvironment.getApplication())
     }
 
     @After
     fun tearDown() {
-        handler.release()
         player.release()
         scope.cancel()
     }
@@ -261,6 +263,61 @@ class AudioViewModelTest {
         requests.open(TrackSource.DEEZER, "42")
 
         assertTrue(viewModel.onPlayerOpened())
+    }
+
+    @Test
+    fun `тап по тому же локальному треку после остановки плеера сервисом - воспроизведение снова запущено`() {
+        localRepository.tracks = listOf(localTrack(1, LOCAL_URI_1))
+        val viewModel = createViewModel()
+        viewModel.loadLocalTrack(LOCAL_URI_1)
+        stopPlayerAsServiceDoes()
+
+        viewModel.loadLocalTrack(LOCAL_URI_1)
+
+        assertResumed()
+    }
+
+    @Test
+    fun `тап по тому же треку Deezer после остановки плеера сервисом - воспроизведение снова запущено`() {
+        remoteRepository.tracks = mapOf("42" to remoteTrack(42))
+        val viewModel = createViewModel()
+        viewModel.loadRemoteTrack("42")
+        stopPlayerAsServiceDoes()
+
+        viewModel.loadRemoteTrack("42")
+
+        assertResumed()
+    }
+
+    @Test
+    fun `тап по тому же треку на паузе при живом сервисе - пауза сохраняется`() {
+        remoteRepository.tracks = mapOf("42" to remoteTrack(42))
+        val viewModel = createViewModel()
+        viewModel.loadRemoteTrack("42")
+        player.pause()
+
+        viewModel.loadRemoteTrack("42")
+
+        assertFalse(player.playWhenReady)
+    }
+
+    /** What PlayBackService.onDestroy does to the shared player. */
+    private fun stopPlayerAsServiceDoes() {
+        player.playWhenReady = false
+        player.stop()
+        drainStartedServices()
+    }
+
+    private fun assertResumed() {
+        assertTrue(player.playWhenReady)
+        assertNotEquals(Player.STATE_IDLE, player.playbackState)
+        val started = shadowOf(RuntimeEnvironment.getApplication()).nextStartedService
+        assertEquals(PlayBackService::class.java.name, started?.component?.className)
+    }
+
+    private fun drainStartedServices() {
+        val app = shadowOf(RuntimeEnvironment.getApplication())
+        while (app.nextStartedService != null) Unit
     }
 
     private fun createViewModel() = AudioViewModel(

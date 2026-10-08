@@ -32,7 +32,9 @@ internal fun PlayerRoute(viewModel: AudioViewModel, navigator: Navigator) {
             navigator.goBack()
             return@LaunchedEffect
         }
-        context.startForegroundService(Intent(context, PlayBackService::class.java))
+        // A plain start: Media3 moves the service to the foreground once playback starts, and a
+        // foreground start from here would crash if playback did not begin in time.
+        context.startService(Intent(context, PlayBackService::class.java))
     }
     PlayerScreen(
         scaffoldPadding = PaddingValues(),

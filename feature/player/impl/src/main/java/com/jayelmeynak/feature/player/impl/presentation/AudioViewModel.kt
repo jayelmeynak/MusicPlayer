@@ -138,7 +138,10 @@ internal class AudioViewModel @Inject constructor(
     }
 
     fun loadRemoteTrack(id: String) {
-        if (_currentSelectedAudio.value.id.toString() == id) return
+        if (_currentSelectedAudio.value.id.toString() == id) {
+            resumeIfStopped()
+            return
+        }
         _source.value = "api"
         viewModelScope.launch {
             _uiState.value = UIState.Loading
@@ -187,7 +190,10 @@ internal class AudioViewModel @Inject constructor(
     }
 
     fun loadLocalTrack(trackUri: String) {
-        if (_currentSelectedAudio.value.preview == trackUri && _audioList.value.isNotEmpty()) return
+        if (_currentSelectedAudio.value.preview == trackUri && _audioList.value.isNotEmpty()) {
+            resumeIfStopped()
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = UIState.Loading
@@ -212,6 +218,14 @@ internal class AudioViewModel @Inject constructor(
             )
             audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
         }
+    }
+
+    /**
+     * The same track was tapped again. A paused track stays paused, but a queue left behind by a
+     * destroyed service (the player is idle) plays again, or the tap would do nothing.
+     */
+    private fun resumeIfStopped() {
+        if (audioServiceHandler.isIdle()) audioServiceHandler.onPlayerEvents(PlayerEvent.PlayPause)
     }
 
     private fun loadArtworkForCurrentTrack() {

@@ -31,8 +31,6 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.common)
-    implementation(libs.media3.ui)
-    implementation(libs.glide)
 
     testImplementation(libs.junit)
     testImplementation(project(":util:testing"))
