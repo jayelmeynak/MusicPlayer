@@ -22,6 +22,8 @@ dependencies {
     implementation(project(":feature:player:di"))
     implementation(project(":features:download-tracks"))
     implementation(project(":lib:designsystem"))
+    // LocalTrack: the local tab hands its visible list to the player.
+    implementation(project(":lib:mediastore"))
     implementation(project(":lib:navigation"))
     implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)

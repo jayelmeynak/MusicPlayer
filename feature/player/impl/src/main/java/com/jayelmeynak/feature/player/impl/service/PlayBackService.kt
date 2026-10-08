@@ -2,20 +2,21 @@ package com.jayelmeynak.feature.player.impl.service
 
 import android.app.PendingIntent
 import android.util.Log
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkBitmapLoader
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
- * Owns the media session for its lifetime: a new session on every [onCreate], released in
- * [onDestroy], so a service started again in the same process never hands out a released session.
- * The standard Media3 notification follows the session and puts the service in the foreground
- * while playback is ongoing; nothing calls `startForeground` by hand.
+ * Owns the player and the media session for its lifetime: both are created in [onCreate] and
+ * released in [onDestroy], so a service started again in the same process starts with a new
+ * working pair. The app UI reaches them only through a `MediaController`. The standard Media3
+ * notification follows the session and puts the service in the foreground while playback is
+ * ongoing; nothing calls `startForeground` by hand.
  *
  * [onTaskRemoved] is not overridden on purpose (owner's decision): the Media3 default keeps the
  * service while playing and stops it otherwise.
@@ -24,33 +25,40 @@ import javax.inject.Inject
 @AndroidEntryPoint
 internal class PlayBackService : MediaSessionService() {
 
-    /** The app-wide player; it outlives the service until the service creates its own player. */
     @Inject
-    lateinit var exoPlayer: ExoPlayer
+    lateinit var playerFactory: PlayerFactory
+
+    @Inject
+    lateinit var sessionCallback: PlaybackSessionCallback
+
+    @Inject
+    lateinit var bitmapLoader: LocalArtworkBitmapLoader
 
     private var mediaSession: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
         setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build())
+        val player = playerFactory.create()
         setListener(object : Listener {
             /**
-             * Android 12+ refuses a foreground start from the background (e.g. a Deezer track
-             * whose network reply arrives after the app was minimized). Sound without a
-             * notification and a foreground service is not allowed: pause instead.
+             * Android 12+ refuses a foreground start from the background (e.g. a play command
+             * from a Bluetooth device long after the app was left). Sound without a notification
+             * and a foreground service is not allowed: pause instead.
              */
             override fun onForegroundServiceStartNotAllowedException() {
                 Log.w(TAG, "Foreground start not allowed, pausing playback")
-                exoPlayer.pause()
+                player.pause()
             }
         })
-        val session = MediaSession.Builder(this, exoPlayer)
+        val session = MediaSession.Builder(this, player)
+            .setCallback(sessionCallback)
+            .setBitmapLoader(CacheBitmapLoader(bitmapLoader))
             .apply { sessionActivity()?.let(::setSessionActivity) }
             .build()
         mediaSession = session
-        // The app UI connects no controller until it moves to MediaController, so onGetSession
-        // may never be called: add the session here or no notification is shown. System
-        // controllers (notification, Bluetooth) get this same session from onGetSession.
+        // Media3 adds the session when a controller connects through onGetSession; adding it here
+        // as well shows the notification even if the service was started without a controller.
         addSession(session)
     }
 
@@ -59,12 +67,7 @@ internal class PlayBackService : MediaSessionService() {
 
     override fun onDestroy() {
         mediaSession?.run {
-            // The shared player stays alive after the service: stop it, or it would keep playing
-            // without a session, a notification and a foreground service.
-            if (player.playbackState != Player.STATE_IDLE) {
-                player.playWhenReady = false
-                player.stop()
-            }
+            player.release()
             release()
         }
         mediaSession = null
