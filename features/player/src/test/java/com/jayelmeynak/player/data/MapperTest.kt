@@ -2,9 +2,9 @@ package com.jayelmeynak.player.data
 
 import android.net.Uri
 import com.jayelmeynak.local.domain.model.LocalTrack
-import com.jayelmeynak.network.data.dto.AlbumDto
-import com.jayelmeynak.network.data.dto.Artist
-import com.jayelmeynak.network.data.dto.TrackDto
+import com.jayelmeynak.lib.network.data.dto.AlbumDto
+import com.jayelmeynak.lib.network.data.dto.Artist
+import com.jayelmeynak.lib.network.data.dto.TrackDto
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
 import org.junit.Assert.assertEquals

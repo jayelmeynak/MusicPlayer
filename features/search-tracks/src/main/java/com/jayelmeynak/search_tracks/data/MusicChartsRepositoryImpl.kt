@@ -1,6 +1,6 @@
 package com.jayelmeynak.search_tracks.data
 
-import com.jayelmeynak.network.data.RemoteChartDataSource
+import com.jayelmeynak.lib.network.data.RemoteChartDataSource
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.Result
 import com.jayelmeynak.util.result.map

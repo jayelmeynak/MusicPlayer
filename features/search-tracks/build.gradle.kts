@@ -16,7 +16,7 @@ android {
 dependencies {
 
     implementation(project(":core:ui"))
-    implementation(project(":core:network"))
+    implementation(project(":lib:network"))
     implementation(project(":util:result"))
 
     implementation(libs.androidx.lifecycle.runtime.compose)

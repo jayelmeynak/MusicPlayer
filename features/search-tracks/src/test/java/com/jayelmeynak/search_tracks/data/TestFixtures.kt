@@ -1,8 +1,8 @@
 package com.jayelmeynak.search_tracks.data
 
-import com.jayelmeynak.network.data.dto.AlbumDto
-import com.jayelmeynak.network.data.dto.Artist
-import com.jayelmeynak.network.data.dto.TrackDto
+import com.jayelmeynak.lib.network.data.dto.AlbumDto
+import com.jayelmeynak.lib.network.data.dto.Artist
+import com.jayelmeynak.lib.network.data.dto.TrackDto
 
 internal fun albumDto() = AlbumDto(
     id = 7,

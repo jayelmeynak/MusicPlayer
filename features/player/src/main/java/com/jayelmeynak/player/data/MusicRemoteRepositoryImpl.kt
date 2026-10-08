@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.data
 
-import com.jayelmeynak.network.data.RemoteTrackDataSource
+import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.Result
 import com.jayelmeynak.util.result.map

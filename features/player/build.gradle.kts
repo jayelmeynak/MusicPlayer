@@ -31,7 +31,7 @@ dependencies {
     implementation(libs.glide)
 
     implementation(project(":core:ui"))
-    implementation(project(":core:network"))
+    implementation(project(":lib:network"))
     implementation(project(":util:result"))
     implementation(project(":util:coroutines"))
     implementation(project(":core:local"))
