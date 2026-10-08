@@ -13,7 +13,9 @@ fun TrackDto.toTrack(): Track? {
         title = title ?: return null,
         preview = preview ?: return null,
         artistName = artist?.name.orEmpty(),
-        album = album?.toAlbum() ?: EMPTY_ALBUM
+        album = album?.toAlbum() ?: EMPTY_ALBUM,
+        // Deezer reports seconds.
+        duration = duration?.times(1000L) ?: 0L,
     )
 }
 

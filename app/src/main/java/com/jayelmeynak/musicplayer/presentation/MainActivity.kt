@@ -10,7 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.jayelmeynak.feature.player.api.MiniPlayerHost
-import com.jayelmeynak.feature.player.api.PlayerOpener
+import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.musicplayer.R
 import com.jayelmeynak.musicplayer.presentation.navigation.AppNavigation
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
     lateinit var entryInstallers: Set<@JvmSuppressWildcards EntryInstaller>
 
     @Inject
-    lateinit var playerOpener: PlayerOpener
+    lateinit var playbackController: PlaybackController
 
     @Inject
     lateinit var miniPlayerHost: MiniPlayerHost
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
             AppTheme {
                 AppNavigation(
                     entryInstallers = entryInstallers,
-                    playerOpener = playerOpener,
+                    playbackController = playbackController,
                     miniPlayerHost = miniPlayerHost,
                 )
             }

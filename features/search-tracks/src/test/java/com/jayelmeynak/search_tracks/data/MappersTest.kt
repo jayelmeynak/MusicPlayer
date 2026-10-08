@@ -30,9 +30,16 @@ class MappersTest {
                 album = albumDto().toAlbum(),
                 artistName = "Artist",
                 preview = "https://preview",
+                duration = 180_000L,
             ),
             track,
         )
+    }
+
+    @Test
+    fun `длительность Deezer в секундах переводится в миллисекунды, без неё - 0`() {
+        assertEquals(180_000L, trackDto().toTrack()?.duration)
+        assertEquals(0L, trackDto().copy(duration = null).toTrack()?.duration)
     }
 
     @Test

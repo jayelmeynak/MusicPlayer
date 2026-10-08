@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,12 +27,14 @@ import com.jayelmeynak.lib.designsystem.R
 import com.jayelmeynak.lib.designsystem.components.RemoteTrackImage
 import com.jayelmeynak.lib.designsystem.components.TrackItem
 import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
+import com.jayelmeynak.search_tracks.domain.models.Track
 
 @Composable
 fun ChartTracksScreen(
     scaffoldPadding: PaddingValues,
     viewModel: ChartTracksViewModel = hiltViewModel(),
-    onTrackClicked: (String) -> Unit
+    /** The visible list (chart or search results) and the index of the tapped track in it. */
+    onTrackClicked: (tracks: List<Track>, index: Int) -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val errorMessage = state.errorMessage
@@ -79,7 +81,8 @@ fun ChartTracksScreen(
                     }
 
                     else -> LazyColumn {
-                        items(state.searchList ?: state.charts, key = { it.id }) { track ->
+                        val tracks = state.searchList ?: state.charts
+                        itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
                             TrackItem(
                                 title = track.title,
                                 artistName = track.artistName,
@@ -89,7 +92,7 @@ fun ChartTracksScreen(
                                             track.id.toString()
                                         )
                                     )
-                                    onTrackClicked(track.id.toString())
+                                    onTrackClicked(tracks, index)
                                 },
                                 image = { RemoteTrackImage(track.album.cover) }
                             )

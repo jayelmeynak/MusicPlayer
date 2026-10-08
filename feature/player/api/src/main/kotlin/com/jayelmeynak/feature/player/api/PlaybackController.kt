@@ -21,6 +21,8 @@ public interface PlaybackController {
 
     /**
      * Replaces the queue with [queue] and starts playing the item at [startIndex] from the start.
+     * If [queue] already is the current queue and [startIndex] the current item, the item is not
+     * restarted: it keeps playing, or resumes if paused (a tap on the playing track in a list).
      *
      * @throws IllegalArgumentException if [startIndex] is not in `queue.indices` (so [queue] must
      *   not be empty).

@@ -24,16 +24,15 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
 import com.jayelmeynak.feature.player.api.MiniPlayerHost
+import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlayerDestination
-import com.jayelmeynak.feature.player.api.PlayerOpener
-import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
 
 @Composable
 fun AppNavigation(
     entryInstallers: Set<EntryInstaller>,
-    playerOpener: PlayerOpener,
+    playbackController: PlaybackController,
     miniPlayerHost: MiniPlayerHost,
 ) {
     val navigationState = rememberNavigationState(
@@ -52,8 +51,8 @@ fun AppNavigation(
             entry<TopLevelDestination.ApiTracks> {
                 ChartTracksScreen(
                     scaffoldPadding = PaddingValues(),
-                    onTrackClicked = { trackId ->
-                        playerOpener.open(TrackSource.DEEZER, trackId)
+                    onTrackClicked = { tracks, index ->
+                        playbackController.play(tracks.map { it.toQueueItem() }, index)
                         navigator.navigateTo(PlayerDestination)
                     },
                 )
@@ -62,8 +61,8 @@ fun AppNavigation(
                 DownloadTrackScreen(
                     scaffoldPadding = PaddingValues(),
                     viewModel = hiltViewModel(),
-                    onTrackClicked = { trackUri ->
-                        playerOpener.open(TrackSource.LOCAL, trackUri.toString())
+                    onTrackClicked = { tracks, index ->
+                        playbackController.play(tracks.map { it.toQueueItem() }, index)
                         navigator.navigateTo(PlayerDestination)
                     },
                 )

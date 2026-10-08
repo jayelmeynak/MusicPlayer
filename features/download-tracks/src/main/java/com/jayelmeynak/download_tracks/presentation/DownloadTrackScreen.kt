@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jayelmeynak.download_tracks.R
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import com.jayelmeynak.lib.designsystem.R as DesignR
 import com.jayelmeynak.lib.designsystem.components.LocalTrackImage
 import com.jayelmeynak.lib.designsystem.components.TrackItem
@@ -47,7 +48,8 @@ import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
 fun DownloadTrackScreen(
     scaffoldPadding: PaddingValues,
     viewModel: DownloadTracksViewModel = hiltViewModel(),
-    onTrackClicked: (Uri) -> Unit,
+    /** The visible list (all tracks or search results) and the index of the tapped track in it. */
+    onTrackClicked: (tracks: List<LocalTrack>, index: Int) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -99,7 +101,7 @@ private fun audioPermission(): String =
 fun DownloadTracks(
     scaffoldPadding: PaddingValues,
     state: DownloadTracksState,
-    onTrackClicked: (Uri) -> Unit,
+    onTrackClicked: (tracks: List<LocalTrack>, index: Int) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onRequestPermission: () -> Unit,
 ) {
@@ -180,12 +182,13 @@ fun DownloadTracks(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.searchList ?: state.tracks, key = { it.id }) { track ->
+                            val tracks = state.searchList ?: state.tracks
+                            itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
                                 TrackItem(
                                     title = track.title,
                                     artistName = track.artistName,
                                     onClick = {
-                                        onTrackClicked(track.uri)
+                                        onTrackClicked(tracks, index)
                                     },
                                     image = { LocalTrackImage(state.artworks[track.id]) }
                                 )

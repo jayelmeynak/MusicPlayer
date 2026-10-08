@@ -6,4 +6,6 @@ data class Track(
     val album: Album,
     val artistName: String,
     val preview: String,
+    /** Full track length in ms, 0 when unknown; the playable preview is 30 seconds. */
+    val duration: Long = 0L,
 )

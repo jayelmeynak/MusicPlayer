@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.musicplayer.feature.impl)
-    id("kotlin-parcelize")
 }
 
 android {
@@ -22,6 +21,7 @@ dependencies {
 
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.coil.compose)
