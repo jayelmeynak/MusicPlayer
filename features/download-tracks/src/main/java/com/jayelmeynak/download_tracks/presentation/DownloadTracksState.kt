@@ -9,5 +9,7 @@ data class DownloadTracksState(
     val isLoading: Boolean = true,
     val errorMessage: UiText? = null,
     val query: String = "",
-    val searchList: List<LocalTrack> = emptyList()
+    /** Null while no search is active; empty when the search found nothing. */
+    val searchList: List<LocalTrack>? = null,
+    val isPermissionDenied: Boolean = false,
 )
