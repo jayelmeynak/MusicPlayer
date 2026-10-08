@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.domain.usecase
 
-import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.GetLocalTracksUseCase
 import com.jayelmeynak.player.data.toTrack
 import com.jayelmeynak.player.domain.models.Track
 import javax.inject.Inject

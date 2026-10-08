@@ -3,10 +3,10 @@ package com.jayelmeynak.download_tracks.presentation
 import android.net.Uri
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
-import com.jayelmeynak.local.domain.model.LocalTrack
-import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
-import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
-import com.jayelmeynak.local.domain.usecase.PruneArtworkCacheUseCase
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler

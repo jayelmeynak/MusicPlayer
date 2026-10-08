@@ -1,8 +1,8 @@
 package com.jayelmeynak.download_tracks.presentation
 
 import android.net.Uri
-import com.jayelmeynak.local.domain.model.LocalTrack
-import com.jayelmeynak.local.domain.repository.LocalTracksRepository
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.repository.LocalTracksRepository
 
 class FakeLocalTracksRepository(
     var tracks: List<LocalTrack> = emptyList(),

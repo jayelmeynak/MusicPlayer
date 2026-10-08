@@ -1,6 +1,6 @@
 package com.jayelmeynak.download_tracks.presentation
 
-import com.jayelmeynak.local.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import com.jayelmeynak.ui.UiText
 
 data class DownloadTracksState(

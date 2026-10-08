@@ -2,9 +2,9 @@ package com.jayelmeynak.download_tracks.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
-import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
-import com.jayelmeynak.local.domain.usecase.PruneArtworkCacheUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
+import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async

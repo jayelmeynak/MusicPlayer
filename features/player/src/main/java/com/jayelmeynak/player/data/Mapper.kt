@@ -1,6 +1,6 @@
 package com.jayelmeynak.player.data
 
-import com.jayelmeynak.local.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import com.jayelmeynak.lib.network.data.dto.AlbumDto
 import com.jayelmeynak.lib.network.data.dto.TrackDto
 import com.jayelmeynak.player.domain.models.Album
