@@ -1,9 +1,9 @@
 package com.jayelmeynak.search_tracks.data
 
 import com.jayelmeynak.network.data.RemoteChartDataSource
-import com.jayelmeynak.network.utils.DataError
-import com.jayelmeynak.network.utils.Result
-import com.jayelmeynak.network.utils.map
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
+import com.jayelmeynak.util.result.map
 import com.jayelmeynak.search_tracks.domain.models.Track
 import com.jayelmeynak.search_tracks.domain.repositories.MusicChartsRepository
 import javax.inject.Inject

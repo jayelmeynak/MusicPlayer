@@ -7,6 +7,7 @@ import com.jayelmeynak.local.domain.model.LocalTrack
 import com.jayelmeynak.local.domain.usecase.GetLocalTracksUseCase
 import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.local.domain.usecase.PruneArtworkCacheUseCase
+import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest

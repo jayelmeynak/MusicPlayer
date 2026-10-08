@@ -1,8 +1,8 @@
-package com.jayelmeynak.network.utils
+package com.jayelmeynak.util.result
 
-sealed interface DataError: Error {
+public sealed interface DataError: Error {
 
-    enum class Remote: DataError {
+    public enum class Remote: DataError {
         REQUEST_TIMEOUT,
         TOO_MANY_REQUESTS,
         NO_INTERNET,
@@ -11,7 +11,7 @@ sealed interface DataError: Error {
         UNKNOWN
     }
 
-    enum class Local: DataError {
+    public enum class Local: DataError {
         DISK_FULL,
         UNKNOWN
     }

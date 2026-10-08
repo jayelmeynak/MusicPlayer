@@ -2,8 +2,8 @@ package com.jayelmeynak.search_tracks.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jayelmeynak.network.utils.onError
-import com.jayelmeynak.network.utils.onSuccess
+import com.jayelmeynak.util.result.onError
+import com.jayelmeynak.util.result.onSuccess
 import com.jayelmeynak.search_tracks.domain.usecase.GetChartUseCase
 import com.jayelmeynak.search_tracks.domain.usecase.SearchTrackUseCase
 import com.jayelmeynak.ui.toUiText

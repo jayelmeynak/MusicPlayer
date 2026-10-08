@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.jayelmeynak.local.domain.usecase.GetTrackArtworkUseCase
-import com.jayelmeynak.network.utils.onError
-import com.jayelmeynak.network.utils.onSuccess
+import com.jayelmeynak.util.result.onError
+import com.jayelmeynak.util.result.onSuccess
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
 import com.jayelmeynak.player.domain.usecase.GetLocalTrackListUseCase

@@ -1,14 +1,15 @@
 package com.jayelmeynak.search_tracks.presentation
 
 import app.cash.turbine.test
-import com.jayelmeynak.network.utils.DataError
-import com.jayelmeynak.network.utils.Result
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
 import com.jayelmeynak.search_tracks.data.toTrack
 import com.jayelmeynak.search_tracks.data.trackDto
 import com.jayelmeynak.search_tracks.domain.usecase.GetChartUseCase
 import com.jayelmeynak.search_tracks.domain.usecase.SearchTrackUseCase
 import com.jayelmeynak.ui.R
 import com.jayelmeynak.ui.UiText
+import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

@@ -2,9 +2,9 @@ package com.jayelmeynak.network.data
 
 import com.jayelmeynak.network.data.dto.ResponseChart
 import com.jayelmeynak.network.data.dto.Tracks
-import com.jayelmeynak.network.utils.DataError
-import com.jayelmeynak.network.utils.Result
-import com.jayelmeynak.network.utils.safeCall
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
+import com.jayelmeynak.network.http.safeCall
 import javax.inject.Inject
 
 class RemoteChartDataSourceImpl @Inject constructor(

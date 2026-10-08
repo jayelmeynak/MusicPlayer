@@ -14,6 +14,7 @@ android {
 
 dependencies {
 
+    implementation(project(":util:result"))
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)

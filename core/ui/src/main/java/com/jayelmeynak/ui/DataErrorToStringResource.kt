@@ -1,6 +1,6 @@
 package com.jayelmeynak.ui
 
-import com.jayelmeynak.network.utils.DataError
+import com.jayelmeynak.util.result.DataError
 
 fun DataError.toUiText(): UiText {
     val stringRes = when(this) {

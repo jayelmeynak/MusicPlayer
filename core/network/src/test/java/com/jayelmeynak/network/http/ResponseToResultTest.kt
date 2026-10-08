@@ -1,5 +1,7 @@
-package com.jayelmeynak.network.utils
+package com.jayelmeynak.network.http
 
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals

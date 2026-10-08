@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":features:player"))
     implementation(project(":features:download-tracks"))
     implementation(project(":core:ui"))
+    implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
