@@ -19,6 +19,10 @@ ksp = "2.3.6"
 room = "2.8.4"
 navigation3 = "1.1.1"
 kotlinxSerializationJson = "1.11.0"
+kotlinxCoroutines = "1.10.2"
+turbine = "1.2.1"
+robolectric = "4.16.1"
+sqlite = "2.6.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -56,6 +60,16 @@ navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref =
 lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite", version = "1.4.0" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+# Test dependencies
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+sqlite-bundled-jvm = { module = "androidx.sqlite:sqlite-bundled-jvm", version.ref = "sqlite" }
+media3-test-utils = { module = "androidx.media3:media3-test-utils", version.ref = "media3" }
+media3-test-utils-robolectric = { module = "androidx.media3:media3-test-utils-robolectric", version.ref = "media3" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # Dependencies of the included build-logic
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
