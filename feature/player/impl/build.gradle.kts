@@ -36,6 +36,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(project(":util:testing"))
+    testImplementation(testFixtures(project(":feature:player:api")))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
