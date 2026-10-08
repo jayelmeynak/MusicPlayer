@@ -1,9 +1,9 @@
 package com.jayelmeynak.player.data
 
 import com.jayelmeynak.network.data.RemoteTrackDataSource
-import com.jayelmeynak.network.utils.DataError
-import com.jayelmeynak.network.utils.Result
-import com.jayelmeynak.network.utils.map
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
+import com.jayelmeynak.util.result.map
 import com.jayelmeynak.player.domain.models.Track
 import com.jayelmeynak.player.domain.repository.MusicRemoteRepository
 import javax.inject.Inject

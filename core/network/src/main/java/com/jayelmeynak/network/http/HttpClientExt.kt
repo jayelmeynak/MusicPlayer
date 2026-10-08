@@ -1,6 +1,7 @@
-package com.jayelmeynak.network.utils
+package com.jayelmeynak.network.http
 
-
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
 import kotlinx.coroutines.ensureActive
 import retrofit2.Response
 import java.net.SocketTimeoutException

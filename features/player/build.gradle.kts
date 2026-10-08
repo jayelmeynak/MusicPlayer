@@ -32,9 +32,12 @@ dependencies {
 
     implementation(project(":core:ui"))
     implementation(project(":core:network"))
+    implementation(project(":util:result"))
+    implementation(project(":util:coroutines"))
     implementation(project(":core:local"))
 
     testImplementation(libs.junit)
+    testImplementation(project(":util:testing"))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
