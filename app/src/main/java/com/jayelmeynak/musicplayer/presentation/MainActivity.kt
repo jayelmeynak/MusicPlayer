@@ -22,15 +22,17 @@ class MainActivity : ComponentActivity() {
     private var isServiceRunning = false
 
     private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (!isGranted) handlePermissionResult()
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        // Without the notification permission playback still works, so only the audio denial is reported.
+        if (results[getRequiredPermission()] == false) handlePermissionResult()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        checkPermissions()
+        // A recreated Activity must not ask again: a second denial blocks the system dialog for good.
+        if (savedInstanceState == null) checkPermissions()
         setContent {
             AppTheme {
                 AppNavigation(
@@ -41,13 +43,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkPermissions() {
-        val requiredPermission = getRequiredPermission()
-        if (ContextCompat.checkSelfPermission(
-                this,
-                requiredPermission
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            permissionLauncher.launch(requiredPermission)
+        val deniedPermissions = buildList {
+            add(getRequiredPermission())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }.filter {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_DENIED
+        }
+        if (deniedPermissions.isNotEmpty()) {
+            permissionLauncher.launch(deniedPermissions.toTypedArray())
         }
     }
 
