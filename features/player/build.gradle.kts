@@ -34,7 +34,7 @@ dependencies {
     implementation(project(":lib:network"))
     implementation(project(":util:result"))
     implementation(project(":util:coroutines"))
-    implementation(project(":core:local"))
+    implementation(project(":lib:mediastore"))
 
     testImplementation(libs.junit)
     testImplementation(project(":util:testing"))

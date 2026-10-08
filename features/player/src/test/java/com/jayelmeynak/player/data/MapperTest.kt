@@ -1,7 +1,7 @@
 package com.jayelmeynak.player.data
 
 import android.net.Uri
-import com.jayelmeynak.local.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import com.jayelmeynak.lib.network.data.dto.AlbumDto
 import com.jayelmeynak.lib.network.data.dto.Artist
 import com.jayelmeynak.lib.network.data.dto.TrackDto

@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jayelmeynak.local.domain.model.LocalTrack
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 
 @Composable
 fun TrackItem(
