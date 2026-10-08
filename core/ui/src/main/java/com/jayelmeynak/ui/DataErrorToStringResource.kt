@@ -11,6 +11,7 @@ fun DataError.toUiText(): UiText {
         DataError.Remote.NO_INTERNET -> R.string.error_no_internet
         DataError.Remote.SERVER -> R.string.error_unknown
         DataError.Remote.SERIALIZATION -> R.string.error_serialization
+        DataError.Remote.NOT_FOUND -> R.string.error_not_found
         DataError.Remote.UNKNOWN -> R.string.error_unknown
     }
 

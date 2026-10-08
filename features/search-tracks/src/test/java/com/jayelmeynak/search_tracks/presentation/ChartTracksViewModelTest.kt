@@ -24,7 +24,7 @@ class ChartTracksViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private val chart = listOf(trackDto().toTrack(), trackDto().copy(id = 43L).toTrack())
+    private val chart = listOf(trackDto().toTrack()!!, trackDto().copy(id = 43L).toTrack()!!)
     private val repository = FakeMusicChartsRepository(chartResult = Result.Success(chart))
 
     private fun viewModel() = ChartTracksViewModel(
@@ -55,6 +55,29 @@ class ChartTracksViewModelTest {
     }
 
     @Test
+    fun `Deezer не нашёл данные - errorMessage NOT_FOUND, charts пуст`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NOT_FOUND)
+
+        viewModel().state.test {
+            val state = expectMostRecentItem()
+            assertTrue(state.charts.isEmpty())
+            assertFalse(state.isLoading)
+            assertEquals(R.string.error_not_found, state.errorResId())
+        }
+    }
+
+    @Test
+    fun `квота Deezer на чарте - errorMessage TOO_MANY_REQUESTS`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.TOO_MANY_REQUESTS)
+
+        viewModel().state.test {
+            val state = expectMostRecentItem()
+            assertTrue(state.charts.isEmpty())
+            assertEquals(R.string.error_too_many_requests, state.errorResId())
+        }
+    }
+
+    @Test
     fun `ошибка чарта стирается через 500 мс начальным пустым поиском`() = runTest {
         repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
         val viewModel = viewModel()
@@ -70,7 +93,7 @@ class ChartTracksViewModelTest {
 
     @Test
     fun `query обновляется сразу, поиск идёт только после паузы 500 мс`() = runTest {
-        val found = listOf(trackDto().copy(id = 1L, title = "Found").toTrack())
+        val found = listOf(trackDto().copy(id = 1L, title = "Found").toTrack()!!)
         repository.searchResult = { Result.Success(found) }
         val viewModel = viewModel()
 

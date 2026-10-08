@@ -8,6 +8,7 @@ import com.jayelmeynak.lib.network.data.dto.TrackDto
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -57,6 +58,31 @@ class MapperTest {
             ),
             localTrack.toTrack(),
         )
+    }
+
+    @Test
+    fun `TrackDto без id, title или preview отбрасывается`() {
+        assertNull(trackDto().copy(id = null).toTrack())
+        assertNull(trackDto().copy(title = null).toTrack())
+        assertNull(trackDto().copy(preview = null).toTrack())
+    }
+
+    @Test
+    fun `TrackDto без исполнителя и альбома - пустое имя и альбом null`() {
+        val track = trackDto().copy(artist = null, album = null).toTrack()
+
+        assertEquals("", track?.artistName)
+        assertNull(track?.album)
+    }
+
+    @Test
+    fun `TrackDto с альбомом без id - альбом null, лишний запрос альбома не уходит`() {
+        assertNull(trackDto().copy(album = albumDto().copy(id = null)).toTrack()?.album)
+    }
+
+    @Test
+    fun `AlbumDto без полей переводится в Album с пустыми значениями`() {
+        assertEquals(Album(id = 0, title = "", cover = "", trackList = "", type = ""), AlbumDto().toAlbum())
     }
 
     private fun albumDto() = AlbumDto(

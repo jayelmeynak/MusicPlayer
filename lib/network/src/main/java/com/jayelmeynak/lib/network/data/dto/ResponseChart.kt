@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 public data class ResponseChart(
     @SerializedName("tracks")
-    public val tracks: Tracks
+    public val tracks: Tracks? = null,
 )

@@ -6,21 +6,25 @@ import com.jayelmeynak.lib.network.data.dto.TrackDto
 import com.jayelmeynak.player.domain.models.Album
 import com.jayelmeynak.player.domain.models.Track
 
-fun TrackDto.toTrack() = Track(
-    id = id,
-    title = title,
-    preview = preview,
-    artistName = artist.name,
-    album = album.toAlbum(),
-    uri = null
-)
+// Null when Deezer sent a track without id, title or preview: such a track can't be played.
+fun TrackDto.toTrack(): Track? {
+    return Track(
+        id = id ?: return null,
+        title = title ?: return null,
+        preview = preview ?: return null,
+        artistName = artist?.name.orEmpty(),
+        // Without an id the album can't be loaded, so the track gets no album at all.
+        album = album?.takeIf { it.id != null }?.toAlbum(),
+        uri = null
+    )
+}
 
 fun AlbumDto.toAlbum() = Album(
-    id = id,
-    title = title,
-    cover = cover,
-    trackList = trackList,
-    type = type
+    id = id ?: 0,
+    title = title.orEmpty(),
+    cover = cover.orEmpty(),
+    trackList = trackList.orEmpty(),
+    type = type.orEmpty()
 )
 
 fun LocalTrack.toTrack() = Track(
