@@ -11,6 +11,7 @@ data class Track(
     val album: Album?,
     val artistName: String,
     val preview: String,
-    val duration: Int = 30,
+    /** Full track length in ms, 0 when unknown; for Deezer it is the full track, not the preview. */
+    val duration: Int = 0,
     val uri: Uri?
 ) : Parcelable

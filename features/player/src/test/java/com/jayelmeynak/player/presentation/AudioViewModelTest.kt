@@ -15,6 +15,7 @@ import com.jayelmeynak.player.domain.models.Track
 import com.jayelmeynak.player.domain.usecase.GetLocalTrackListUseCase
 import com.jayelmeynak.player.domain.usecase.GetRemoteAlbumUseCase
 import com.jayelmeynak.player.domain.usecase.GetRemoteTrackUseCase
+import com.jayelmeynak.player.service.EXTRA_TRACK_DURATION_MS
 import com.jayelmeynak.player.service.MusicServiceHandler
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
@@ -138,6 +139,30 @@ class AudioViewModelTest {
         viewModel.loadRemoteTrack("42")
 
         assertNull(viewModel.trackArtwork.value)
+    }
+
+    @Test
+    fun `трек Deezer попадает в очередь плеера с полной длительностью, не как длительность медиа`() {
+        remoteRepository.tracks = mapOf("42" to remoteTrack(42).copy(duration = 225_000))
+        val viewModel = createViewModel()
+
+        viewModel.loadRemoteTrack("42")
+
+        val metadata = player.getMediaItemAt(0).mediaMetadata
+        assertEquals(225_000, metadata.extras?.getInt(EXTRA_TRACK_DURATION_MS))
+        assertNull(metadata.durationMs)
+    }
+
+    @Test
+    fun `перемотка на паузе сразу двигает прогресс и время`() {
+        handler.setMediaItemList(listOf(mediaItem(1, "https://example.com/1.mp3")))
+        run(player).untilState(Player.STATE_READY)
+        val viewModel = createViewModel()
+
+        viewModel.onUiEvents(UIEvents.SeekTo(50f))
+
+        assertEquals(50f, viewModel.progress.value)
+        assertEquals("00:05", viewModel.progressString.value)
     }
 
     @Test

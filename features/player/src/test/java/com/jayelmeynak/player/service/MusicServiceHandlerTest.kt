@@ -1,6 +1,7 @@
 package com.jayelmeynak.player.service
 
 import android.net.Uri
+import androidx.core.os.bundleOf
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -241,6 +242,21 @@ class MusicServiceHandlerTest {
             assertEquals(null, uri)
             assertEquals("", album?.cover)
         }
+    }
+
+    @Test
+    fun `restorePlaylist берёт длительность трека из метаданных`() {
+        val withDuration = MediaItem.Builder()
+            .setMediaId("1")
+            .setUri("https://example.com/1.mp3")
+            .setMediaMetadata(MediaMetadata.Builder().setExtras(bundleOf(EXTRA_TRACK_DURATION_MS to 225_000)).build())
+            .build()
+        handler.setMediaItemList(listOf(withDuration) + mediaItems(1))
+
+        val tracks = handler.restorePlaylist()
+
+        assertEquals(225_000, tracks[0].duration)
+        assertEquals(0, tracks[1].duration)
     }
 
     // The progress loop runs on Dispatchers.Main forever; with a shared scheduler runTest would spin it.

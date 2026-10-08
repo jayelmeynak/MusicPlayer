@@ -15,6 +15,8 @@ fun TrackDto.toTrack(): Track? {
         artistName = artist?.name.orEmpty(),
         // Without an id the album can't be loaded, so the track gets no album at all.
         album = album?.takeIf { it.id != null }?.toAlbum(),
+        // Deezer reports seconds.
+        duration = duration?.times(1000) ?: 0,
         uri = null
     )
 }

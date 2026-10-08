@@ -3,6 +3,7 @@ package com.jayelmeynak.player.presentation
 import android.annotation.SuppressLint
 import android.content.ContentResolver
 import androidx.core.net.toUri
+import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -15,6 +16,7 @@ import com.jayelmeynak.player.domain.models.Track
 import com.jayelmeynak.player.domain.usecase.GetLocalTrackListUseCase
 import com.jayelmeynak.player.domain.usecase.GetRemoteAlbumUseCase
 import com.jayelmeynak.player.domain.usecase.GetRemoteTrackUseCase
+import com.jayelmeynak.player.service.EXTRA_TRACK_DURATION_MS
 import com.jayelmeynak.player.service.MusicServiceHandler
 import com.jayelmeynak.player.service.MusicState
 import com.jayelmeynak.player.service.PlayerEvent
@@ -158,6 +160,7 @@ class AudioViewModel @Inject constructor(
                             audio.album?.cover?.takeIf { it.isNotEmpty() }?.toUri()
                                 ?: audio.uri
                         )
+                        .setExtras(bundleOf(EXTRA_TRACK_DURATION_MS to audio.duration))
                         .build()
                 )
                 .build()
@@ -226,10 +229,11 @@ class AudioViewModel @Inject constructor(
 
             is UIEvents.SeekTo -> {
                 if (_duration.value <= 0) return@launch
-                audioServiceHandler.onPlayerEvents(
-                    PlayerEvent.SeekTo,
-                    seekPosition = ((_duration.value * uiEvents.position) / 100f).toLong()
-                )
+                val seekPosition = ((_duration.value * uiEvents.position) / 100f).toLong()
+                audioServiceHandler.onPlayerEvents(PlayerEvent.SeekTo, seekPosition = seekPosition)
+                // The progress loop is off while paused: show the new position right away.
+                _progress.value = uiEvents.position
+                _progressString.value = formatDuration(seekPosition)
             }
 
             is UIEvents.UpdateProgress -> {

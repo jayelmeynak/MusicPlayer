@@ -25,7 +25,6 @@ import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
+import com.jayelmeynak.player.presentation.components.SeekSlider
 import com.jayelmeynak.player.presentation.AudioViewModel
 import com.jayelmeynak.player.presentation.PlayerScreen
 import com.jayelmeynak.player.presentation.UIEvents
@@ -224,14 +224,14 @@ private fun MiniPlayer(
                 )
             }
         }
-        Slider(
-            value = progress,
-            onValueChange = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
-            valueRange = 0f..100f,
+        SeekSlider(
+            progress = progress,
+            onSeek = { viewModel.onUiEvents(UIEvents.SeekTo(it)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(18.dp)
                 .padding(8.dp),
+            trackKey = currentTrack.id,
         )
     }
 }
