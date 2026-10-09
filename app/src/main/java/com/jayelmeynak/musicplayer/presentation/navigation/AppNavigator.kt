@@ -11,10 +11,11 @@ class AppNavigator(private val state: NavigationState) : Navigator {
                 state.topLevelRoute = destination
             }
         } else {
-            val stack = state.backStacks[state.currentTopLevel] ?: return
+            val stack = state.backStacks[state.topLevelRoute] ?: return
             if (stack.lastOrNull() == destination) return
             // One key lives in one place: equal entries share a content key in NavDisplay, and so
-            // their saved state and ViewModelStore.
+            // their saved state and ViewModelStore. Moving the key between stacks keeps that state,
+            // since toEntries decorates all stacks as one list.
             state.backStacks.values.forEach { it.removeAll { key -> key == destination } }
             stack.add(destination)
         }
@@ -31,14 +32,14 @@ class AppNavigator(private val state: NavigationState) : Navigator {
         }
 
         val stack = state.backStacks[destination]
-        if (stack != null && stack.lastOrNull() != destination) {
+        if (stack != null && (stack.size != 1 || stack.first() != destination)) {
             stack.clear()
             stack.add(destination)
         }
     }
 
     override fun goBack() {
-        val currentStack = state.backStacks[state.currentTopLevel] ?: return
+        val currentStack = state.backStacks[state.topLevelRoute] ?: return
         when {
             currentStack.size > 1 -> {
                 currentStack.removeLastOrNull()

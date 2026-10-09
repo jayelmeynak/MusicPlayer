@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Immutable
+@Serializable
 sealed interface TopLevelDestination : NavKey {
     @Serializable
     data object ApiTracks : TopLevelDestination

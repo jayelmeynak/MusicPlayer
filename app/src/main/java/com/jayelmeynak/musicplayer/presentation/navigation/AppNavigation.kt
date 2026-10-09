@@ -39,7 +39,7 @@ fun AppNavigation(
         topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
     )
     val navigator = remember(navigationState) { AppNavigator(navigationState) }
-    val currentTop = navigationState.currentTopLevel
+    val currentTop = navigationState.topLevelRoute
     val currentBackStack = navigationState.backStacks[currentTop] ?: emptyList()
     val currentRoute = currentBackStack.lastOrNull()
 
