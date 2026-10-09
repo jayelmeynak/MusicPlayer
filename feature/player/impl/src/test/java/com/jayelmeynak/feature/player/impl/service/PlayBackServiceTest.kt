@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -113,6 +114,24 @@ class PlayBackServiceTest {
 
         val uri = player.getMediaItemAt(0).localConfiguration?.uri
         assertEquals(TrackKey(TrackSource.DEEZER, "42"), uri?.toTrackKey())
+        service.destroy()
+    }
+
+    /**
+     * End to end through the real service and its callback. Under Robolectric an in-process
+     * controller is also `isTrusted`, so this does not tell the own-uid branch of the access policy
+     * from the trusted one; that branch is covered by `PlaybackSessionCallbackTest`.
+     */
+    @Test
+    fun `контроллер своего приложения подключается к сервису и читает очередь`() {
+        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val controller = connect(service.get().sessions.single().token)
+
+        controller.setMediaItem(queueItem.toMediaItem())
+        runMainLooperUntil { controller.mediaItemCount == 1 }
+
+        assertTrue(controller.isCommandAvailable(Player.COMMAND_GET_TIMELINE))
+        assertEquals(queueItem, controller.getMediaItemAt(0).toQueueItem())
         service.destroy()
     }
 
