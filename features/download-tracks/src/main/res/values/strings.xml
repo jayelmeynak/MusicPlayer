@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="search_results">Search Results</string>
     <string name="local_tracks_load_error">Не удалось загрузить треки</string>
     <string name="local_tracks_permission_denied">Нет доступа к аудиофайлам</string>
     <string name="grant_access">Разрешить доступ</string>
+    <string name="local_tracks_empty">На устройстве нет аудио</string>
 </resources>

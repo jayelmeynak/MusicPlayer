@@ -178,6 +178,10 @@ fun DownloadTracks(
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(text = stringResource(DesignR.string.search_nothing_found))
                         }
+                    } else if (state.isLibraryEmpty) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = stringResource(R.string.local_tracks_empty))
+                        }
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()

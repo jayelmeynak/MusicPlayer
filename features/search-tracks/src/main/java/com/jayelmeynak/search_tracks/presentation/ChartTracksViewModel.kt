@@ -10,6 +10,7 @@ import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.designsystem.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,7 @@ class ChartTracksViewModel @Inject constructor(
     // The chart outcome, restored when the search is cleared: search shares isLoading/errorMessage.
     private var chartLoading = true
     private var chartError: UiText? = null
+    private var chartJob: Job? = null
 
     init {
         getChartList()
@@ -42,9 +44,7 @@ class ChartTracksViewModel @Inject constructor(
 
     fun onAction(action: ChartTracksAction) {
         when (action) {
-            is ChartTracksAction.OnTrackClicked -> {
-
-            }
+            ChartTracksAction.OnRetryClick -> getChartList()
 
             is ChartTracksAction.OnSearchQueryChange -> {
                 // State first: the search flow reads the query to tell an active search.
@@ -59,7 +59,7 @@ class ChartTracksViewModel @Inject constructor(
         viewModelScope.launch {
             _searchQuery
                 // A cleared query goes through at once: it cancels a running search right away.
-                .debounce { query -> if (query.isBlank()) 0L else 500L }
+                .debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
                 .distinctUntilChanged()
                 .collectLatest { query -> searchTrack(query) }
         }
@@ -100,8 +100,16 @@ class ChartTracksViewModel @Inject constructor(
     private fun ChartTracksState.withChartOutcome(): ChartTracksState =
         if (query.isNotBlank()) this else copy(isLoading = chartLoading, errorMessage = chartError)
 
-    private fun getChartList() = viewModelScope.launch {
-        _state.update { it.copy(isLoading = true) }
+    private fun getChartList() {
+        // Повтор отменяет прежнюю загрузку: на экран попадает исход последнего запроса.
+        chartJob?.cancel()
+        chartLoading = true
+        chartError = null
+        _state.update { it.withChartOutcome() }
+        chartJob = viewModelScope.launch { loadChart() }
+    }
+
+    private suspend fun loadChart() {
         getChartUseCase()
             .onSuccess { result ->
                 chartLoading = false
@@ -115,3 +123,6 @@ class ChartTracksViewModel @Inject constructor(
             }
     }
 }
+
+/** Пауза после ввода, после которой запускается поиск. */
+internal const val SEARCH_DEBOUNCE_MS = 500L

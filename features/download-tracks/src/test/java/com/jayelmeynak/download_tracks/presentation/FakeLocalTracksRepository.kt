@@ -4,18 +4,13 @@ import android.net.Uri
 import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import com.jayelmeynak.lib.mediastore.domain.repository.LocalTracksRepository
 import kotlinx.coroutines.CompletableDeferred
-import java.util.Collections
 
 class FakeLocalTracksRepository(
     var tracks: List<LocalTrack> = emptyList(),
     var artworks: Map<Long, ByteArray?> = emptyMap(),
 ) : LocalTracksRepository {
 
-    // Written from Dispatchers.IO inside PruneArtworkCacheUseCase.
-    val prunedIds: MutableList<List<Long>> = Collections.synchronizedList(mutableListOf())
-
-    /** Completes on the first cache prune: tests await it instead of racing the IO thread. */
-    val pruned = CompletableDeferred<Unit>()
+    val prunedIds = mutableListOf<List<Long>>()
     var tracksRequests = 0
 
     /** Thrown by getTracksList, e.g. a SecurityException without the audio permission. */
@@ -40,6 +35,5 @@ class FakeLocalTracksRepository(
 
     override suspend fun pruneArtworkCache(activeTrackIds: List<Long>) {
         prunedIds += activeTrackIds
-        pruned.complete(Unit)
     }
 }

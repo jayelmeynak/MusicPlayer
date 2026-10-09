@@ -12,4 +12,9 @@ data class DownloadTracksState(
     /** Null while no search is active; empty when the search found nothing. */
     val searchList: List<LocalTrack>? = null,
     val isPermissionDenied: Boolean = false,
-)
+) {
+    /** Доступ есть, загрузка завершена без ошибки, треков нет, поиск не активен. */
+    val isLibraryEmpty: Boolean
+        get() = !isPermissionDenied && !isLoading && errorMessage == null &&
+            searchList == null && tracks.isEmpty()
+}

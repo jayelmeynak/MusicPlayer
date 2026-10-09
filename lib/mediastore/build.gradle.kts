@@ -11,8 +11,12 @@ android {
 dependencies {
 
     implementation(project(":lib:database"))
+    implementation(project(":util:coroutines"))
     implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }

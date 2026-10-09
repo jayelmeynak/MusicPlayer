@@ -100,7 +100,8 @@ internal class ContentResolverHelper @Inject constructor(
                 } else {
                     while (cursor.moveToNext()) {
                         val id = getLong(idColumn)
-                        val artist = getString(artistColumn)
+                        // У файла без тега исполнителя в MediaStore NULL.
+                        val artist = getString(artistColumn) ?: ""
                         val duration = getInt(durationColumn)
                         val title = getString(titleColumn)
                         val uri = ContentUris.withAppendedId(

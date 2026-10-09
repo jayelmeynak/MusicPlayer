@@ -47,7 +47,7 @@ class DownloadTracksViewModel @Inject constructor(
         viewModelScope.launch {
             _searchQuery
                 // A cleared query goes through at once.
-                .debounce { query -> if (query.isBlank()) 0L else 500L }
+                .debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
                 .distinctUntilChanged()
                 .collect { query -> searchTrack(query) }
         }
@@ -116,7 +116,6 @@ class DownloadTracksViewModel @Inject constructor(
 
     fun onAction(action: DownloadTracksAction) {
         when (action) {
-            is DownloadTracksAction.OnTrackClicked -> {}
             is DownloadTracksAction.OnSearchQueryChange -> {
                 _state.update { it.copy(query = action.query) }
                 _searchQuery.value = action.query
@@ -144,3 +143,6 @@ class DownloadTracksViewModel @Inject constructor(
 }
 
 private const val ARTWORK_BATCH_SIZE = 20
+
+/** Пауза после ввода, после которой применяется поиск. */
+internal const val SEARCH_DEBOUNCE_MS = 500L

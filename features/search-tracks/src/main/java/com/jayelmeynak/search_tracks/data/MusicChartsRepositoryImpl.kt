@@ -17,6 +17,8 @@ class MusicChartsRepositoryImpl @Inject constructor(
             .getChartSongs()
             .map { response ->
                 response.tracks?.tracks.orEmpty().mapNotNull { it?.toTrack() }
+                    // Повтор id в ответе уронил бы список: ключи элементов должны быть уникальны.
+                    .distinctBy { it.id }
             }
     }
 
@@ -25,6 +27,7 @@ class MusicChartsRepositoryImpl @Inject constructor(
             .searchTrack(q)
             .map { response ->
                 response.tracks.orEmpty().mapNotNull { it?.toTrack() }
+                    .distinctBy { it.id }
             }
     }
 

@@ -7,16 +7,17 @@ import androidx.compose.ui.res.stringResource
 public sealed interface UiText {
     public data class DynamicString(public val value: String) : UiText
 
-    public class StringResourceId(
+    /** Текст из ресурса; равенство — по ресурсу и аргументам. */
+    public data class StringResourceId(
         @StringRes public val id: Int,
-        public vararg val args: Any
+        public val args: List<Any> = emptyList(),
     ) : UiText
 
     @Composable
     public fun asString(): String {
         return when (this) {
             is DynamicString -> value
-            is StringResourceId -> stringResource(id, *args)
+            is StringResourceId -> stringResource(id, *args.toTypedArray())
         }
     }
 }
