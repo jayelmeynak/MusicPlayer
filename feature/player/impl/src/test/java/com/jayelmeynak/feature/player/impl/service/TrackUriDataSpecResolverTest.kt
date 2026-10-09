@@ -14,7 +14,23 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import org.junit.Assert.assertTrue
+import java.io.FileNotFoundException
 import java.io.IOException
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.ResolvingDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.test.utils.TestExoPlayerBuilder
+import androidx.media3.test.utils.robolectric.TestPlayerRunHelper.run
+import com.jayelmeynak.feature.player.api.PlaybackError
+import com.jayelmeynak.feature.player.api.QueueItem
+import com.jayelmeynak.feature.player.impl.playback.toPlaybackError
+import com.jayelmeynak.feature.player.impl.resolver.DeezerPreviewUriResolver
+import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
+import com.jayelmeynak.lib.network.data.dto.ResponseChart
+import com.jayelmeynak.lib.network.data.dto.TrackDto
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.Result
+import org.robolectric.RuntimeEnvironment
 import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -23,6 +39,8 @@ import kotlin.concurrent.thread
 /** Robolectric: DataSpec holds an android.net.Uri. */
 @RunWith(RobolectricTestRunner::class)
 class TrackUriDataSpecResolverTest {
+
+    private val context = RuntimeEnvironment.getApplication()
 
     private val deezer = FakeTrackUriResolver(mapOf("42" to "https://cdn.example/42.mp3?exp=1"))
     private val local = FakeTrackUriResolver(mapOf(LOCAL_ID to LOCAL_ID))
@@ -59,8 +77,8 @@ class TrackUriDataSpecResolverTest {
         assertEquals(listOf("42", "42"), deezer.requested)
     }
 
-    @Test(expected = IOException::class)
-    fun `резолвер вернул null - IOException`() {
+    @Test(expected = FileNotFoundException::class)
+    fun `резолвер вернул null - FileNotFoundException, плеер не повторяет загрузку`() {
         resolver.resolveDataSpec(spec(TrackKey(TrackSource.DEEZER, "missing")))
     }
 
@@ -87,7 +105,7 @@ class TrackUriDataSpecResolverTest {
     }
 
     @Test
-    fun `прерывание потока загрузчика - InterruptedIOException, резолвер отменён`() {
+    fun `прерывание потока загрузчика - InterruptedIOException, резолвер отменён, флаг прерывания сохранён`() {
         val started = CountDownLatch(1)
         var resolveJob: Job? = null
         val hanging = TrackUriResolver {
@@ -97,9 +115,11 @@ class TrackUriDataSpecResolverTest {
         }
         val blocking = TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to hanging))
         var error: Throwable? = null
+        var stillInterrupted = false
         val loader = thread {
             error = runCatching { blocking.resolveDataSpec(spec(TrackKey(TrackSource.DEEZER, "42"))) }
                 .exceptionOrNull()
+            stillInterrupted = Thread.currentThread().isInterrupted
         }
         assertTrue(started.await(5, TimeUnit.SECONDS))
 
@@ -108,6 +128,49 @@ class TrackUriDataSpecResolverTest {
 
         assertTrue(error is InterruptedIOException)
         assertTrue(resolveJob?.isCancelled == true)
+        // Флаг прерывания остаётся для кода загрузчика выше по стеку.
+        assertTrue(stillInterrupted)
+    }
+
+    @Test
+    fun `резолвер Deezer не ответил - одна попытка, ошибка источника без повторов загрузки`() {
+        var calls = 0
+        val silent = object : RemoteTrackDataSource {
+            override suspend fun getTrack(id: String): Result<TrackDto, DataError.Remote> {
+                calls++
+                awaitCancellation()
+            }
+
+            override suspend fun getAlbum(id: String): Result<ResponseChart, DataError.Remote> = error("not used")
+        }
+        val deezerResolver = DeezerPreviewUriResolver(silent, now = { 0L }, ttlMs = 1L, timeoutMs = TEST_TIMEOUT_MS)
+        val player = TestExoPlayerBuilder(context)
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(
+                    ResolvingDataSource.Factory(
+                        DefaultDataSource.Factory(context),
+                        TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to deezerResolver)),
+                    ),
+                )
+            )
+            .build()
+        try {
+            player.setMediaItems(
+                PlaybackSessionCallback().prepareMediaItems(
+                    listOf(QueueItem("42", TrackSource.DEEZER, "One", "A", null, 0L).toMediaItem()),
+                )
+            )
+            player.prepare()
+            player.play()
+
+            val error = run(player).untilPlayerError()
+
+            // Повторы загрузки дали бы ещё запросы к сети с паузами между ними.
+            assertEquals(1, calls)
+            assertEquals(PlaybackError.SOURCE_UNAVAILABLE, error.toPlaybackError())
+        } finally {
+            player.release()
+        }
     }
 
     @Test
@@ -121,5 +184,6 @@ class TrackUriDataSpecResolverTest {
 
     private companion object {
         const val LOCAL_ID = "content://media/external/audio/media/7"
+        const val TEST_TIMEOUT_MS = 200L
     }
 }

@@ -149,6 +149,7 @@ class FakePlaybackControllerTest {
         isPlaying = true,
         playWhenReady = true,
         isBuffering = false,
+        showPlayButton = false,
         durationMs = durationMs,
         error = null,
     )
@@ -159,6 +160,7 @@ class FakePlaybackControllerTest {
         isPlaying = false,
         playWhenReady = false,
         isBuffering = false,
+        showPlayButton = true,
         durationMs = 0,
         error = null,
     )

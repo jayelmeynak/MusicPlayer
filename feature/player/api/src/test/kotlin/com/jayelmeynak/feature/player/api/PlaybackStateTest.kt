@@ -31,6 +31,7 @@ class PlaybackStateTest {
         isPlaying = false,
         playWhenReady = false,
         isBuffering = false,
+        showPlayButton = true,
         durationMs = 0,
         error = null,
     )

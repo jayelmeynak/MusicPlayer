@@ -6,10 +6,14 @@ import com.jayelmeynak.util.result.Result
 import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DeezerPreviewUriResolverTest {
@@ -102,12 +106,53 @@ class DeezerPreviewUriResolverTest {
     }
 
     @Test
+    fun `сервер не отвечает - null по истечении лимита, неудача не кэшируется`() = runTest {
+        var calls = 0
+        val silent = object : RemoteTrackDataSource by remote {
+            override suspend fun getTrack(id: String): Result<TrackDto, DataError.Remote> {
+                calls++
+                awaitCancellation()
+            }
+        }
+        val limited = DeezerPreviewUriResolver(silent, now = { nowMs }, ttlMs = TTL_MS, timeoutMs = TIMEOUT_MS)
+
+        val result = async { limited.resolve("42") }
+        advanceTimeBy(TIMEOUT_MS - 1)
+        assertFalse(result.isCompleted)
+        advanceTimeBy(2)
+
+        assertTrue(result.isCompleted)
+        assertNull(result.await())
+        val again = async { limited.resolve("42") }
+        advanceTimeBy(TIMEOUT_MS + 1)
+        assertNull(again.await())
+        assertEquals(2, calls)
+    }
+
+    @Test
+    fun `рабочий конструктор - лимит ожидания 10 секунд`() = runTest {
+        val silent = object : RemoteTrackDataSource by remote {
+            override suspend fun getTrack(id: String): Result<TrackDto, DataError.Remote> = awaitCancellation()
+        }
+        val injected = DeezerPreviewUriResolver(silent)
+
+        val result = async { injected.resolve("42") }
+        advanceTimeBy(10_000L - 1)
+        assertFalse(result.isCompleted)
+        advanceTimeBy(2)
+
+        assertTrue(result.isCompleted)
+        assertNull(result.await())
+    }
+
+    @Test
     fun `TTL по умолчанию короче срока жизни ссылки Deezer`() {
         assertEquals(true, DeezerPreviewUriResolver.DEFAULT_TTL_MS < 15 * 60 * 1000L)
     }
 
     private companion object {
         const val TTL_MS = 10 * 60 * 1000L
+        const val TIMEOUT_MS = 10_000L
         const val PREVIEW = "https://cdns-preview.dzcdn.net/stream/42.mp3?hdnea=exp=1"
     }
 }

@@ -1,8 +1,11 @@
 package com.jayelmeynak.feature.player.impl.playback
 
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import com.jayelmeynak.feature.player.api.PlaybackError
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.QueueItem
@@ -17,6 +20,7 @@ internal fun Player.readQueue(): List<QueueItem?> =
  * [queue] is [readQueue], passed in to rebuild it only when the timeline changes. Foreign items are
  * left out of the queue; if the current item is foreign, [PlaybackState.Active.current] is `null`.
  */
+@OptIn(UnstableApi::class)
 internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): PlaybackState.Active {
     val items = queue.filterNotNull()
     val index = currentMediaItemIndex
@@ -31,6 +35,7 @@ internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): Play
         isPlaying = isPlaying,
         playWhenReady = playWhenReady,
         isBuffering = playbackState == Player.STATE_BUFFERING,
+        showPlayButton = Util.shouldShowPlayButton(this),
         durationMs = duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0L,
         error = playerError?.toPlaybackError(),
     )

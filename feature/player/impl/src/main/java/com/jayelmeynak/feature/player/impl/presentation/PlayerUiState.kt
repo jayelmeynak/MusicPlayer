@@ -16,6 +16,8 @@ internal sealed interface PlayerUiState {
      * @property isPreview The media is a 30-second Deezer preview, not the full track.
      * @property trackLengthMs Full length of the track; `0` when unknown.
      * @property durationMs Length of what is playing, from the player; `0` when unknown.
+     * @property showPlayButton Тап по play/pause запустит воспроизведение; иконка рисуется по нему.
+     * @property isBuffering Текущий элемент загружается: кольцо прогресса вокруг play/pause.
      * @property progress Position in percent of [durationMs]; `0` when the duration is unknown.
      */
     data class Ready(
@@ -26,7 +28,7 @@ internal sealed interface PlayerUiState {
         val artworkData: ByteArray?,
         val isPreview: Boolean,
         val trackLengthMs: Long,
-        val isPlaying: Boolean,
+        val showPlayButton: Boolean,
         val isBuffering: Boolean,
         val durationMs: Long,
         val positionMs: Long,

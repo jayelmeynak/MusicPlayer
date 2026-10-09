@@ -224,7 +224,42 @@ class PlayerViewModelTest {
         val state = ready(viewModel)
         assertEquals("", state.title)
         assertFalse(state.isPreview)
-        assertTrue(state.isPlaying)
+        assertFalse(state.showPlayButton)
+    }
+
+    @Test
+    fun `буферизация при запрошенном воспроизведении - кнопка паузы и индикатор, тап уходит в контроллер`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        val viewModel = PlayerViewModel(controller, artworks)
+
+        controller.state.value = (controller.state.value as PlaybackState.Active)
+            .copy(isPlaying = false, playWhenReady = true, isBuffering = true, showPlayButton = false)
+
+        val state = ready(viewModel)
+        assertFalse(state.showPlayButton)
+        assertTrue(state.isBuffering)
+        viewModel.onAction(PlayerAction.TogglePlayPause)
+        assertEquals(Command.TogglePlayPause, controller.commands.last())
+    }
+
+    @Test
+    fun `пауза и ошибка - кнопка воспроизведения`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        val viewModel = PlayerViewModel(controller, artworks)
+        val playing = controller.state.value as PlaybackState.Active
+
+        controller.state.value = playing.copy(isPlaying = false, playWhenReady = false, showPlayButton = true)
+        assertTrue(ready(viewModel).showPlayButton)
+
+        controller.state.value = playing.copy(
+            isPlaying = false,
+            playWhenReady = true,
+            showPlayButton = true,
+            error = PlaybackError.SOURCE_UNAVAILABLE,
+        )
+        assertTrue(ready(viewModel).showPlayButton)
     }
 
     private fun ready(viewModel: PlayerViewModel): PlayerUiState.Ready =
@@ -236,6 +271,7 @@ class PlayerViewModelTest {
         isPlaying = false,
         playWhenReady = false,
         isBuffering = false,
+        showPlayButton = true,
         durationMs = 0L,
         error = null,
     )
