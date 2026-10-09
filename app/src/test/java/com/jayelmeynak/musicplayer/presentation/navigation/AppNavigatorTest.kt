@@ -24,7 +24,7 @@ class AppNavigatorTest {
     fun setUp() {
         state = NavigationState(
             startRoute = TopLevelDestination.ApiTracks,
-            topLevelRoute = mutableStateOf<NavKey>(TopLevelDestination.ApiTracks),
+            topLevelRoute = mutableStateOf<TopLevelDestination>(TopLevelDestination.ApiTracks),
             backStacks = mapOf(
                 TopLevelDestination.ApiTracks to NavBackStack(TopLevelDestination.ApiTracks),
                 TopLevelDestination.DownloadTracks to NavBackStack(TopLevelDestination.DownloadTracks),
@@ -37,7 +37,7 @@ class AppNavigatorTest {
     fun `navigateTo tab switches tab and keeps stacks`() {
         navigator.navigateTo(TopLevelDestination.DownloadTracks)
 
-        assertEquals(TopLevelDestination.DownloadTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.DownloadTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
         assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
     }
@@ -60,7 +60,7 @@ class AppNavigatorTest {
         navigator.navigateToRoot(TopLevelDestination.DownloadTracks)
         navigator.navigateTo(TopLevelDestination.ApiTracks)
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
     }
 
@@ -71,7 +71,7 @@ class AppNavigatorTest {
 
         navigator.navigateToRoot(TopLevelDestination.ApiTracks)
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
     }
 
@@ -83,7 +83,7 @@ class AppNavigatorTest {
 
         navigator.navigateToRoot(TopLevelDestination.DownloadTracks)
 
-        assertEquals(TopLevelDestination.DownloadTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.DownloadTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
     }
 
@@ -94,7 +94,7 @@ class AppNavigatorTest {
 
         navigator.goBack()
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
     }
 
@@ -104,7 +104,7 @@ class AppNavigatorTest {
 
         navigator.goBack()
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
     }
 
@@ -112,7 +112,7 @@ class AppNavigatorTest {
     fun `goBack from root of start tab changes nothing`() {
         navigator.goBack()
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
         assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
     }
@@ -124,7 +124,7 @@ class AppNavigatorTest {
         assertThrows(IllegalArgumentException::class.java) {
             asInterface.navigateToRoot(Screen("1"))
         }
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
     }
 
@@ -135,7 +135,7 @@ class AppNavigatorTest {
 
         navigator.goBack()
 
-        assertEquals(TopLevelDestination.DownloadTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.DownloadTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
     }
 
@@ -145,7 +145,7 @@ class AppNavigatorTest {
 
         navigator.navigateTo(TopLevelDestination.ApiTracks)
 
-        assertEquals(TopLevelDestination.ApiTracks, state.currentTopLevel)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
         assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
     }
 
@@ -180,16 +180,13 @@ class AppNavigatorTest {
     }
 
     @Test
-    fun `navigateToRoot does not clear stack whose top is already the root`() {
-        // Only the top of the stack is compared with the root, so screens below it survive.
+    fun `navigateToRoot resets a stack whose top is the root but has screens below`() {
+        // Not reachable through the navigator; the reset must not rely on the top of the stack alone.
         navigator.navigateTo(Screen("1"))
         state.backStacks.getValue(TopLevelDestination.ApiTracks).add(TopLevelDestination.ApiTracks)
 
         navigator.navigateToRoot(TopLevelDestination.ApiTracks)
 
-        assertEquals(
-            listOf(TopLevelDestination.ApiTracks, Screen("1"), TopLevelDestination.ApiTracks),
-            api,
-        )
+        assertEquals(listOf(TopLevelDestination.ApiTracks), api)
     }
 }
