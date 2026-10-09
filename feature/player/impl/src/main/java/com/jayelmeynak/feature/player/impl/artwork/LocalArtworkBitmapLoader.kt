@@ -43,7 +43,14 @@ internal class LocalArtworkBitmapLoader(
         artworkSource: LocalArtworkSource,
         @ApplicationScope scope: CoroutineScope,
         @Dispatcher(MusicPlayerDispatchers.IO) ioDispatcher: CoroutineDispatcher,
-    ) : this(DataSourceBitmapLoader.Builder(context).build(), artworkSource, scope, ioDispatcher)
+    ) : this(
+        // Полноразмерная обложка уходила бы в уведомление и метаданные платформенной сессии
+        // через IPC: уменьшаем и картинки по адресу, и данные из кэша обложек.
+        DataSourceBitmapLoader.Builder(context).setMaximumOutputDimension(MAX_ARTWORK_SIZE_PX).build(),
+        artworkSource,
+        scope,
+        ioDispatcher,
+    )
 
     override fun supportsMimeType(mimeType: String): Boolean = delegate.supportsMimeType(mimeType)
 
@@ -75,5 +82,14 @@ internal class LocalArtworkBitmapLoader(
         // Media3 cancels the future when the item changes: stop reading the cache for it.
         result.addListener({ if (result.isCancelled) job.cancel() }, MoreExecutors.directExecutor())
         return result
+    }
+
+    internal companion object {
+        /**
+         * Потолок большей стороны обложки для сессии (уведомление, системный UI), не целевой
+         * размер: `DataSourceBitmapLoader` уменьшает картинку степенями двойки, пока она не
+         * уложится в лимит (3000 px → 750 px).
+         */
+        const val MAX_ARTWORK_SIZE_PX: Int = 1_024
     }
 }

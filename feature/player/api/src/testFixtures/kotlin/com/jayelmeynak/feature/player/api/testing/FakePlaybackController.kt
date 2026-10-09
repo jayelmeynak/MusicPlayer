@@ -79,6 +79,7 @@ public class FakePlaybackController(
             isPlaying = true,
             playWhenReady = true,
             isBuffering = false,
+            showPlayButton = false,
             durationMs = command.queue[command.startIndex].durationMs,
             error = null,
         )
@@ -102,6 +103,7 @@ public class FakePlaybackController(
             isPlaying = false,
             playWhenReady = false,
             isBuffering = false,
+            showPlayButton = true,
             durationMs = 0L,
             error = null,
         )

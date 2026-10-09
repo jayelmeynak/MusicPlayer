@@ -193,8 +193,11 @@ public class MediaControllerPlaybackController @Inject internal constructor(
     }
 
     private fun start(controller: MediaController, request: Play) {
-        val current = _state.value as? PlaybackState.Active
-        if (current != null && current.queue == request.queue && current.currentIndex == request.startIndex) {
+        // Сравнение — со снапшотом самой сессии, не с _state: у отложенного play _state ещё Idle,
+        // и тап по играющему треку сразу после возврата из фона перезапускал бы его с нуля.
+        queue = controller.readQueue()
+        val current = controller.toPlaybackState(queue)
+        if (current.queue == request.queue && current.currentIndex == request.startIndex) {
             Util.handlePlayButtonAction(controller)
             publish(controller)
             return

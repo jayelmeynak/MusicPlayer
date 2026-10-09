@@ -100,7 +100,7 @@ internal class PlayerViewModel @Inject constructor(
             artworkData = artworkData,
             isPreview = current?.source == TrackSource.DEEZER,
             trackLengthMs = current?.durationMs ?: 0L,
-            isPlaying = active.isPlaying,
+            showPlayButton = active.showPlayButton,
             isBuffering = active.isBuffering,
             durationMs = active.durationMs,
             positionMs = playbackController.positionMs.value,

@@ -16,6 +16,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.GraphicsMode
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.ExecutionException
 
 /** Robolectric: Bitmap, Uri and MediaMetadata are Android classes. */
@@ -68,6 +72,27 @@ class LocalArtworkBitmapLoaderTest {
         loader.loadBitmapFromMetadata(metadata)!!.cancel(false)
 
         assertEquals(listOf(LOCAL_ID), artworks.cancelled)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `большая обложка из кэша уменьшается до лимита сессии`() {
+        val large = Bitmap.createBitmap(3_000, 2_000, Bitmap.Config.ARGB_8888)
+        val png = ByteArrayOutputStream().use { out ->
+            large.compress(Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        }
+        val production = LocalArtworkBitmapLoader(
+            context = RuntimeEnvironment.getApplication(),
+            artworkSource = FakeLocalArtworkSource(mapOf(LOCAL_ID to png)),
+            scope = CoroutineScope(dispatcher),
+            ioDispatcher = dispatcher,
+        )
+        val metadata = MediaMetadata.Builder().setArtworkUri(Uri.parse(LOCAL_ID)).build()
+
+        val bitmap = production.loadBitmapFromMetadata(metadata)!!.get(10, TimeUnit.SECONDS)
+
+        assertTrue(maxOf(bitmap.width, bitmap.height) <= LocalArtworkBitmapLoader.MAX_ARTWORK_SIZE_PX)
     }
 
     private class RecordingBitmapLoader : BitmapLoader {

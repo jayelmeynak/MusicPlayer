@@ -65,7 +65,7 @@ class MiniPlayerViewModelTest {
         val state = viewModel.state.value
         assertEquals("Song 2", state.title)
         assertEquals("Artist 2", state.artist)
-        assertTrue(state.isPlaying)
+        assertFalse(state.showPlayButton)
         assertTrue(state.visible)
     }
 
@@ -74,9 +74,23 @@ class MiniPlayerViewModelTest {
         val controller = FakePlaybackController().apply { play(listOf(track(1)), 0) }
         val viewModel = subscribed(MiniPlayerViewModel(controller))
 
-        controller.state.value = active(controller).copy(isPlaying = false, playWhenReady = false)
+        controller.state.value = active(controller)
+            .copy(isPlaying = false, playWhenReady = false, showPlayButton = true)
 
-        assertFalse(viewModel.state.value.isPlaying)
+        assertTrue(viewModel.state.value.showPlayButton)
+    }
+
+    @Test
+    fun `буферизация при запрошенном воспроизведении - кнопка паузы`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1)), 0) }
+        val viewModel = subscribed(MiniPlayerViewModel(controller))
+
+        controller.state.value = active(controller)
+            .copy(isPlaying = false, playWhenReady = true, isBuffering = true, showPlayButton = false)
+
+        assertFalse(viewModel.state.value.showPlayButton)
+        viewModel.onAction(MiniPlayerAction.TogglePlayPause)
+        assertEquals(Command.TogglePlayPause, controller.commands.last())
     }
 
     @Test

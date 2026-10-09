@@ -155,7 +155,8 @@ private fun PlayerContent(
                 Icon(imageVector = Icons.Filled.SkipPrevious, contentDescription = "Предыдущий трек")
             }
             PlayPauseIconButton(
-                isPlaying = state.isPlaying,
+                showPlayButton = state.showPlayButton,
+                isBuffering = state.isBuffering,
                 onIconButtonClick = { onAction(PlayerAction.TogglePlayPause) },
             )
             IconButton(onClick = { onAction(PlayerAction.Next) }) {

@@ -109,10 +109,48 @@ class PlaybackStateMappingTest {
             .also { players += it }
         player.setMediaItems(sessionItems())
         player.prepare()
+        player.play()
 
         run(player).untilPlayerError()
 
-        assertEquals(PlaybackError.SOURCE_UNAVAILABLE, player.toPlaybackState().error)
+        val state = player.toPlaybackState()
+        assertEquals(PlaybackError.SOURCE_UNAVAILABLE, state.error)
+        // Воспроизведение всё ещё запрошено, но тап повторит попытку: кнопка должна предлагать play.
+        assertTrue(state.playWhenReady)
+        assertTrue(state.showPlayButton)
+    }
+
+    @Test
+    fun `буферизация при запрошенном воспроизведении - кнопка паузы`() {
+        val player = fakePlayer()
+        player.setMediaItems(sessionItems())
+        player.prepare()
+        player.play()
+
+        val state = player.toPlaybackState()
+
+        assertTrue(state.isBuffering)
+        assertFalse(state.isPlaying)
+        assertFalse(state.showPlayButton)
+    }
+
+    @Test
+    fun `пауза и конец очереди - кнопка воспроизведения`() {
+        val player = fakePlayer()
+        player.setMediaItems(sessionItems(), 2, 0L)
+        player.prepare()
+        player.play()
+        run(player).untilState(Player.STATE_READY)
+        assertFalse(player.toPlaybackState().showPlayButton)
+
+        player.pause()
+        assertTrue(player.toPlaybackState().showPlayButton)
+
+        player.play()
+        run(player).untilState(Player.STATE_ENDED)
+        val ended = player.toPlaybackState()
+        assertTrue(ended.playWhenReady)
+        assertTrue(ended.showPlayButton)
     }
 
     @Test

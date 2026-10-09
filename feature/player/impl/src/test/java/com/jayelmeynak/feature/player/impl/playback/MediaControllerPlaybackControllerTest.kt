@@ -4,6 +4,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
@@ -277,6 +278,80 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
+    fun `отложенный play той же очереди и трека при возврате из фона не перезапускает трек`() {
+        lifecycle.start()
+        connectedPlay(queue, 1)
+        // Трек уже не в начале: перемотка прямо в плеере сессии (seek контроллера под Robolectric
+        // до сессии не доходит).
+        player.seekTo(1, SEEK_POSITION_MS)
+        val playlistChanges = countPlaylistChanges()
+        lifecycle.stop()
+        val before = player.currentPosition
+        assertTrue(before > 0)
+
+        controller.play(queue, 1)
+        lifecycle.start()
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.currentIndex == 1 }
+        repeat(5) { ShadowLooper.idleMainLooper() }
+
+        assertEquals(0, playlistChanges())
+        assertEquals(1, player.currentMediaItemIndex)
+        assertTrue(player.currentPosition >= before)
+        assertTrue(player.playWhenReady)
+        assertEquals(queue, (controller.state.value as PlaybackState.Active).queue)
+    }
+
+    @Test
+    fun `повторный play того же трека после остановки плеера - играет снова`() {
+        lifecycle.start()
+        connectedPlay(queue, 1)
+        player.stop()
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.isPlaying == false }
+        val playlistChanges = countPlaylistChanges()
+
+        controller.play(queue, 1)
+        runMainLooperUntil { player.isPlaying }
+
+        assertEquals(0, playlistChanges())
+        assertEquals(1, player.currentMediaItemIndex)
+    }
+
+    @Test
+    fun `повторный play того же трека на паузе - продолжает с места паузы`() {
+        lifecycle.start()
+        connectedPlay(queue, 0)
+        player.seekTo(0, SEEK_POSITION_MS)
+        controller.togglePlayPause()
+        runMainLooperUntil { !player.playWhenReady }
+        val paused = player.currentPosition
+        assertTrue(paused > 0)
+        val playlistChanges = countPlaylistChanges()
+
+        controller.play(queue, 0)
+        runMainLooperUntil { player.isPlaying }
+
+        assertEquals(0, playlistChanges())
+        assertEquals(0, player.currentMediaItemIndex)
+        assertTrue(player.currentPosition >= paused)
+    }
+
+    @Test
+    fun `повторный play того же трека в конце очереди - с начала трека, очередь не заменяется`() {
+        lifecycle.start()
+        connectedPlay(queue, 2)
+        runMainLooperUntil { player.playbackState == Player.STATE_ENDED }
+        val playlistChanges = countPlaylistChanges()
+
+        controller.play(queue, 2)
+        runMainLooperUntil { player.playbackState != Player.STATE_ENDED && player.playWhenReady }
+
+        assertEquals(0, playlistChanges())
+        assertEquals(2, player.currentMediaItemIndex)
+        assertTrue(player.currentPosition < SEEK_POSITION_MS)
+        assertEquals(queue, (controller.state.value as PlaybackState.Active).queue)
+    }
+
+    @Test
     fun `позиция опрашивается во время игры и не опрашивается на паузе`() {
         lifecycle.start()
         connectedPlay(queue, 0)
@@ -324,6 +399,17 @@ class MediaControllerPlaybackControllerTest {
         assertEquals(0L, controller.positionMs.value)
     }
 
+    /** Считает замены плейлиста плеера сессии с момента вызова. */
+    private fun countPlaylistChanges(): () -> Int {
+        var changes = 0
+        player.addListener(object : Player.Listener {
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) changes++
+            }
+        })
+        return { changes }
+    }
+
     private fun connectedPlay(queue: List<QueueItem>, index: Int) {
         runMainLooperUntil { controller.state.value is PlaybackState.Active }
         controller.play(queue, index)
@@ -355,5 +441,6 @@ class MediaControllerPlaybackControllerTest {
 
     private companion object {
         const val POLL_STEP_MS = 500L
+        const val SEEK_POSITION_MS = 3_000L
     }
 }

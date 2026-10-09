@@ -20,6 +20,12 @@ public sealed interface PlaybackState {
      * @property playWhenReady Playback is requested: `true` while playing and while buffering
      *   before playing, `false` on pause.
      * @property isBuffering The player is loading the current item and cannot play yet.
+     * @property showPlayButton Тап по play/pause запустит воспроизведение — то же правило, что у
+     *   [PlaybackController.togglePlayPause]. `true` на паузе, после ошибки, в конце очереди и
+     *   когда воспроизведение запрошено, но подавлено (например, потерян аудиофокус:
+     *   [playWhenReady] = `true`, а тап возобновит звук); `false`, пока воспроизведение запрошено
+     *   и не подавлено, в том числе во время буферизации. Иконку
+     *   play/pause рисовать по нему, а не по [isPlaying].
      * @property durationMs Duration of the current item as the player reports it; `0` when unknown.
      * @property error The reason playback stopped, or `null`.
      */
@@ -29,6 +35,7 @@ public sealed interface PlaybackState {
         val isPlaying: Boolean,
         val playWhenReady: Boolean,
         val isBuffering: Boolean,
+        val showPlayButton: Boolean,
         val durationMs: Long,
         val error: PlaybackError?,
     ) : PlaybackState {

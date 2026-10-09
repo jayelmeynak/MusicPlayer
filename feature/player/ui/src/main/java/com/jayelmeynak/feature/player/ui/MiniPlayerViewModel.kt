@@ -49,7 +49,7 @@ internal class MiniPlayerViewModel @Inject constructor(
         return MiniPlayerUiState(
             title = current.title,
             artist = current.artist,
-            isPlaying = active.isPlaying,
+            showPlayButton = active.showPlayButton,
             progress = if (duration > 0) (positionMs.toFloat() / duration * PERCENT).coerceIn(0f, PERCENT) else 0f,
             trackKey = "${current.source}|${current.id}",
             visible = true,
