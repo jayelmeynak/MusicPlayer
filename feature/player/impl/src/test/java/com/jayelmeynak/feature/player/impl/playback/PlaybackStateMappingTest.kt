@@ -98,7 +98,9 @@ class PlaybackStateMappingTest {
 
     @Test
     fun `резолвер не дал URI - ошибка источника в снапшоте`() {
-        val resolver = TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to FakeTrackUriResolver()))
+        val resolver = TrackUriDataSpecResolver(
+            setOf(FakeTrackUriResolver(TrackSource.DEEZER), FakeTrackUriResolver(TrackSource.LOCAL)),
+        )
         val player = TestExoPlayerBuilder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(

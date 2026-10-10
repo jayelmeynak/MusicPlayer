@@ -1,5 +1,6 @@
 package com.jayelmeynak.feature.player.impl.resolver
 
+import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.lib.network.data.dto.TrackDto
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.Result
@@ -21,6 +22,11 @@ class DeezerPreviewUriResolverTest {
     private val remote = FakeRemoteTrackDataSource()
     private var nowMs = 1_000_000L
     private val resolver = DeezerPreviewUriResolver(remote, now = { nowMs }, ttlMs = TTL_MS)
+
+    @Test
+    fun `резолвер обслуживает треки Deezer`() {
+        assertEquals(TrackSource.DEEZER, resolver.source)
+    }
 
     @Test
     fun `свежий URL превью берётся по id трека`() = runTest {

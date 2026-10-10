@@ -2,6 +2,7 @@ package com.jayelmeynak.feature.player.impl.resolver
 
 import android.provider.MediaStore
 import androidx.core.net.toUri
+import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.TrackUriResolver
 import javax.inject.Inject
 
@@ -13,6 +14,8 @@ import javax.inject.Inject
  * its own resolver.
  */
 internal class LocalContentUriResolver @Inject constructor() : TrackUriResolver {
+
+    override val source: TrackSource = TrackSource.LOCAL
 
     override suspend fun resolve(id: String): String? = id.takeIf(::isMediaStoreUri)
 }
