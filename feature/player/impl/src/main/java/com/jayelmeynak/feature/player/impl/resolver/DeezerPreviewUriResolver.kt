@@ -1,5 +1,6 @@
 package com.jayelmeynak.feature.player.impl.resolver
 
+import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.TrackUriResolver
 import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
 import com.jayelmeynak.util.result.onSuccess
@@ -31,6 +32,8 @@ internal class DeezerPreviewUriResolver(
         now = { System.nanoTime() / NANOS_IN_MILLI },
         ttlMs = DEFAULT_TTL_MS,
     )
+
+    override val source: TrackSource = TrackSource.DEEZER
 
     private class CachedUri(val uri: String, val expiresAtMs: Long)
 

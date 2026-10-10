@@ -42,11 +42,40 @@ class TrackUriDataSpecResolverTest {
 
     private val context = RuntimeEnvironment.getApplication()
 
-    private val deezer = FakeTrackUriResolver(mapOf("42" to "https://cdn.example/42.mp3?exp=1"))
-    private val local = FakeTrackUriResolver(mapOf(LOCAL_ID to LOCAL_ID))
-    private val resolver = TrackUriDataSpecResolver(
-        mapOf(TrackSource.DEEZER to deezer, TrackSource.LOCAL to local),
-    )
+    private val deezer = FakeTrackUriResolver(TrackSource.DEEZER, mapOf("42" to "https://cdn.example/42.mp3?exp=1"))
+    private val local = FakeTrackUriResolver(TrackSource.LOCAL, mapOf(LOCAL_ID to LOCAL_ID))
+    private val resolver = TrackUriDataSpecResolver(setOf(deezer, local))
+
+    @Test
+    fun `набор резолверов раскладывается по их источникам`() {
+        assertEquals(
+            mapOf(TrackSource.DEEZER to deezer, TrackSource.LOCAL to local),
+            resolversBySource(setOf(deezer, local)),
+        )
+    }
+
+    @Test
+    fun `два резолвера одного источника - ошибка при сборке, с именем источника`() {
+        val error = runCatching {
+            resolversBySource(setOf(deezer, local, FakeTrackUriResolver(TrackSource.DEEZER)))
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalStateException)
+        assertTrue(error?.message.orEmpty().contains("DEEZER"))
+    }
+
+    @Test
+    fun `у источника нет резолвера - ошибка при сборке, с именем источника`() {
+        val error = runCatching { resolversBySource(setOf(deezer)) }.exceptionOrNull()
+
+        assertTrue(error is IllegalStateException)
+        assertTrue(error?.message.orEmpty().contains("LOCAL"))
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `неполный набор резолверов - ошибка при создании, а не при загрузке трека`() {
+        TrackUriDataSpecResolver(setOf(local))
+    }
 
     @Test
     fun `внутренний URI получает URL от резолвера своего источника`() {
@@ -83,11 +112,6 @@ class TrackUriDataSpecResolverTest {
     }
 
     @Test(expected = IOException::class)
-    fun `нет резолвера для источника - IOException`() {
-        TrackUriDataSpecResolver(emptyMap()).resolveDataSpec(spec(TrackKey(TrackSource.LOCAL, LOCAL_ID)))
-    }
-
-    @Test(expected = IOException::class)
     fun `битый внутренний URI - IOException`() {
         resolver.resolveDataSpec(DataSpec(Uri.parse("$TRACK_URI_SCHEME://NOPE/1")))
     }
@@ -95,7 +119,7 @@ class TrackUriDataSpecResolverTest {
     @Test
     fun `исключение резолвера - IOException с причиной`() {
         val failure = IllegalStateException("boom")
-        val failing = TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to TrackUriResolver { throw failure }))
+        val failing = TrackUriDataSpecResolver(setOf(deezerResolver { throw failure }, local))
 
         val error = runCatching { failing.resolveDataSpec(spec(TrackKey(TrackSource.DEEZER, "42"))) }
             .exceptionOrNull()
@@ -108,12 +132,12 @@ class TrackUriDataSpecResolverTest {
     fun `прерывание потока загрузчика - InterruptedIOException, резолвер отменён, флаг прерывания сохранён`() {
         val started = CountDownLatch(1)
         var resolveJob: Job? = null
-        val hanging = TrackUriResolver {
+        val hanging = deezerResolver {
             resolveJob = currentCoroutineContext()[Job]
             started.countDown()
             awaitCancellation()
         }
-        val blocking = TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to hanging))
+        val blocking = TrackUriDataSpecResolver(setOf(hanging, local))
         var error: Throwable? = null
         var stillInterrupted = false
         val loader = thread {
@@ -149,7 +173,7 @@ class TrackUriDataSpecResolverTest {
                 DefaultMediaSourceFactory(
                     ResolvingDataSource.Factory(
                         DefaultDataSource.Factory(context),
-                        TrackUriDataSpecResolver(mapOf(TrackSource.DEEZER to deezerResolver)),
+                        TrackUriDataSpecResolver(setOf(deezerResolver, local)),
                     ),
                 )
             )
@@ -181,6 +205,12 @@ class TrackUriDataSpecResolverTest {
     }
 
     private fun spec(key: TrackKey) = DataSpec(key.toTrackUri())
+
+    /** Резолвер Deezer, который отвечает через [block]. */
+    private fun deezerResolver(block: suspend (String) -> String?) = object : TrackUriResolver {
+        override val source = TrackSource.DEEZER
+        override suspend fun resolve(id: String): String? = block(id)
+    }
 
     private companion object {
         const val LOCAL_ID = "content://media/external/audio/media/7"

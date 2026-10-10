@@ -1,7 +1,6 @@
 package com.jayelmeynak.feature.player.impl.resolver
 
 import com.jayelmeynak.feature.player.api.TrackSource
-import com.jayelmeynak.feature.player.impl.di.PlayerImplModule
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -16,6 +15,11 @@ class LocalContentUriResolverTest {
     private val resolver = LocalContentUriResolver()
 
     @Test
+    fun `резолвер обслуживает локальные треки`() {
+        assertEquals(TrackSource.LOCAL, resolver.source)
+    }
+
+    @Test
     fun `id локального трека и есть его content URI`() = runTest {
         val id = "content://media/external/audio/media/42"
 
@@ -28,14 +32,5 @@ class LocalContentUriResolverTest {
         assertNull(resolver.resolve("content://com.example.provider/audio/1"))
         assertNull(resolver.resolve("file:///sdcard/Music/a.mp3"))
         assertNull(resolver.resolve("https://example.com/a.mp3"))
-    }
-
-    @Test
-    fun `для каждого источника треков привязан резолвер`() {
-        val bound = PlayerImplModule::class.java.declaredMethods
-            .mapNotNull { it.getAnnotation(TrackSourceKey::class.java)?.value }
-
-        assertEquals(TrackSource.entries.toSet(), bound.toSet())
-        assertEquals(TrackSource.entries.size, bound.size)
     }
 }

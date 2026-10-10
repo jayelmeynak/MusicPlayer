@@ -1,12 +1,14 @@
 package com.jayelmeynak.feature.player.api.testing
 
+import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.TrackUriResolver
 
 /**
- * [TrackUriResolver] for tests: returns `uris[id]` (`null` for unknown ids) and records every
- * requested id in [requested].
+ * [TrackUriResolver] для тестов: обслуживает [source], возвращает `uris[id]` (`null` для
+ * неизвестных id) и записывает каждый запрошенный id в [requested].
  */
 public class FakeTrackUriResolver(
+    override val source: TrackSource,
     private val uris: Map<String, String?> = emptyMap(),
 ) : TrackUriResolver {
 

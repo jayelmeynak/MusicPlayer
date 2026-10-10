@@ -6,7 +6,6 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
-import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.TrackUriResolver
 import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkSource
 import com.jayelmeynak.feature.player.impl.artwork.MediaStoreArtworkSource
@@ -15,7 +14,6 @@ import com.jayelmeynak.feature.player.impl.playback.ProcessLifecycle
 import com.jayelmeynak.feature.player.impl.playback.SessionServiceConnector
 import com.jayelmeynak.feature.player.impl.resolver.DeezerPreviewUriResolver
 import com.jayelmeynak.feature.player.impl.resolver.LocalContentUriResolver
-import com.jayelmeynak.feature.player.impl.resolver.TrackSourceKey
 import com.jayelmeynak.feature.player.impl.service.ExoPlayerFactory
 import com.jayelmeynak.feature.player.impl.service.PlayerFactory
 import dagger.Binds
@@ -23,7 +21,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import dagger.multibindings.IntoMap
+import dagger.multibindings.IntoSet
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -39,14 +37,14 @@ internal abstract class PlayerImplModule {
     @Binds
     abstract fun bindLocalArtworkSource(impl: MediaStoreArtworkSource): LocalArtworkSource
 
+    // Адаптеры-резолверы — internal, поэтому привязаны здесь, а не в PlayerModule; уйдут отсюда,
+    // когда резолверы источников переедут в фичи каталога и локальной музыки.
     @Binds
-    @IntoMap
-    @TrackSourceKey(TrackSource.DEEZER)
+    @IntoSet
     abstract fun bindDeezerResolver(impl: DeezerPreviewUriResolver): TrackUriResolver
 
     @Binds
-    @IntoMap
-    @TrackSourceKey(TrackSource.LOCAL)
+    @IntoSet
     abstract fun bindLocalResolver(impl: LocalContentUriResolver): TrackUriResolver
 
     companion object {

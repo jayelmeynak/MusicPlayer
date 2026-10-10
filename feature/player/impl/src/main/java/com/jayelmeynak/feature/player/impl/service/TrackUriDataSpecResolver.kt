@@ -22,11 +22,16 @@ import javax.inject.Inject
  *
  * `null` резолвера (в том числе по его таймауту) — неповторяемая ошибка: плеер сразу встаёт в
  * ошибку источника, без повторных загрузок.
+ *
+ * Набор резолверов раскладывается по источникам при создании ([resolversBySource]): ошибка
+ * конфигурации видна при создании сервиса (инъекция Hilt), а не когда пользователь тапает трек.
  */
 @OptIn(UnstableApi::class)
 internal class TrackUriDataSpecResolver @Inject constructor(
-    private val resolvers: Map<TrackSource, @JvmSuppressWildcards TrackUriResolver>,
+    resolvers: Set<@JvmSuppressWildcards TrackUriResolver>,
 ) : ResolvingDataSource.Resolver {
+
+    private val resolvers: Map<TrackSource, TrackUriResolver> = resolversBySource(resolvers)
 
     override fun resolveDataSpec(dataSpec: DataSpec): DataSpec {
         if (dataSpec.uri.scheme != TRACK_URI_SCHEME) return dataSpec
@@ -34,7 +39,7 @@ internal class TrackUriDataSpecResolver @Inject constructor(
         // повторяет (обычный IOException она повторяет с паузами, и «буферизация» растягивается
         // на несколько таймаутов резолвера). Для плеера это та же ошибка ввода-вывода.
         val key = dataSpec.uri.toTrackKey() ?: throw FileNotFoundException("Unknown track ${dataSpec.uri}")
-        val resolver = resolvers[key.source] ?: throw FileNotFoundException("No resolver for ${key.source}")
+        val resolver = resolvers.getValue(key.source)
         val uri = try {
             runBlocking { resolver.resolve(key.id) }
         } catch (e: InterruptedException) {
@@ -49,4 +54,21 @@ internal class TrackUriDataSpecResolver @Inject constructor(
         } ?: throw FileNotFoundException("Track ${key.source} ${key.id} is unavailable")
         return dataSpec.withUri(uri.toUri())
     }
+}
+
+/**
+ * Раскладывает резолверы по их [TrackUriResolver.source]. У каждого источника должен быть ровно
+ * один резолвер: два резолвера одного источника или источник без резолвера —
+ * [IllegalStateException] с именем источника.
+ */
+internal fun resolversBySource(resolvers: Set<TrackUriResolver>): Map<TrackSource, TrackUriResolver> {
+    val bySource = resolvers.groupBy { it.source }
+    bySource.forEach { (source, sameSource) ->
+        check(sameSource.size == 1) {
+            "Several resolvers for $source: ${sameSource.joinToString { it::class.java.name }}"
+        }
+    }
+    val missing = TrackSource.entries - bySource.keys
+    check(missing.isEmpty()) { "No resolver for $missing" }
+    return bySource.mapValues { (_, sameSource) -> sameSource.single() }
 }
