@@ -40,8 +40,12 @@ gradlePlugin {
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.FeatureDiConventionPlugin"
         }
         register("lib") {
-            id = libs.plugins.musicplayer.lib.get().pluginId
+            id = libs.plugins.musicplayer.lib.asProvider().get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.LibConventionPlugin"
+        }
+        register("libJvm") {
+            id = libs.plugins.musicplayer.lib.jvm.get().pluginId
+            implementationClass = "com.jayelmeynak.musicplayer.buildlogic.LibJvmConventionPlugin"
         }
         register("util") {
             id = libs.plugins.musicplayer.util.get().pluginId

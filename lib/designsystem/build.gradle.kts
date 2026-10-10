@@ -27,7 +27,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
+    // Тестовая ComponentActivity для Robolectric-тестов SeekSlider: AGP подключает её через
+    // debug-манифест модуля. Побочный эффект — она попадает в debug-сборку потребителей.
     debugImplementation(libs.androidx.ui.test.manifest)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 }

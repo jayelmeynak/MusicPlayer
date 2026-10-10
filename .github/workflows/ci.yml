@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: lint-reports
-          path: '**/build/reports/lint-results-*'
+          path: '**/build/reports/lint-results*'
           if-no-files-found: ignore
 
       - name: Upload test reports
