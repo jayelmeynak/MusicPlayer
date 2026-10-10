@@ -17,5 +17,6 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             defaultConfig.consumerProguardFiles("consumer-rules.pro")
         }
         configureKotlin(explicitApi = false)
+        forbidForeignImpl()
     }
 }

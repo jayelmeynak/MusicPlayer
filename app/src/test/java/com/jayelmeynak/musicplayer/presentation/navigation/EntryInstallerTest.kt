@@ -1,7 +1,8 @@
-package com.jayelmeynak.lib.navigation
+package com.jayelmeynak.musicplayer.presentation.navigation
 
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.lib.navigation.testing.FakeNavigator
 import org.junit.Assert.assertEquals
 import org.junit.Test

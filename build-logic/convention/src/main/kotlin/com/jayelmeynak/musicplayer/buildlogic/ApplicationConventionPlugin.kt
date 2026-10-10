@@ -18,5 +18,6 @@ class ApplicationConventionPlugin : Plugin<Project> {
             buildFeatures.compose = true
         }
         configureKotlin(explicitApi = false)
+        forbidForeignImpl()
     }
 }
