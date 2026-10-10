@@ -193,8 +193,8 @@ class PlayerViewModelTest {
             expectNoEvents()
         }
         assertEquals(
-            R.string.player_error_source_unavailable,
-            (ready(viewModel).errorMessage as UiText.StringResourceId).id,
+            UiText.StringResourceId(R.string.player_error_source_unavailable),
+            ready(viewModel).errorMessage,
         )
     }
 

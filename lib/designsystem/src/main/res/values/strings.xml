@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="error_disk_full">Oops, it seems like your disk is full.</string>
-    <string name="error_unknown">Oops, something went wrong.</string>
-    <string name="error_request_timeout">The request timed out.</string>
-    <string name="error_no_internet">Couldnt reach server, please check your internet connection.</string>
-    <string name="error_too_many_requests">Your quota seems to be exceeded.</string>
-    <string name="error_serialization">Couldnt parse data.</string>
-    <string name="error_not_found">Nothing found.</string>
-    <string name="search_hint">Search...</string>
-    <string name="close_hint">Clear search</string>
+    <string name="error_disk_full">Не хватает места на устройстве</string>
+    <string name="error_unknown">Что-то пошло не так</string>
+    <string name="error_request_timeout">Сервер не ответил вовремя</string>
+    <string name="error_no_internet">Нет связи с сервером, проверьте подключение к интернету</string>
+    <string name="error_too_many_requests">Слишком много запросов, попробуйте позже</string>
+    <string name="error_serialization">Не удалось разобрать ответ сервера</string>
+    <string name="error_not_found">Ничего не найдено</string>
+    <string name="search_hint">Поиск…</string>
+    <string name="close_hint">Очистить поиск</string>
     <string name="search_nothing_found">Ничего не найдено</string>
 </resources>

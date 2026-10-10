@@ -58,6 +58,35 @@ class MusicChartsRepositoryImplTest {
         assertEquals(Result.Success(emptyList<Any>()), repository.searchTrack("abc"))
     }
 
+    private val duplicatedTracks = Tracks(
+        tracks = listOf(
+            trackDto().copy(id = 1L, title = "First"),
+            trackDto().copy(id = 2L),
+            trackDto().copy(id = 1L, title = "Duplicate"),
+            trackDto().copy(id = 3L),
+        )
+    )
+
+    @Test
+    fun `чарт с повтором id - трек один раз, первое вхождение, порядок сохранён`() = runTest {
+        source.chart = Result.Success(ResponseChart(duplicatedTracks))
+
+        val tracks = (repository.getChart() as Result.Success).data
+
+        assertEquals(listOf(1L, 2L, 3L), tracks.map { it.id })
+        assertEquals("First", tracks.first().title)
+    }
+
+    @Test
+    fun `поиск с повтором id - трек один раз, первое вхождение, порядок сохранён`() = runTest {
+        source.search = Result.Success(duplicatedTracks)
+
+        val tracks = (repository.searchTrack("abc") as Result.Success).data
+
+        assertEquals(listOf(1L, 2L, 3L), tracks.map { it.id })
+        assertEquals("First", tracks.first().title)
+    }
+
     @Test
     fun `ошибка источника проходит как есть`() = runTest {
         source.chart = Result.Error(DataError.Remote.NOT_FOUND)

@@ -50,7 +50,7 @@ class ChartTracksViewModelTest {
             val state = expectMostRecentItem()
             assertTrue(state.charts.isEmpty())
             assertFalse(state.isLoading)
-            assertEquals(R.string.error_no_internet, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_no_internet), state.errorMessage)
         }
     }
 
@@ -62,7 +62,7 @@ class ChartTracksViewModelTest {
             val state = expectMostRecentItem()
             assertTrue(state.charts.isEmpty())
             assertFalse(state.isLoading)
-            assertEquals(R.string.error_not_found, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_not_found), state.errorMessage)
         }
     }
 
@@ -73,7 +73,7 @@ class ChartTracksViewModelTest {
         viewModel().state.test {
             val state = expectMostRecentItem()
             assertTrue(state.charts.isEmpty())
-            assertEquals(R.string.error_too_many_requests, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_too_many_requests), state.errorMessage)
         }
     }
 
@@ -83,9 +83,9 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             val state = expectMostRecentItem()
-            assertEquals(R.string.error_no_internet, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_no_internet), state.errorMessage)
             assertFalse(state.isLoading)
             assertTrue(state.charts.isEmpty())
             assertTrue(repository.searchQueries.isEmpty())
@@ -100,13 +100,13 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             assertNull(expectMostRecentItem().errorMessage)
 
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
 
             val state = expectMostRecentItem()
-            assertEquals(R.string.error_no_internet, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_no_internet), state.errorMessage)
             assertNull(state.searchList)
         }
     }
@@ -117,7 +117,7 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("zzzzzz"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(emptyList<Any>(), expectMostRecentItem().searchList)
         }
@@ -130,7 +130,7 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
 
             val state = expectMostRecentItem()
@@ -151,10 +151,10 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("a"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("ab"))
-            // "ab" is done at ~1101 ms while "a" would still run until ~1500 ms.
-            advanceTimeBy(650)
+            // "ab" готов через паузу + 100 мс, а "a" ещё шёл бы до паузы + 1000 мс.
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 150)
 
             val state = expectMostRecentItem()
             assertEquals(fresh, state.searchList)
@@ -174,7 +174,7 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(600)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 100)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
             advanceTimeBy(2_000)
 
@@ -191,11 +191,11 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
             advanceTimeBy(100)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
             assertEquals("abc", state.query)
@@ -204,7 +204,7 @@ class ChartTracksViewModelTest {
     }
 
     @Test
-    fun `query обновляется сразу, поиск идёт только после паузы 500 мс`() = runTest {
+    fun `query обновляется сразу, поиск идёт только после паузы ввода`() = runTest {
         val found = listOf(trackDto().copy(id = 1L, title = "Found").toTrack()!!)
         repository.searchResult = { Result.Success(found) }
         val viewModel = viewModel()
@@ -213,7 +213,7 @@ class ChartTracksViewModelTest {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
             assertEquals("abc", expectMostRecentItem().query)
 
-            advanceTimeBy(499)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS - 1)
             assertTrue(repository.searchQueries.isEmpty())
 
             advanceTimeBy(2)
@@ -231,11 +231,11 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abcd"))
             advanceTimeBy(100)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(listOf("abc"), repository.searchQueries)
             cancelAndIgnoreRemainingEvents()
@@ -249,9 +249,9 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
             assertNull(state.searchList)
@@ -267,16 +267,168 @@ class ChartTracksViewModelTest {
 
         viewModel.state.test {
             viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-            advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
             assertEquals(emptyList<Any>(), state.searchList)
             assertFalse(state.isLoading)
-            assertEquals(R.string.error_too_many_requests, state.errorResId())
+            assertEquals(UiText.StringResourceId(R.string.error_too_many_requests), state.errorMessage)
             assertEquals(chart, state.charts)
         }
     }
 
-    private fun ChartTracksState.errorResId(): Int? =
-        (errorMessage as? UiText.StringResourceId)?.id
+    @Test
+    fun `повтор после ошибки чарта - чарт без ошибки`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            assertTrue(expectMostRecentItem().isChartError)
+
+            repository.chartResult = Result.Success(chart)
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+
+            val state = expectMostRecentItem()
+            assertEquals(chart, state.charts)
+            assertNull(state.errorMessage)
+            assertFalse(state.isLoading)
+            assertFalse(state.isChartError)
+            assertEquals(2, repository.chartRequests)
+        }
+    }
+
+    @Test
+    fun `повтор чарта показывает загрузку до ответа`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        repository.chartDelayMs = { call -> if (call == 1) 0L else 1_000L }
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            expectMostRecentItem()
+            repository.chartResult = Result.Success(chart)
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+
+            val loading = expectMostRecentItem()
+            assertTrue(loading.isLoading)
+            assertNull(loading.errorMessage)
+
+            advanceTimeBy(1_001)
+            assertEquals(chart, expectMostRecentItem().charts)
+        }
+    }
+
+    @Test
+    fun `повтор чарта снова с ошибкой - ошибка и кнопка повтора`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            expectMostRecentItem()
+            repository.chartResult = Result.Error(DataError.Remote.REQUEST_TIMEOUT)
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+
+            val state = expectMostRecentItem()
+            assertEquals(UiText.StringResourceId(R.string.error_request_timeout), state.errorMessage)
+            assertFalse(state.isLoading)
+            assertTrue(state.isChartError)
+        }
+    }
+
+    @Test
+    fun `двойной повтор - на экране исход последнего запроса`() = runTest {
+        val stale = listOf(trackDto().copy(id = 7L, title = "Stale").toTrack()!!)
+        repository.chartResultFor = { call ->
+            when (call) {
+                1 -> Result.Error(DataError.Remote.NO_INTERNET)
+                2 -> Result.Success(stale)
+                else -> Result.Success(chart)
+            }
+        }
+        repository.chartDelayMs = { call -> if (call == 2) 1_000L else 0L }
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            advanceTimeBy(2_000)
+
+            assertEquals(chart, expectMostRecentItem().charts)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `ошибка поиска - не ошибка чарта, кнопки повтора нет`() = runTest {
+        repository.searchResult = { Result.Error(DataError.Remote.TOO_MANY_REQUESTS) }
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
+
+            val state = expectMostRecentItem()
+            assertEquals(UiText.StringResourceId(R.string.error_too_many_requests), state.errorMessage)
+            assertFalse(state.isChartError)
+        }
+    }
+
+    @Test
+    fun `повтор при активном поиске не трогает поиск, после очистки виден новый чарт`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        val found = listOf(trackDto().copy(id = 1L, title = "Found").toTrack()!!)
+        repository.searchResult = { Result.Success(found) }
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
+            repository.chartResult = Result.Success(chart)
+            viewModel.onAction(ChartTracksAction.OnRetryClick)
+
+            val searching = expectMostRecentItem()
+            assertEquals(found, searching.searchList)
+            assertFalse(searching.isLoading)
+
+            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            val cleared = expectMostRecentItem()
+            assertEquals(chart, cleared.charts)
+            assertNull(cleared.errorMessage)
+        }
+    }
+
+    @Test
+    fun `пустой чарт без ошибки - пустое состояние`() = runTest {
+        repository.chartResult = Result.Success(emptyList())
+
+        viewModel().state.test {
+            val state = expectMostRecentItem()
+            assertTrue(state.isChartEmpty)
+            assertFalse(state.isChartError)
+        }
+    }
+
+    @Test
+    fun `ошибка чарта или непустой чарт - не пустое состояние`() = runTest {
+        viewModel().state.test {
+            assertFalse(expectMostRecentItem().isChartEmpty)
+        }
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        viewModel().state.test {
+            assertFalse(expectMostRecentItem().isChartEmpty)
+        }
+    }
+
+    @Test
+    fun `введён запрос до срабатывания поиска - ни ошибки чарта, ни пустого чарта`() = runTest {
+        repository.chartResult = Result.Error(DataError.Remote.NO_INTERNET)
+        val failed = viewModel()
+        repository.chartResult = Result.Success(emptyList())
+        val empty = viewModel()
+
+        failed.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+        empty.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+
+        assertFalse(failed.state.value.isChartError)
+        assertFalse(empty.state.value.isChartEmpty)
+    }
 }

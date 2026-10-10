@@ -9,8 +9,7 @@ import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -46,10 +45,9 @@ class DownloadTracksViewModelTest {
     )
 
     @Test
-    fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest(ownScheduler()) {
+    fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest {
         viewModel().state.test {
             val state = awaitState { !it.isLoading && it.artworks.size == 3 }
-            repository.pruned.await()
             assertEquals(listOf(yesterday, numb, help), state.tracks)
             assertEquals(setOf(1L, 2L, 3L), state.artworks.keys)
             assertArrayEquals(byteArrayOf(1), state.artworks[1L])
@@ -60,20 +58,20 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `нет треков - пустое состояние, кэш чистится пустым списком`() = runTest(ownScheduler()) {
+    fun `нет треков - пустое состояние, очистка кэша вызвана с пустым списком`() = runTest {
         repository.tracks = emptyList()
 
         viewModel().state.test {
             val state = awaitLoaded()
-            repository.pruned.await()
             assertTrue(state.tracks.isEmpty())
             assertTrue(state.artworks.isEmpty())
+            assertTrue(state.isLibraryEmpty)
             assertEquals(listOf(emptyList<Long>()), repository.prunedIds)
         }
     }
 
     @Test
-    fun `поиск по исполнителю без учёта регистра после паузы 500 мс`() = runTest(ownScheduler()) {
+    fun `поиск по исполнителю без учёта регистра после паузы ввода`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -81,48 +79,48 @@ class DownloadTracksViewModelTest {
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("beatles"))
             assertEquals("beatles", expectMostRecentItem().query)
 
-            mainRule.dispatcher.scheduler.advanceTimeBy(499)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS - 1)
             assertNull(viewModel.state.value.searchList)
 
-            mainRule.dispatcher.scheduler.advanceTimeBy(2)
+            advanceTimeBy(2)
             assertEquals(listOf(yesterday, help), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `поиск по подстроке названия без учёта регистра`() = runTest(ownScheduler()) {
+    fun `поиск по подстроке названия без учёта регистра`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("NUM"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(listOf(numb), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `поиск без совпадений - пустой результат, а не отсутствие поиска`() = runTest(ownScheduler()) {
+    fun `поиск без совпадений - пустой результат, а не отсутствие поиска`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("zzzzzz"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(emptyList<LocalTrack>(), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `очистка строки сразу убирает результат поиска`() = runTest(ownScheduler()) {
+    fun `очистка строки сразу убирает результат поиска`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange(""))
 
             assertNull(expectMostRecentItem().searchList)
@@ -130,7 +128,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `список виден до загрузки медленной обложки`() = runTest(ownScheduler()) {
+    fun `список виден до загрузки медленной обложки`() = runTest {
         val slowArtwork = CompletableDeferred<ByteArray?>()
         repository.pendingArtworks[1L] = slowArtwork
 
@@ -145,7 +143,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `исключение при чтении треков - текст ошибки`() = runTest(ownScheduler()) {
+    fun `исключение при чтении треков - текст ошибки`() = runTest {
         repository.tracksError = SecurityException("no audio permission")
 
         viewModel().state.test {
@@ -156,7 +154,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `исключение в обложке одного трека - у него нет обложки, у остальных есть`() = runTest(ownScheduler()) {
+    fun `исключение в обложке одного трека - у него нет обложки, у остальных есть`() = runTest {
         repository.failingArtworks = setOf(1L)
 
         viewModel().state.test {
@@ -168,7 +166,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `нет разрешения на аудио - состояние без доступа`() = runTest(ownScheduler()) {
+    fun `нет разрешения на аудио - состояние без доступа`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -180,7 +178,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `разрешение выдано после отказа - список загружается заново`() = runTest(ownScheduler()) {
+    fun `разрешение выдано после отказа - список загружается заново`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -196,7 +194,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `ошибка загрузки и разрешение есть - список загружается заново`() = runTest(ownScheduler()) {
+    fun `ошибка загрузки и разрешение есть - список загружается заново`() = runTest {
         repository.tracksError = SecurityException("no audio permission")
         val viewModel = viewModel()
 
@@ -213,7 +211,7 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `разрешение есть и список загружен - повторной загрузки нет`() = runTest(ownScheduler()) {
+    fun `разрешение есть и список загружен - повторной загрузки нет`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -226,14 +224,14 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `поиск, набранный до перезагрузки, применяется к новым трекам`() = runTest(ownScheduler()) {
+    fun `поиск, набранный до перезагрузки, применяется к новым трекам`() = runTest {
         repository.tracksError = SecurityException("no audio permission")
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             repository.tracksError = null
             viewModel.onAction(DownloadTracksAction.OnAudioPermissionChecked(granted = true))
 
@@ -244,32 +242,32 @@ class DownloadTracksViewModelTest {
     }
 
     @Test
-    fun `очистка и повтор того же запроса внутри паузы - результаты видны`() = runTest(ownScheduler()) {
+    fun `очистка и повтор того же запроса внутри паузы - результаты видны`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange(""))
-            mainRule.dispatcher.scheduler.advanceTimeBy(100)
+            advanceTimeBy(100)
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(listOf(help), expectMostRecentItem().searchList)
         }
     }
 
     @Test
-    fun `пустой запрос очищает searchList`() = runTest(ownScheduler()) {
+    fun `пустой запрос очищает searchList`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
             awaitLoaded()
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange("help"))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(DownloadTracksAction.OnSearchQueryChange(""))
-            mainRule.dispatcher.scheduler.advanceTimeBy(501)
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
             assertNull(state.searchList)
@@ -277,14 +275,21 @@ class DownloadTracksViewModelTest {
         }
     }
 
-    // runTest must not share the Main scheduler: while it waits for the IO hop it would advance
-    // virtual time and fire the initial debounce concurrently with loadData. Debounce time is
-    // moved explicitly through mainRule. StandardTestDispatcher() without an argument would
-    // take the Main scheduler.
-    private fun ownScheduler() = StandardTestDispatcher(TestCoroutineScheduler())
+    @Test
+    fun `треки есть, ошибка или нет доступа - не пустое состояние`() = runTest {
+        val viewModel = viewModel()
 
-    // Loading state comes from Main; the cache prune runs last on the real Dispatchers.IO, so tests
-    // that check it await FakeLocalTracksRepository.pruned.
+        viewModel.state.test {
+            assertFalse(awaitLoaded().isLibraryEmpty)
+            viewModel.onAction(DownloadTracksAction.OnAudioPermissionChecked(granted = false))
+            assertFalse(expectMostRecentItem().isLibraryEmpty)
+        }
+        repository.tracksError = SecurityException("no audio permission")
+        viewModel().state.test {
+            assertFalse(awaitLoaded().isLibraryEmpty)
+        }
+    }
+
     private suspend fun ReceiveTurbine<DownloadTracksState>.awaitLoaded(): DownloadTracksState =
         awaitState { !it.isLoading }
 

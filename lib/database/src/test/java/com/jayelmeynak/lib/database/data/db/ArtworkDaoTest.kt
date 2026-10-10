@@ -82,7 +82,7 @@ class ArtworkDaoTest {
     }
 
     @Test
-    fun `deleteStale с пустым списком ничего не удаляет`() = runTest {
+    fun `дефект - пустой список актуальных треков не очищает кэш`() = runTest {
         listOf(1L, 2L).forEach { dao.insert(ArtworkEntity(trackId = it, data = null)) }
 
         dao.deleteStale(emptyList())

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,6 +28,7 @@ import com.jayelmeynak.lib.designsystem.R
 import com.jayelmeynak.lib.designsystem.components.RemoteTrackImage
 import com.jayelmeynak.lib.designsystem.components.TrackItem
 import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
+import com.jayelmeynak.search_tracks.R as SearchR
 import com.jayelmeynak.search_tracks.domain.models.Track
 
 @Composable
@@ -73,11 +75,25 @@ fun ChartTracksScreen(
                     state.isLoading -> CenteredBox { CircularProgressIndicator() }
 
                     errorMessage != null -> CenteredBox {
-                        Text(text = errorMessage.asString())
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = errorMessage.asString())
+                            if (state.isChartError) {
+                                Button(
+                                    onClick = { viewModel.onAction(ChartTracksAction.OnRetryClick) },
+                                    modifier = Modifier.padding(top = 16.dp)
+                                ) {
+                                    Text(text = stringResource(SearchR.string.retry))
+                                }
+                            }
+                        }
                     }
 
                     state.searchList?.isEmpty() == true -> CenteredBox {
                         Text(text = stringResource(R.string.search_nothing_found))
+                    }
+
+                    state.isChartEmpty -> CenteredBox {
+                        Text(text = stringResource(SearchR.string.chart_empty))
                     }
 
                     else -> LazyColumn {
@@ -86,14 +102,7 @@ fun ChartTracksScreen(
                             TrackItem(
                                 title = track.title,
                                 artistName = track.artistName,
-                                onClick = {
-                                    viewModel.onAction(
-                                        ChartTracksAction.OnTrackClicked(
-                                            track.id.toString()
-                                        )
-                                    )
-                                    onTrackClicked(tracks, index)
-                                },
+                                onClick = { onTrackClicked(tracks, index) },
                                 image = { RemoteTrackImage(track.album.cover) }
                             )
                         }
