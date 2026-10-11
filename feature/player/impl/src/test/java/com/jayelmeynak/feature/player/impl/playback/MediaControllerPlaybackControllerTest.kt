@@ -14,8 +14,14 @@ import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
-import com.jayelmeynak.feature.player.impl.service.PlaybackSessionCallback
+import com.jayelmeynak.feature.player.impl.service.testSessionCallback
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import com.jayelmeynak.feature.player.impl.service.finishRestoring
+import com.jayelmeynak.feature.player.impl.service.sessionExtras
+import com.jayelmeynak.feature.player.impl.service.toMediaItem
+import com.jayelmeynak.feature.player.impl.service.withTrackUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,24 +56,22 @@ class MediaControllerPlaybackControllerTest {
     private val lifecycle = TestProcessLifecycle()
     private lateinit var player: ExoPlayer
     private lateinit var session: MediaSession
-    private val futures = mutableListOf<com.google.common.util.concurrent.ListenableFuture<MediaController>>()
-    private lateinit var controller: MediaControllerPlaybackController
+    private val futures = mutableListOf<ListenableFuture<MediaController>>()
+
+    /** Контроллер теста; создаётся при первом обращении, тесты со своим коннектором его не создают. */
+    private val controller: MediaControllerPlaybackController by lazy {
+        MediaControllerPlaybackController(
+            lifecycleOwner = lifecycle,
+            connector = ::realConnect,
+            scope = scope,
+            mainDispatcher = dispatcher,
+        )
+    }
 
     @Before
     fun setUp() {
         player = TestExoPlayerBuilder(context).setMediaSourceFactory(FakeMediaSourceFactory()).build()
-        session = MediaSession.Builder(context, player).setCallback(PlaybackSessionCallback()).build()
-        controller = MediaControllerPlaybackController(
-            lifecycleOwner = lifecycle,
-            connector = { listener ->
-                MediaController.Builder(context, session.token)
-                    .setListener(listener)
-                    .buildAsync()
-                    .also { futures += it }
-            },
-            scope = scope,
-            mainDispatcher = dispatcher,
-        )
+        session = MediaSession.Builder(context, player).setCallback(testSessionCallback()).build()
     }
 
     @After
@@ -89,6 +93,26 @@ class MediaControllerPlaybackControllerTest {
         val states = mutableListOf<PlaybackState>()
         collector.launch { controller.state.collect { states += it } }
         return states
+    }
+
+    @Test
+    fun `создание контроллера вне главного потока падает с понятной ошибкой`() {
+        var error: Throwable? = null
+        val thread = Thread {
+            error = runCatching {
+                MediaControllerPlaybackController(
+                    lifecycleOwner = lifecycle,
+                    connector = { error("подключение не ожидается") },
+                    scope = scope,
+                    mainDispatcher = dispatcher,
+                )
+            }.exceptionOrNull()
+        }
+        thread.start()
+        thread.join()
+
+        assertTrue(error is IllegalStateException)
+        assertTrue(error?.message.orEmpty().contains("главном потоке"))
     }
 
     @Test
@@ -120,7 +144,7 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
-    fun `сессия оборвалась - Idle и переподключение к новой сессии`() {
+    fun `сессия оборвалась - снапшот не подключён и переподключение к новой сессии`() {
         lifecycle.start()
         connectedPlay(queue, 0)
         val states = recordStates()
@@ -130,13 +154,14 @@ class MediaControllerPlaybackControllerTest {
         extraPlayers += newPlayer
         session = MediaSession.Builder(context, newPlayer)
             .setId("recreated")
-            .setCallback(PlaybackSessionCallback())
+            .setCallback(testSessionCallback())
             .build()
 
         oldSession.release()
 
-        runMainLooperUntil { futures.size == 2 && controller.state.value is PlaybackState.Active }
-        assertTrue(states.contains(PlaybackState.Idle))
+        runMainLooperUntil { futures.size == 2 && (controller.state.value as? PlaybackState.Active)?.isConnected == true }
+        assertFalse(states.contains(PlaybackState.Idle))
+        assertTrue(states.any { it is PlaybackState.Active && !it.isConnected && it.queue == queue })
         assertTrue((controller.state.value as PlaybackState.Active).queue.isEmpty())
     }
 
@@ -149,7 +174,7 @@ class MediaControllerPlaybackControllerTest {
         session.release()
         repeat(5) { ShadowLooper.idleMainLooper() }
 
-        assertEquals(PlaybackState.Idle, controller.state.value)
+        assertEquals(false, (controller.state.value as PlaybackState.Active).isConnected)
         assertEquals(1, futures.size)
     }
 
@@ -220,12 +245,15 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
-    fun `ON_STOP - Idle и контроллер освобождён, ON_START - снапшот текущего плеера`() {
+    fun `ON_STOP - последний снапшот не подключён и контроллер освобождён, ON_START - снапшот текущего плеера`() {
         lifecycle.start()
         connectedPlay(queue, 2)
 
         lifecycle.stop()
-        assertEquals(PlaybackState.Idle, controller.state.value)
+        val stopped = controller.state.value as PlaybackState.Active
+        assertEquals(queue, stopped.queue)
+        assertEquals(2, stopped.currentIndex)
+        assertFalse(stopped.isConnected)
 
         lifecycle.start()
         runMainLooperUntil { controller.state.value is PlaybackState.Active }
@@ -397,6 +425,202 @@ class MediaControllerPlaybackControllerTest {
         controller.play(queue.reversed(), 0)
 
         assertEquals(0L, controller.positionMs.value)
+    }
+
+    @Test
+    fun `возврат из фона - ни одного пустого или Idle снапшота между старым и новым`() {
+        lifecycle.start()
+        connectedPlay(queue, 1)
+        lifecycle.stop()
+        val states = recordStates()
+
+        lifecycle.start()
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.isConnected == true }
+
+        assertTrue(states.none { it == PlaybackState.Idle })
+        assertTrue(states.filterIsInstance<PlaybackState.Active>().all { it.queue == queue })
+    }
+
+    @Test
+    fun `не подключён - транспортные команды не доходят до сессии`() {
+        lifecycle.start()
+        connectedPlay(queue, 0)
+        lifecycle.stop()
+
+        controller.next()
+        controller.togglePlayPause()
+        repeat(5) { ShadowLooper.idleMainLooper() }
+
+        assertEquals(0, player.currentMediaItemIndex)
+        assertTrue(player.playWhenReady)
+    }
+
+    @Test
+    fun `сессия восстанавливает очередь - снапшот публикуется только после восстановления`() {
+        val restoringSession = restoringSession()
+        val states = recordStates()
+
+        lifecycle.start()
+        runMainLooperUntil { futures.isNotEmpty() && futures.last().isDone }
+        repeat(5) { ShadowLooper.idleMainLooper() }
+        assertEquals(PlaybackState.Idle, controller.state.value)
+
+        player.setMediaItems(queue.map { it.toMediaItem().withTrackUri() }, 2, 0L)
+        collector.launch(Dispatchers.Main.immediate) { restoringSession.finishRestoring() }
+
+        runMainLooperUntil { controller.state.value is PlaybackState.Active }
+        val active = states.filterIsInstance<PlaybackState.Active>()
+        assertTrue(active.none { it.queue.isEmpty() })
+        assertEquals(queue, active.first().queue)
+        assertEquals(2, active.first().currentIndex)
+    }
+
+    @Test
+    fun `возврат к восстанавливающейся сессии - позиция прежнего снапшота не сбрасывается в 0`() {
+        lifecycle.start()
+        connectedPlay(queue, 0)
+        player.seekTo(0, SEEK_POSITION_MS)
+        runMainLooperUntil { controller.positionMs.value >= SEEK_POSITION_MS }
+        lifecycle.stop()
+        val before = controller.positionMs.value
+        restoringSession(emptyPlayer = true)
+
+        lifecycle.start()
+        runMainLooperUntil { futures.size == 2 && futures.last().isDone }
+        repeat(5) { ShadowLooper.idleMainLooper() }
+
+        assertEquals(before, controller.positionMs.value)
+        assertFalse((controller.state.value as PlaybackState.Active).isConnected)
+    }
+
+    @Test
+    fun `отложенный play во время восстановления сессии публикуется сразу`() {
+        restoringSession()
+        controller.play(queue, 1)
+
+        lifecycle.start()
+
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.currentIndex == 1 }
+        assertEquals(queue, (controller.state.value as PlaybackState.Active).queue)
+    }
+
+    @Test
+    fun `подключение не удалось один раз - повтор через паузу подключается`() {
+        var failures = 1
+        val retrying = controllerWith { listener ->
+            if (failures-- > 0) Futures.immediateFailedFuture(SecurityException("сбой в тесте")) else realConnect(listener)
+        }
+
+        lifecycle.start()
+        assertEquals(PlaybackState.Idle, retrying.state.value)
+        dispatcher.scheduler.advanceTimeBy(CONNECT_RETRY_BASE_MS - 1)
+        dispatcher.scheduler.runCurrent()
+        assertTrue(futures.isEmpty())
+
+        dispatcher.scheduler.advanceTimeBy(2)
+        dispatcher.scheduler.runCurrent()
+        runMainLooperUntil { retrying.state.value is PlaybackState.Active }
+    }
+
+    @Test
+    fun `все попытки подключения неудачны - ConnectionFailed после лимита, паузы растут`() {
+        val attemptsAt = mutableListOf<Long>()
+        val failing = controllerWith {
+            attemptsAt += dispatcher.scheduler.currentTime
+            Futures.immediateFailedFuture(SecurityException("сбой в тесте"))
+        }
+
+        lifecycle.start()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(0L, 500L, 1_500L, 3_500L), attemptsAt)
+        assertEquals(PlaybackState.ConnectionFailed, failing.state.value)
+    }
+
+    @Test
+    fun `уход в фон отменяет повтор, возврат начинает попытки заново`() {
+        var attempts = 0
+        val failing = controllerWith {
+            attempts++
+            Futures.immediateFailedFuture(SecurityException("сбой в тесте"))
+        }
+        lifecycle.start()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(PlaybackState.ConnectionFailed, failing.state.value)
+
+        lifecycle.stop()
+        lifecycle.start()
+        assertEquals(PlaybackState.Idle, failing.state.value)
+        dispatcher.scheduler.runCurrent()
+        lifecycle.stop()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(MAX_CONNECT_ATTEMPTS + 1, attempts)
+    }
+
+    @Test
+    fun `play после ConnectionFailed начинает новую серию подключения и играет`() {
+        var failures = MAX_CONNECT_ATTEMPTS
+        val retrying = controllerWith { listener ->
+            if (failures-- > 0) Futures.immediateFailedFuture(SecurityException("сбой в тесте")) else realConnect(listener)
+        }
+        lifecycle.start()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(PlaybackState.ConnectionFailed, retrying.state.value)
+
+        retrying.play(queue, 1)
+
+        runMainLooperUntil { (retrying.state.value as? PlaybackState.Active)?.currentIndex == 1 }
+        assertEquals(queue, (retrying.state.value as PlaybackState.Active).queue)
+        runMainLooperUntil { player.playWhenReady && player.currentMediaItemIndex == 1 }
+    }
+
+    @Test
+    fun `сессия ещё восстанавливается - транспортная команда доходит до сессии`() {
+        player.setMediaItems(queue.map { it.toMediaItem().withTrackUri() }, 0, 0L)
+        restoringSession()
+        val states = recordStates()
+        lifecycle.start()
+        runMainLooperUntil { futures.isNotEmpty() && futures.last().isDone }
+        repeat(5) { ShadowLooper.idleMainLooper() }
+        assertEquals(listOf<PlaybackState>(PlaybackState.Idle), states)
+
+        controller.next()
+
+        runMainLooperUntil { player.currentMediaItemIndex == 1 }
+    }
+
+    /**
+     * Заменяет сессию теста новой, которая сообщает «восстановление идёт»; [emptyPlayer] — над новым
+     * пустым плеером, как у пересозданного сервиса.
+     */
+    private fun restoringSession(emptyPlayer: Boolean = false): MediaSession {
+        session.release()
+        val sessionPlayer = if (emptyPlayer) {
+            TestExoPlayerBuilder(context).setMediaSourceFactory(FakeMediaSourceFactory()).build().also { extraPlayers += it }
+        } else {
+            player
+        }
+        session = MediaSession.Builder(context, sessionPlayer)
+            .setId("restoring")
+            .setCallback(testSessionCallback())
+            .setSessionExtras(sessionExtras(restoring = true))
+            .build()
+        return session
+    }
+
+    private fun realConnect(listener: MediaController.Listener): ListenableFuture<MediaController> =
+        MediaController.Builder(context, session.token).setListener(listener).buildAsync().also { futures += it }
+
+    private fun controllerWith(
+        connector: (MediaController.Listener) -> ListenableFuture<MediaController>,
+    ): MediaControllerPlaybackController {
+        return MediaControllerPlaybackController(
+            lifecycleOwner = lifecycle,
+            connector = connector,
+            scope = scope,
+            mainDispatcher = dispatcher,
+        )
     }
 
     /** Считает замены плейлиста плеера сессии с момента вызова. */

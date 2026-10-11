@@ -5,12 +5,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.lib.navigation.Navigator
 
 /**
- * The player screen. Shows a progress indicator until the playback session is connected and
- * leaves itself once connected with nothing to play. It never starts the playback service: the
- * playback controller connects to it.
+ * Экран плеера. Показывает индикатор, пока сессия воспроизведения не подключена и не
+ * восстановлена, и убирает свой ключ из стека, когда подключённой сессии нечего играть. Сервис
+ * плеера экран не стартует: к нему подключается контроллер воспроизведения.
  */
 @Composable
 internal fun PlayerRoute(
@@ -20,7 +21,8 @@ internal fun PlayerRoute(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                PlayerEffect.Close -> navigator.goBack()
+                // Свой ключ, не «назад»: поверх экрана плеера мог открыться другой экран.
+                PlayerEffect.Close -> navigator.remove(PlayerDestination)
             }
         }
     }

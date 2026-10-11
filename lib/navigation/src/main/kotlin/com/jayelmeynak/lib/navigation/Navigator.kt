@@ -21,4 +21,13 @@ public interface Navigator {
 
     /** Pops the current back stack. */
     public fun goBack()
+
+    /**
+     * Убирает [destination] из всех стеков, кроме корня вкладки; нет ключа — ничего не делает.
+     * Текущая вкладка не меняется.
+     *
+     * Для экрана, который закрывает сам себя (например, плеер без очереди): [goBack] закрыл бы
+     * экран, открытый поверх него.
+     */
+    public fun remove(destination: NavKey)
 }

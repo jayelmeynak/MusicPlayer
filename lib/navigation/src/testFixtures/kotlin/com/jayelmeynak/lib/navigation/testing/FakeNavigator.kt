@@ -12,6 +12,9 @@ public class FakeNavigator : Navigator {
     /** Keys passed to [navigateToRoot], in call order. */
     public val rootDestinations: MutableList<NavKey> = mutableListOf()
 
+    /** Ключи, переданные в [remove], в порядке вызовов. */
+    public val removed: MutableList<NavKey> = mutableListOf()
+
     /** How many times [goBack] was called. */
     public var backCount: Int = 0
         private set
@@ -26,5 +29,9 @@ public class FakeNavigator : Navigator {
 
     override fun goBack() {
         backCount++
+    }
+
+    override fun remove(destination: NavKey) {
+        removed += destination
     }
 }

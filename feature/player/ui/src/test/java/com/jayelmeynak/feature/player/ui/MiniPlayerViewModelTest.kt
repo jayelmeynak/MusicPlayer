@@ -1,5 +1,6 @@
 package com.jayelmeynak.feature.player.ui
 
+import app.cash.turbine.Event
 import app.cash.turbine.test
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.QueueItem
@@ -48,6 +49,32 @@ class MiniPlayerViewModelTest {
         controller.connect()
 
         assertTrue(viewModel.state.value.visible)
+    }
+
+    @Test
+    fun `уход в фон и возврат - мини-плеер виден всё время, без мигания`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1)), 0) }
+        val viewModel = MiniPlayerViewModel(controller)
+
+        viewModel.state.test {
+            assertTrue(awaitItem().visible)
+            controller.disconnect()
+            controller.connect()
+            // Ни одного скрытого состояния между уходом и возвратом.
+            cancelAndConsumeRemainingEvents().forEach { event ->
+                assertTrue((event as Event.Item).value.visible)
+            }
+        }
+    }
+
+    @Test
+    fun `подключиться не удалось - мини-плеер скрыт`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1)), 0) }
+        val viewModel = subscribed(MiniPlayerViewModel(controller))
+
+        controller.failConnection()
+
+        assertFalse(viewModel.state.value.visible)
     }
 
     @Test

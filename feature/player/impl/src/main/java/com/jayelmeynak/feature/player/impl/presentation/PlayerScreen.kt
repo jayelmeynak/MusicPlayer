@@ -56,6 +56,19 @@ internal fun PlayerScreen(
             CircularProgressIndicator()
         }
 
+        PlayerUiState.ConnectionFailed -> Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(PlayerR.string.player_error_connection),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+            )
+        }
+
         is PlayerUiState.Ready -> PlayerContent(state, onAction, modifier)
     }
 }

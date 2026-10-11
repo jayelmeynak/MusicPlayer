@@ -52,4 +52,10 @@ class AppNavigator(private val state: NavigationState) : Navigator {
             }
         }
     }
+
+    override fun remove(destination: NavKey) {
+        // Корень вкладки не убирается: стек без корня NavDisplay не покажет.
+        if (destination is TopLevelDestination) return
+        state.backStacks.values.forEach { stack -> stack.removeAll { it == destination } }
+    }
 }

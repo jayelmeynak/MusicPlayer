@@ -7,6 +7,8 @@ import com.jayelmeynak.feature.player.api.PlaybackError
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
+import com.jayelmeynak.feature.player.api.key
+import com.jayelmeynak.feature.player.api.positionForPercent
 import com.jayelmeynak.feature.player.impl.R
 import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkSource
 import com.jayelmeynak.lib.designsystem.UiText
@@ -70,19 +72,26 @@ internal class PlayerViewModel @Inject constructor(
 
     private fun seekTo(percent: Float) {
         val duration = (_state.value as? PlayerUiState.Ready)?.durationMs ?: return
-        if (duration <= 0) return
-        playbackController.seekTo((duration * percent / PERCENT).toLong())
+        positionForPercent(percent, duration)?.let(playbackController::seekTo)
     }
 
     private fun onPlaybackState(playback: PlaybackState) {
-        val active = playback as? PlaybackState.Active
-        if (active == null) {
-            _state.value = PlayerUiState.Connecting
-            return
+        val active = when (playback) {
+            PlaybackState.Idle -> {
+                _state.value = PlayerUiState.Connecting
+                return
+            }
+            PlaybackState.ConnectionFailed -> {
+                _state.value = PlayerUiState.ConnectionFailed
+                return
+            }
+            is PlaybackState.Active -> playback
         }
         if (active.queue.isEmpty()) {
             _state.value = PlayerUiState.Connecting
-            if (!closeSent) {
+            // Пустой снапшот без подключения ничего не значит: контроллер публикует подключённый
+            // снапшот только после восстановления сессии, закрываться можно лишь по нему.
+            if (active.isConnected && !closeSent) {
                 closeSent = true
                 _effects.trySend(PlayerEffect.Close)
             }
@@ -93,7 +102,7 @@ internal class PlayerViewModel @Inject constructor(
         val current = active.current
         if (current != artworkFor) loadArtwork(current)
         _state.value = PlayerUiState.Ready(
-            trackKey = current?.let { "${it.source}|${it.id}" } ?: "foreign|${active.currentIndex}",
+            trackKey = current?.key ?: "foreign|${active.currentIndex}",
             title = current?.title.orEmpty(),
             artist = current?.artist.orEmpty(),
             artworkUri = current?.artworkUri?.takeIf { current.source == TrackSource.DEEZER },
@@ -129,8 +138,4 @@ internal class PlayerViewModel @Inject constructor(
             PlaybackError.UNKNOWN -> R.string.player_error_unknown
         }
     )
-
-    private companion object {
-        const val PERCENT = 100f
-    }
 }

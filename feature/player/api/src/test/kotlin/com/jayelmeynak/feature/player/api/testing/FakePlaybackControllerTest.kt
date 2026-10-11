@@ -154,6 +154,52 @@ class FakePlaybackControllerTest {
         error = null,
     )
 
+    @Test
+    fun `disconnect оставляет последний снапшот с признаком не подключён`() {
+        val controller = FakePlaybackController()
+        controller.play(listOf(first, second), 1)
+
+        controller.disconnect()
+
+        val state = controller.state.value as PlaybackState.Active
+        assertEquals(listOf(first, second), state.queue)
+        assertEquals(1, state.currentIndex)
+        assertEquals(false, state.isConnected)
+    }
+
+    @Test
+    fun `disconnect без снапшота оставляет Idle, connect после него - подключённый снапшот`() {
+        val controller = FakePlaybackController(connected = false)
+
+        controller.disconnect()
+        assertEquals(PlaybackState.Idle, controller.state.value)
+
+        controller.connect()
+        assertEquals(emptyActive(), controller.state.value)
+    }
+
+    @Test
+    fun `connect после disconnect возвращает очередь подключённой`() {
+        val controller = FakePlaybackController()
+        controller.play(listOf(first), 0)
+        controller.disconnect()
+
+        controller.connect()
+
+        val state = controller.state.value as PlaybackState.Active
+        assertEquals(listOf(first), state.queue)
+        assertEquals(true, state.isConnected)
+    }
+
+    @Test
+    fun `failConnection - ConnectionFailed`() {
+        val controller = FakePlaybackController(connected = false)
+
+        controller.failConnection()
+
+        assertEquals(PlaybackState.ConnectionFailed, controller.state.value)
+    }
+
     private fun emptyActive() = PlaybackState.Active(
         queue = emptyList(),
         currentIndex = 0,

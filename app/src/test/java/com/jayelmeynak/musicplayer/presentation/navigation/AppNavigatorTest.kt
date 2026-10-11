@@ -34,6 +34,39 @@ class AppNavigatorTest {
     }
 
     @Test
+    fun `remove убирает экран из стека, даже если поверх открыт другой`() {
+        navigator.navigateTo(Screen("player"))
+        navigator.navigateTo(Screen("other"))
+
+        navigator.remove(Screen("player"))
+
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("other")), api)
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
+    }
+
+    @Test
+    fun `remove ищет ключ во всех стеках и не меняет вкладку`() {
+        navigator.navigateTo(Screen("player"))
+        navigator.navigateTo(TopLevelDestination.DownloadTracks)
+
+        navigator.remove(Screen("player"))
+
+        assertEquals(listOf(TopLevelDestination.ApiTracks), api)
+        assertEquals(TopLevelDestination.DownloadTracks, state.topLevelRoute)
+    }
+
+    @Test
+    fun `remove корня вкладки и отсутствующего ключа ничего не делает`() {
+        navigator.navigateTo(Screen("1"))
+
+        navigator.remove(TopLevelDestination.ApiTracks)
+        navigator.remove(Screen("missing"))
+
+        assertEquals(listOf(TopLevelDestination.ApiTracks, Screen("1")), api)
+        assertEquals(listOf(TopLevelDestination.DownloadTracks), local)
+    }
+
+    @Test
     fun `navigateTo tab switches tab and keeps stacks`() {
         navigator.navigateTo(TopLevelDestination.DownloadTracks)
 

@@ -3,11 +3,18 @@ package com.jayelmeynak.feature.player.api
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Controls the playback session that the player service owns.
+ * Управляет сессией воспроизведения, которой владеет сервис плеера.
  *
- * [state] is [PlaybackState.Idle] until the controller connects to the session. [play] called
- * before that runs once connected (the last call wins); the transport commands ([togglePlayPause],
- * [seekTo], [next], [previous], [seekBack], [seekForward]) are ignored while idle.
+ * [state] — [PlaybackState.Idle], пока контроллер ни разу не получил снапшот сессии. [play] до
+ * подключения исполняется после него (выигрывает последний вызов); в
+ * [PlaybackState.ConnectionFailed] он ещё и начинает новую серию попыток подключения. Транспортные
+ * команды ([togglePlayPause], [seekTo], [next], [previous], [seekBack], [seekForward]) без
+ * подключения игнорируются: до первого подключения, в [PlaybackState.ConnectionFailed] и в
+ * снапшоте [PlaybackState.Active] с `isConnected = false`. Пока подключённая сессия поднимает
+ * сохранённую очередь, [state] ещё прежний ([PlaybackState.Idle] или снапшот с
+ * `isConnected = false`), а команды уже доходят до сессии: play возобновит сохранённую очередь.
+ *
+ * Все методы вызываются только на главном потоке; на нём же реализация создаётся.
  */
 public interface PlaybackController {
 

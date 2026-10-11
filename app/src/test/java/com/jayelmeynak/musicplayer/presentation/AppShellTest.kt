@@ -149,6 +149,33 @@ class AppShellTest {
     }
 
     @Test
+    fun `уход в фон и возврат - мини-плеер с треком виден всё время переподключения`() {
+        openPlayerFromChart(index = 2)
+        back()
+
+        composeRule.runOnIdle { controller.disconnect() }
+        onComposeScreen<MiniPlayerScreen>(composeRule) {
+            root {
+                assertIsDisplayed()
+                assertTextContains(chart[2].title)
+            }
+        }
+
+        composeRule.runOnIdle { controller.connect() }
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertTextContains(chart[2].title) } }
+    }
+
+    @Test
+    fun `подключиться к плееру не удалось - мини-плеер скрыт`() {
+        openPlayerFromChart(index = 1)
+        back()
+
+        composeRule.runOnIdle { controller.failConnection() }
+
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertDoesNotExist() } }
+    }
+
+    @Test
     fun `клик по мини-плееру на Local переносит плеер в Local без дубля в Remote`() {
         openPlayerFromChart(index = 0)
         onComposeScreen<NavigationBarScreen>(composeRule) { localTab { performClick() } }

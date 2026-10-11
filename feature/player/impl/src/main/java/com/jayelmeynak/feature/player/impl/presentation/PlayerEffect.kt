@@ -1,6 +1,9 @@
 package com.jayelmeynak.feature.player.impl.presentation
 
 internal sealed interface PlayerEffect {
-    /** Nothing to play (e.g. the screen was restored after process death): leave the screen. */
+    /**
+     * Играть нечего: подключённая сессия закончила восстановление, а очередь пуста (например,
+     * экран восстановлен из стека, а сохранённой очереди нет). Экран убирает свой ключ из стека.
+     */
     data object Close : PlayerEffect
 }

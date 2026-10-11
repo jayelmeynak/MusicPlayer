@@ -6,13 +6,15 @@ import com.jayelmeynak.feature.player.api.QueueItem
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
- * [PlaybackController] for tests: records every call in [commands], including calls the contract
- * ignores while idle, so a test can check what was sent.
+ * [PlaybackController] для тестов: записывает каждый вызов в [commands], в том числе те, что
+ * контракт игнорирует без подключения, — тест проверяет, что было отправлено.
  *
- * A [connected] fake starts as an empty [PlaybackState.Active]; one created with
- * `connected = false` starts as [PlaybackState.Idle], defers [play] (the last call wins) and
- * applies it on [connect]. Only [play] and [connect] change [state] and [positionMs]; for any
- * other transition the test sets them itself. Transport commands never change the state.
+ * Фейк с [connected] стартует пустым [PlaybackState.Active]; созданный с `connected = false` — в
+ * [PlaybackState.Idle], откладывает [play] (выигрывает последний вызов) и применяет его в [connect].
+ * [disconnect] оставляет последний снапшот с `isConnected = false`, как настоящий контроллер в фоне;
+ * [failConnection] даёт [PlaybackState.ConnectionFailed]. [state] и [positionMs] меняют только
+ * [play], [connect], [disconnect] и [failConnection]; любой другой переход тест задаёт сам.
+ * Транспортные команды состояние не меняют.
  */
 public class FakePlaybackController(
     connected: Boolean = true,
@@ -32,12 +34,33 @@ public class FakePlaybackController(
     /** Calls in call order. */
     public val commands: List<Command> get() = recorded.toList()
 
-    /** Connects to the session: plays the deferred queue, if any, or becomes an empty `Active`. */
+    /**
+     * Подключение к сессии: играет отложенную очередь, если она есть; иначе последний снапшот снова
+     * подключён, а без снапшота — пустой `Active`.
+     */
     public fun connect() {
         isConnected = true
         val pending = deferredPlay
         deferredPlay = null
-        if (pending != null) start(pending) else state.value = emptyActive()
+        val last = state.value as? PlaybackState.Active
+        when {
+            pending != null -> start(pending)
+            last != null -> state.value = last.copy(isConnected = true)
+            else -> state.value = emptyActive()
+        }
+    }
+
+    /** Уход в фон: последний снапшот остаётся с `isConnected = false`; без снапшота — [PlaybackState.Idle]. */
+    public fun disconnect() {
+        isConnected = false
+        val last = state.value as? PlaybackState.Active
+        state.value = last?.copy(isConnected = false) ?: PlaybackState.Idle
+    }
+
+    /** Все попытки подключения не удались. */
+    public fun failConnection() {
+        isConnected = false
+        state.value = PlaybackState.ConnectionFailed
     }
 
     override fun play(queue: List<QueueItem>, startIndex: Int) {
