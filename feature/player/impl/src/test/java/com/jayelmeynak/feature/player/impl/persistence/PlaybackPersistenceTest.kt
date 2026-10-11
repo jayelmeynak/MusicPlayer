@@ -101,13 +101,30 @@ class PlaybackPersistenceTest {
         dispatcher.scheduler.runCurrent()
         assertEquals(beforePeriod + 2, store.savedPositions.size)
 
+        // Позиция плеера в событиях, на которые пишется позиция, — в той же рассылке, что и запись.
+        // Сравнивать с player.currentPosition после лупера нельзя: поток плеера (часы TestExoPlayer
+        // идут сами) подтверждает паузу позже и может уточнить позицию без нового события — на
+        // медленной машине (CI) она расходится с записанной.
+        var lastEventPositionMs = -1L
+        player.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                if (events.containsAny(
+                        Player.EVENT_IS_PLAYING_CHANGED,
+                        Player.EVENT_MEDIA_ITEM_TRANSITION,
+                        Player.EVENT_POSITION_DISCONTINUITY,
+                    )
+                ) {
+                    lastEventPositionMs = player.currentPosition
+                }
+            }
+        })
         player.pause()
         // Часы плеера идут сами: пока лупер крутится, плеер мог сменить трек — это тоже запись.
         ShadowLooper.idleMainLooper()
         dispatcher.scheduler.runCurrent()
         val afterPause = store.savedPositions.size
         assertTrue(afterPause > beforePeriod + 2)
-        assertEquals(player.currentPosition, store.savedPositions.last().positionMs)
+        assertEquals(lastEventPositionMs, store.savedPositions.last().positionMs)
 
         // Периодическая запись на паузе остановлена: планировщик доходит до простоя, записей нет.
         dispatcher.scheduler.advanceUntilIdle()
