@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Только debug: незашифрованный HTTP к петле нужен фейковому серверу Deezer в UI-тестах.
+     Остальные адреса — по политике по умолчанию (HTTP запрещён). -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
