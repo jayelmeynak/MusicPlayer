@@ -19,13 +19,30 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+/** Базовый адрес Deezer API; тесты подменяют [DeezerBaseUrlModule] адресом фейкового сервера. */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+public annotation class DeezerBaseUrl
+
+/** Точка подмены адреса Deezer API в тестах (`@TestInstallIn`); в приложении — настоящий адрес. */
+@Module
+@InstallIn(SingletonComponent::class)
+public object DeezerBaseUrlModule {
+
+    private const val BASE_URL = "https://api.deezer.com"
+
+    @Provides
+    @DeezerBaseUrl
+    public fun provideDeezerBaseUrl(): String = BASE_URL
+}
 
 @Module
 @InstallIn(SingletonComponent::class)
 internal object NetworkModule {
 
-    private const val BASE_URL = "https://api.deezer.com"
     private const val TIMEOUT = 20L
 
     @Singleton
@@ -47,8 +64,8 @@ internal object NetworkModule {
     }
     @Provides
     @Singleton
-    fun provideApi(okHttpClient: OkHttpClient): ApiService {
-        return createApiService(BASE_URL.toHttpUrl(), okHttpClient)
+    fun provideApi(okHttpClient: OkHttpClient, @DeezerBaseUrl baseUrl: String): ApiService {
+        return createApiService(baseUrl.toHttpUrl(), okHttpClient)
     }
 }
 

@@ -12,6 +12,14 @@ android {
         applicationId = "com.jayelmeynak.musicplayer"
         versionCode = 1
         versionName = "1.0"
+        // Hilt в инструментальных тестах: runner подставляет HiltTestApplication.
+        testInstrumentationRunner = "com.jayelmeynak.musicplayer.HiltTestRunner"
+    }
+
+    // Фейковый сервер Deezer — общий для Robolectric- и инструментальных UI-тестов.
+    sourceSets {
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
     }
 
     // Compose UI tests on Robolectric need the merged manifest with the test ComponentActivity.
@@ -57,5 +65,32 @@ dependencies {
     testImplementation(libs.androidx.ui.test.junit4)
     // The test ComponentActivity for every unit-test variant, not only debug.
     testImplementation(libs.androidx.ui.test.manifest)
+    // UI-тесты оболочки на Robolectric: Hilt testing, фейковый Deezer, фейковый контроллер плеера.
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
+    testImplementation(libs.mockwebserver3)
+    // DeezerBaseUrlModule — заменяется адресом фейкового сервера.
+    testImplementation(project(":lib:network"))
+    testImplementation(testFixtures(project(":feature:player:api")))
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.espresso.core)
+    testImplementation(libs.kakao.compose)
+
+    // Инструментальные UI-тесты: настоящий плеер, уведомление, системные точки входа.
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
+    androidTestImplementation(libs.mockwebserver3)
+    androidTestImplementation(project(":lib:network"))
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kaspresso)
+    androidTestImplementation(libs.kaspresso.compose.support)
+    // Используются напрямую: UiDevice (шторка, поворот) и screen-классы Kakao Compose из sharedTest.
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.kakao.compose)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+
     debugImplementation(libs.androidx.ui.tooling)
 }

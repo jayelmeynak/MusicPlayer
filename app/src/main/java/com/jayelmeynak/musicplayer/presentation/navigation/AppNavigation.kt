@@ -19,6 +19,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
@@ -28,6 +29,9 @@ import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.ui.MiniPlayer
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.search_tracks.presentation.ChartTracksScreen
+
+/** Тег мини-плеера: заголовок трека есть и в списке, и в мини-плеере — UI-тесты ищут по тегу. */
+const val MINI_PLAYER_TAG = "mini_player"
 
 @Composable
 fun AppNavigation(
@@ -114,7 +118,7 @@ fun AppNavigation(
 
             // Outside NavDisplay: the mini player's view model is scoped to the Activity.
             if (!isPlayerScreen) {
-                MiniPlayer(navigator = navigator)
+                MiniPlayer(navigator = navigator, modifier = Modifier.testTag(MINI_PLAYER_TAG))
             }
         }
     }

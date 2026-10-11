@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <application>
+    <!-- HTTP только к петле: фейковый сервер Deezer в UI-тестах. -->
+    <application android:networkSecurityConfig="@xml/network_security_config">
         <!-- Deep link для ручных проверок: только в debug, в release-манифест не попадает. -->
         <activity
             android:name=".presentation.MainActivity"
