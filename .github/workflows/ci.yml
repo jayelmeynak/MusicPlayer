@@ -108,7 +108,7 @@ jobs:
           path: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/androidTest/debug/*.apk
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   # Итоговый чек с прежним именем: его требует ruleset main. always() — чтобы чек не пропускался (skipped
   # засчитывается как пройденный), когда упал или отменён один из job'ов.
@@ -136,7 +136,8 @@ jobs:
 
   # Инструментальные UI-тесты (Kaspresso) на эмуляторе: настоящий плеер, уведомление, системные точки входа.
   # После assemble и по его APK, без Gradle: эмуляторы не стартуют при сломанной сборке, проект не
-  # компилируется в каждом job'е матрицы.
+  # компилируется в каждом job'е матрицы. Сломанная сборка — job'ы матрицы skipped, а обязательные чеки
+  # ruleset «android-tests (API N)» остаются ожидаемыми: merge заблокирован (и падает lint-test-assemble).
   android-tests:
     name: android-tests (API ${{ matrix.api-level }})
     needs: assemble
