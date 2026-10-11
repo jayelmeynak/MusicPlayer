@@ -13,8 +13,11 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: lint-test-assemble
+  # Lint, unit-тесты и сборка APK — параллельные job'ы: каждый заново конфигурирует проект и компилирует
+  # Kotlin, поэтому --build-cache: локальный build cache лежит в Gradle User Home, setup-gradle сохраняет его
+  # с main и восстанавливает на PR (только чтение), и неизменённые модули берутся из кэша.
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -31,8 +34,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Lint, unit tests, assemble
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug --continue
+      - name: Lint
+        run: ./gradlew lintDebug --continue --build-cache
 
       - name: Upload lint reports
         if: ${{ !cancelled() }}
@@ -42,33 +45,11 @@ jobs:
           path: '**/build/reports/lint-results*'
           if-no-files-found: ignore
 
-      - name: Upload test reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-reports
-          path: |
-            **/build/reports/tests/
-            **/build/test-results/
-          if-no-files-found: ignore
-
-      - name: Upload debug APK
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: ignore
-
-  # Инструментальные UI-тесты (Kaspresso) на эмуляторе: настоящий плеер, уведомление, системные точки входа.
-  android-tests:
-    name: android-tests (API ${{ matrix.api-level }})
+  # Без шардирования по модулям: шард заново компилирует общие модули, а основное время — :app с Robolectric.
+  unit-tests:
+    name: unit-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        api-level: [29, 33, 36]
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -83,14 +64,111 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --continue --build-cache
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          if-no-files-found: ignore
+
+  assemble:
+    name: assemble
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Test APK собирается здесь же: android-tests берут оба APK артефактом и проект не компилируют.
+      - name: Assemble debug
+        run: ./gradlew assembleDebug :app:assembleDebugAndroidTest --continue --build-cache
+
+      # Пути относительно app/build/outputs/apk: в android-tests распаковываются туда же, где их ждёт скрипт.
+      - name: Upload debug APKs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-debug-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/androidTest/debug/*.apk
+          if-no-files-found: ignore
+
+  # Итоговый чек с прежним именем: его требует ruleset main. always() — чтобы чек не пропускался (skipped
+  # засчитывается как пройденный), когда упал или отменён один из job'ов.
+  lint-test-assemble:
+    name: lint-test-assemble
+    needs: [lint, unit-tests, assemble]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check jobs
+        env:
+          LINT: ${{ needs.lint.result }}
+          UNIT_TESTS: ${{ needs['unit-tests'].result }}
+          ASSEMBLE: ${{ needs.assemble.result }}
+        run: |
+          echo "lint=$LINT unit-tests=$UNIT_TESTS assemble=$ASSEMBLE"
+          for result in "$LINT" "$UNIT_TESTS" "$ASSEMBLE"; do
+            if [ "$result" != "success" ]; then
+              echo "::error title=lint-test-assemble::Не все job'ы прошли: lint=$LINT, unit-tests=$UNIT_TESTS, assemble=$ASSEMBLE"
+              exit 1
+            fi
+          done
+
+  # Инструментальные UI-тесты (Kaspresso) на эмуляторе: настоящий плеер, уведомление, системные точки входа.
+  # После assemble и по его APK, без Gradle: эмуляторы не стартуют при сломанной сборке, проект не
+  # компилируется в каждом job'е матрицы.
+  android-tests:
+    name: android-tests (API ${{ matrix.api-level }})
+    needs: assemble
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [29, 33, 36]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # JDK — для sdkmanager/avdmanager эмулятора; Gradle в этом job'е не запускается.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Build app and test APKs
-        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Download debug APKs
+        uses: actions/download-artifact@v8
+        with:
+          name: app-debug-apks
+          path: app/build/outputs/apk
 
       - name: AVD cache
         uses: actions/cache@v6
@@ -135,8 +213,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: android-tests-reports-api${{ matrix.api-level }}
-          path: |
-            app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
-            app/build/ci-artifacts/
+          path: app/build/ci-artifacts/
           if-no-files-found: ignore
