@@ -14,6 +14,9 @@ android {
         versionName = "1.0"
         // Hilt в инструментальных тестах: runner подставляет HiltTestApplication.
         testInstrumentationRunner = "com.jayelmeynak.musicplayer.HiltTestRunner"
+        // Таймаут на инструментальный тест: зависание (ожидание простоя UI, системы) — падение одного
+        // теста с артефактами, а не весь таймаут CI job.
+        testInstrumentationRunnerArguments["timeout_msec"] = "180000"
     }
 
     // Фейковый сервер Deezer — общий для Robolectric- и инструментальных UI-тестов.

@@ -21,7 +21,9 @@ import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.musicplayer.presentation.MainActivity
 import com.jayelmeynak.musicplayer.screen.TrackListScreen
 import com.kaspersky.components.composesupport.config.addComposeSupport
+import com.kaspersky.kaspresso.interceptors.watcher.testcase.impl.screenshot.ScreenshotFailStepWatcherInterceptor
 import com.kaspersky.kaspresso.interceptors.watcher.testcase.impl.screenshot.ScreenshotStepWatcherInterceptor
+import com.kaspersky.kaspresso.interceptors.watcher.testcase.impl.screenshot.TestRunnerScreenshotWatcherInterceptor
 import com.kaspersky.kaspresso.kaspresso.Kaspresso
 import com.kaspersky.kaspresso.testcases.api.testcase.TestCase
 import com.kaspersky.kaspresso.testcases.core.testcontext.BaseTestContext
@@ -72,6 +74,10 @@ abstract class MusicPlayerTestCase : TestCase(kaspressoBuilder = kaspressoBuilde
 
     @get:Rule(order = 4)
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    /** Скриншот при падении — пока Activity ещё открыта (правило внутри правила Activity). */
+    @get:Rule(order = 5)
+    val failureScreenshotRule = FailureScreenshotRule()
 
     protected val chart = FakeDeezerServer.chartTracks
 
@@ -195,13 +201,20 @@ abstract class MusicPlayerTestCase : TestCase(kaspressoBuilder = kaspressoBuilde
         const val STATE_PLAYING = 3
 
         /**
-         * Расширенная конфигурация Kaspresso: при падении — скриншот, видео, дамп иерархии и logcat
-         * в [ArtifactsDirsProvider]; скриншоты каждого шага отключены (лишние файлы на устройстве).
+         * Расширенная конфигурация Kaspresso: при падении — видео, дамп иерархии и logcat в
+         * [ArtifactsDirsProvider]. Скриншоты Kaspresso сняты: его `InternalScreenshotMaker` рисует View
+         * в программный Canvas и падает на hardware-bitmap обложек Coil, подменяя исходную ошибку
+         * теста; скриншот при падении снимает [FailureScreenshotRule] через `UiDevice`.
          */
         private fun kaspressoBuilder(): Kaspresso.Builder =
             Kaspresso.Builder.advanced { dirsProvider = ArtifactsDirsProvider() }
                 .addComposeSupport()
-                .apply { stepWatcherInterceptors.removeAll { it is ScreenshotStepWatcherInterceptor } }
+                .apply {
+                    stepWatcherInterceptors.removeAll {
+                        it is ScreenshotStepWatcherInterceptor || it is ScreenshotFailStepWatcherInterceptor
+                    }
+                    testRunWatcherInterceptors.removeAll { it is TestRunnerScreenshotWatcherInterceptor }
+                }
 
         private fun requiredPermissions(): Array<String> =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
