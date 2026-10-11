@@ -1,5 +1,12 @@
 package com.jayelmeynak.feature.player.impl.service
 
+import com.jayelmeynak.feature.player.impl.persistence.PlaybackResumption
+import org.robolectric.shadows.ShadowLooper
+import org.robolectric.shadows.ShadowLog
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
@@ -15,6 +22,14 @@ import androidx.media3.session.MediaSession.ControllerInfo
 import androidx.media3.test.utils.TestExoPlayerBuilder
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
+import com.jayelmeynak.feature.player.api.key
+import com.jayelmeynak.feature.player.impl.persistence.FakePlaybackStateStore
+import com.jayelmeynak.feature.player.impl.persistence.PlaybackStateStore
+import com.jayelmeynak.feature.player.impl.persistence.SavedPosition
+import com.jayelmeynak.feature.player.impl.persistence.SavedQueue
+import com.jayelmeynak.feature.player.impl.persistence.toSaved
+import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
+import java.util.concurrent.ExecutionException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,7 +49,7 @@ import org.robolectric.RuntimeEnvironment
 @RunWith(RobolectricTestRunner::class)
 class PlaybackSessionCallbackTest {
 
-    private val callback = PlaybackSessionCallback()
+    private val callback = testSessionCallback()
     private var player: ExoPlayer? = null
     private var session: MediaSession? = null
 
@@ -189,6 +204,95 @@ class PlaybackSessionCallbackTest {
         assertNull(added.localConfiguration?.uri?.toTrackKey())
         assertEquals(Uri.parse(added.localConfiguration?.uri.toString()), added.localConfiguration?.uri)
     }
+
+    @Test
+    fun `возобновление для воспроизведения - сохранённая очередь, индекс и позиция`() {
+        val callback = testSessionCallback(savedStore())
+
+        val future = callback.onPlaybackResumption(session(), ownController(), /* isForPlayback = */ true)
+        runMainLooperUntil { future.isDone }
+
+        val result = future.get()
+        assertEquals(savedQueue, result.mediaItems.map { it.toQueueItem() })
+        assertTrue(result.mediaItems.all { it.localConfiguration?.uri?.toTrackKey() != null })
+        assertEquals(1, result.startIndex)
+        assertEquals(42_000L, result.startPositionMs)
+    }
+
+    @Test
+    fun `возобновление только для метаданных - один текущий элемент`() {
+        val callback = testSessionCallback(savedStore())
+
+        val future = callback.onPlaybackResumption(session(), ownController(), /* isForPlayback = */ false)
+        runMainLooperUntil { future.isDone }
+
+        assertEquals(listOf(savedQueue[1]), future.get().mediaItems.map { it.toQueueItem() })
+    }
+
+    @Test
+    fun `возобновлять нечего - future с ошибкой`() {
+        val callback = testSessionCallback(FakePlaybackStateStore())
+
+        val future = callback.onPlaybackResumption(session(), ownController(), /* isForPlayback = */ true)
+        runMainLooperUntil { future.isDone }
+
+        val error = runCatching { future.get() }.exceptionOrNull()
+        assertTrue(error is ExecutionException && error.cause is IllegalStateException)
+    }
+
+    @Test
+    fun `сбой чтения сохранённой очереди - future с ошибкой, процесс не падает`() {
+        val broken = object : PlaybackStateStore by FakePlaybackStateStore() {
+            override suspend fun readQueue(): SavedQueue? = throw IllegalStateException("сбой в тесте")
+        }
+        val callback = testSessionCallback(broken)
+
+        val future = callback.onPlaybackResumption(session(), ownController(), /* isForPlayback = */ true)
+        runMainLooperUntil { future.isDone }
+
+        assertTrue(runCatching { future.get() }.exceptionOrNull() is ExecutionException)
+    }
+
+    @Test
+    fun `сигнал неудачи возобновления вызывается один раз и не выдаётся за сбой чтения`() {
+        val uncaught = mutableListOf<Throwable>()
+        val callback = PlaybackSessionCallback(
+            resumption = PlaybackResumption(FakePlaybackStateStore()),
+            scope = CoroutineScope(SupervisorJob() + CoroutineExceptionHandler { _, e -> uncaught += e }),
+            mainDispatcher = Dispatchers.Main.immediate,
+        )
+        var signals = 0
+        callback.onResumptionFinished = { succeeded ->
+            assertFalse(succeeded)
+            signals++
+            throw IllegalStateException("сигнал упал в тесте")
+        }
+
+        val future = callback.onPlaybackResumption(session(), ownController(), /* isForPlayback = */ true)
+        runMainLooperUntil { future.isDone }
+        ShadowLooper.idleMainLooper()
+
+        assertEquals(1, signals)
+        assertEquals("Нет сохранённой очереди для возобновления", runCatching { future.get() }.exceptionOrNull()?.cause?.message)
+        assertTrue(ShadowLog.getLogsForTag("PlaybackSessionCallback").none { it.msg.contains("Could not read") })
+        assertEquals(listOf("сигнал упал в тесте"), uncaught.map { it.message })
+    }
+
+    private val savedQueue = listOf(
+        QueueItem("1", TrackSource.DEEZER, "One", "A", null, 30_000L),
+        QueueItem("2", TrackSource.DEEZER, "Two", "B", null, 30_000L),
+    )
+
+    private fun savedStore() = FakePlaybackStateStore(
+        queue = SavedQueue(savedQueue.map { it.toSaved() }),
+        position = SavedPosition(index = 1, key = savedQueue[1].key, positionMs = 42_000L),
+    )
+
+    private fun ownController() = controller(
+        packageName = RuntimeEnvironment.getApplication().packageName,
+        uid = Process.myUid(),
+        trusted = true,
+    )
 
     private fun session(): MediaSession {
         val context = RuntimeEnvironment.getApplication()

@@ -167,7 +167,10 @@ class TrackUriDataSpecResolverTest {
 
             override suspend fun getAlbum(id: String): Result<ResponseChart, DataError.Remote> = error("not used")
         }
-        val deezerResolver = DeezerPreviewUriResolver(silent, now = { 0L }, ttlMs = 1L, timeoutMs = TEST_TIMEOUT_MS)
+        // Таймаут — 1 мс реального времени: часы TestExoPlayer идут сами, и за долгое реальное ожидание
+        // загрузчика цикл буферизации «проживает» 10 минут и падает проверкой зависшей буферизации
+        // (ERROR_CODE_TIMEOUT) раньше ошибки источника — под нагрузкой тест мигал.
+        val deezerResolver = DeezerPreviewUriResolver(silent, now = { 0L }, ttlMs = 1L, timeoutMs = 1L)
         val player = TestExoPlayerBuilder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
@@ -180,7 +183,7 @@ class TrackUriDataSpecResolverTest {
             .build()
         try {
             player.setMediaItems(
-                PlaybackSessionCallback().prepareMediaItems(
+                testSessionCallback().prepareMediaItems(
                     listOf(QueueItem("42", TrackSource.DEEZER, "One", "A", null, 0L).toMediaItem()),
                 )
             )
@@ -214,6 +217,5 @@ class TrackUriDataSpecResolverTest {
 
     private companion object {
         const val LOCAL_ID = "content://media/external/audio/media/7"
-        const val TEST_TIMEOUT_MS = 200L
     }
 }

@@ -13,7 +13,7 @@ import com.jayelmeynak.feature.player.api.PlaybackError
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.testing.FakeTrackUriResolver
-import com.jayelmeynak.feature.player.impl.service.PlaybackSessionCallback
+import com.jayelmeynak.feature.player.impl.service.testSessionCallback
 import com.jayelmeynak.feature.player.impl.service.TrackUriDataSpecResolver
 import com.jayelmeynak.feature.player.impl.service.toMediaItem
 import org.junit.After
@@ -182,7 +182,7 @@ class PlaybackStateMappingTest {
         .build()
         .also { players += it }
 
-    private fun sessionItems() = PlaybackSessionCallback().prepareMediaItems(queue.map { it.toMediaItem() })
+    private fun sessionItems() = testSessionCallback().prepareMediaItems(queue.map { it.toMediaItem() })
 
     private val queue = listOf(
         QueueItem("1", TrackSource.DEEZER, "One", "A", "https://example.com/1.jpg", 200_000L),

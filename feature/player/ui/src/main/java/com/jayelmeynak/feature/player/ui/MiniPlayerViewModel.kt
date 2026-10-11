@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlaybackState
+import com.jayelmeynak.feature.player.api.key
+import com.jayelmeynak.feature.player.api.positionForPercent
+import com.jayelmeynak.feature.player.api.progressPercent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,28 +40,26 @@ internal class MiniPlayerViewModel @Inject constructor(
 
     private fun seekTo(percent: Float) {
         val duration = (playbackController.state.value as? PlaybackState.Active)?.durationMs ?: return
-        if (duration <= 0) return
-        playbackController.seekTo((duration * percent / PERCENT).toLong())
+        positionForPercent(percent, duration)?.let(playbackController::seekTo)
     }
 
     private fun toUiState(playback: PlaybackState, positionMs: Long): MiniPlayerUiState {
+        // Снапшот без подключения тоже показывается: мини-плеер не мигает при возврате из фона.
+        // Idle и ConnectionFailed — показывать нечего.
         val active = playback as? PlaybackState.Active ?: return MiniPlayerUiState()
         // An item added by another controller has no metadata of ours: nothing to show.
         val current = active.current ?: return MiniPlayerUiState()
-        val duration = active.durationMs
         return MiniPlayerUiState(
             title = current.title,
             artist = current.artist,
             showPlayButton = active.showPlayButton,
-            progress = if (duration > 0) (positionMs.toFloat() / duration * PERCENT).coerceIn(0f, PERCENT) else 0f,
-            trackKey = "${current.source}|${current.id}",
+            progress = progressPercent(positionMs, active.durationMs),
+            trackKey = current.key,
             visible = true,
         )
     }
 
     private companion object {
-        const val PERCENT = 100f
-
         /** Keeps the upstream through a configuration change. */
         const val STOP_TIMEOUT_MS = 5_000L
     }

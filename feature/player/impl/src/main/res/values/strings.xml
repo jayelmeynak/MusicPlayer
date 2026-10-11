@@ -3,4 +3,5 @@
     <string name="player_preview_label_with_length">Превью 30 с · трек %1$s</string>
     <string name="player_error_source_unavailable">Трек недоступен</string>
     <string name="player_error_unknown">Не удалось воспроизвести трек</string>
+    <string name="player_error_connection">Не удалось подключиться к плееру. Откройте приложение снова</string>
 </resources>

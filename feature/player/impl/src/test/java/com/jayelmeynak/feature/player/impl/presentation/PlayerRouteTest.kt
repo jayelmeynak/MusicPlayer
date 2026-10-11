@@ -7,6 +7,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.jayelmeynak.feature.player.api.PlaybackState
+import com.jayelmeynak.feature.player.api.PlayerDestination
+import com.jayelmeynak.feature.player.impl.R
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
@@ -42,7 +44,20 @@ class PlayerRouteTest {
         controller.state.value = controller.state.value
         composeRule.waitForIdle()
 
-        assertEquals(1, navigator.backCount)
+        // Экран убирает свой ключ, а не «назад»: поверх него мог открыться другой экран.
+        assertEquals(listOf(PlayerDestination), navigator.removed)
+        assertEquals(0, navigator.backCount)
+    }
+
+    @Test
+    fun `подключиться не удалось - текст ошибки вместо индикатора`() {
+        val controller = FakePlaybackController(connected = false)
+        setPlayerRoute(controller)
+
+        controller.failConnection()
+
+        composeRule.onNodeWithText(RuntimeEnvironment.getApplication().getString(R.string.player_error_connection)).assertExists()
+        assertEquals(emptyList<Any>(), navigator.removed)
     }
 
     @Test
@@ -50,6 +65,7 @@ class PlayerRouteTest {
         setPlayerRoute(FakePlaybackController(connected = false))
 
         assertEquals(0, navigator.backCount)
+        assertEquals(emptyList<Any>(), navigator.removed)
     }
 
     @Test

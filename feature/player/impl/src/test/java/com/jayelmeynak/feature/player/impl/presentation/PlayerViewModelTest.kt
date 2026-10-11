@@ -212,6 +212,46 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `уход в фон - трек остаётся на экране, без закрытия`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        val viewModel = PlayerViewModel(controller, artworks)
+
+        viewModel.effects.test {
+            controller.disconnect()
+            expectNoEvents()
+        }
+        assertEquals("Deezer 1", ready(viewModel).title)
+    }
+
+    @Test
+    fun `не подключённый снапшот с пустой очередью - экран ждёт, не закрывается`() = runTest {
+        val controller = FakePlaybackController()
+        val viewModel = PlayerViewModel(controller, artworks)
+        viewModel.effects.test {
+            // Подключённая пустая сессия закрывает экран; здесь снапшот уже не подключён.
+            controller.state.value = emptyActive().copy(isConnected = false)
+            cancelAndIgnoreRemainingEvents()
+        }
+        val fresh = PlayerViewModel(controller, artworks)
+
+        fresh.effects.test { expectNoEvents() }
+        assertEquals(PlayerUiState.Connecting, fresh.state.value)
+    }
+
+    @Test
+    fun `подключиться не удалось - экран показывает ошибку подключения, без закрытия`() = runTest {
+        val controller = FakePlaybackController(connected = false)
+        val viewModel = PlayerViewModel(controller, artworks)
+
+        viewModel.effects.test {
+            controller.failConnection()
+            expectNoEvents()
+        }
+        assertEquals(PlayerUiState.ConnectionFailed, viewModel.state.value)
+    }
+
+    @Test
     fun `текущий элемент чужой - экран с управлением без метаданных, без закрытия`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)

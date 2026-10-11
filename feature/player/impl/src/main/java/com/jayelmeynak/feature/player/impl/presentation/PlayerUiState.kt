@@ -1,11 +1,15 @@
 package com.jayelmeynak.feature.player.impl.presentation
 
+import com.jayelmeynak.feature.player.api.progressPercent
 import com.jayelmeynak.lib.designsystem.UiText
 
 internal sealed interface PlayerUiState {
 
     /** Not connected to the playback session yet: nothing to show but a progress indicator. */
     data object Connecting : PlayerUiState
+
+    /** Подключиться к сессии не удалось после всех попыток: текст ошибки вместо индикатора. */
+    data object ConnectionFailed : PlayerUiState
 
     /**
      * The current track.
@@ -36,12 +40,6 @@ internal sealed interface PlayerUiState {
     ) : PlayerUiState {
 
         val progress: Float
-            get() = if (durationMs > 0 && positionMs > 0) {
-                (positionMs.toFloat() / durationMs * PERCENT).coerceIn(0f, PERCENT)
-            } else {
-                0f
-            }
+            get() = progressPercent(positionMs, durationMs)
     }
 }
-
-private const val PERCENT = 100f

@@ -8,8 +8,14 @@ package com.jayelmeynak.feature.player.api
  */
 public sealed interface PlaybackState {
 
-    /** Not connected to the playback session yet (or disconnected while the app is in background). */
+    /** Снапшота сессии ещё не было: контроллер не подключался с начала процесса. */
     public data object Idle : PlaybackState
+
+    /**
+     * Подключиться к сессии не удалось после всех попыток. Команды игнорируются; следующий выход
+     * приложения на передний план пробует подключиться снова.
+     */
+    public data object ConnectionFailed : PlaybackState
 
     /**
      * Connected to the playback session.
@@ -28,6 +34,9 @@ public sealed interface PlaybackState {
      *   play/pause рисовать по нему, а не по [isPlaying].
      * @property durationMs Duration of the current item as the player reports it; `0` when unknown.
      * @property error The reason playback stopped, or `null`.
+     * @property isConnected `false` — последний известный снапшот, контроллер сейчас не подключён
+     *   (приложение в фоне, сессия переподключается или ещё восстанавливает очередь): показывать
+     *   можно; команды игнорируются, пока нет подключения (см. [PlaybackController]).
      */
     public data class Active(
         val queue: List<QueueItem>,
@@ -38,6 +47,7 @@ public sealed interface PlaybackState {
         val showPlayButton: Boolean,
         val durationMs: Long,
         val error: PlaybackError?,
+        val isConnected: Boolean = true,
     ) : PlaybackState {
 
         /** The item at [currentIndex], or `null` if the index is outside [queue]. */

@@ -19,3 +19,9 @@ public data class QueueItem(
     val artworkUri: String?,
     val durationMs: Long,
 )
+
+/**
+ * Ключ элемента очереди `SOURCE|id`: один и тот же для `mediaId` сессии, ключа жеста перемотки и
+ * сверки сохранённой позиции.
+ */
+public val QueueItem.key: String get() = "${source.name}|$id"

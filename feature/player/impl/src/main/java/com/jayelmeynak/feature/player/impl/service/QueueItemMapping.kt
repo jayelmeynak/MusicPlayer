@@ -7,6 +7,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
+import com.jayelmeynak.feature.player.api.key
 
 /**
  * MediaMetadata extras key for the full track length in ms. Not durationMs: for Deezer the media is
@@ -23,11 +24,11 @@ private const val MEDIA_ID_SEPARATOR = '|'
 internal data class TrackKey(val source: TrackSource, val id: String)
 
 /**
- * The queue item as a session item: `mediaId` = `SOURCE|id`, title, artist and artwork in the
+ * The queue item as a session item: `mediaId` = [QueueItem.key] (`SOURCE|id`), title, artist and artwork in the
  * metadata, the full length in extras. No URI: the session sets its own in `onAddMediaItems`.
  */
 internal fun QueueItem.toMediaItem(): MediaItem = MediaItem.Builder()
-    .setMediaId("${source.name}$MEDIA_ID_SEPARATOR$id")
+    .setMediaId(key)
     .setMediaMetadata(
         MediaMetadata.Builder()
             .setTitle(title)
@@ -76,3 +77,15 @@ internal fun Uri.toTrackKey(): TrackKey? {
 }
 
 private fun trackSourceOf(name: String): TrackSource? = TrackSource.entries.firstOrNull { it.name == name }
+
+/** Неразрешимый внутренний URI: элемент без ключа трека никогда не загрузится. */
+internal const val UNRESOLVABLE_TRACK_URI = "$TRACK_URI_SCHEME://unknown"
+
+/**
+ * Элемент для плеера сессии: свой элемент получает внутренний URI своего трека, любой другой — URI,
+ * который никогда не разрешится, даже если у него был собственный URI (см. `PlaybackSessionCallback`).
+ */
+internal fun MediaItem.withTrackUri(): MediaItem {
+    val uri = trackKey()?.toTrackUri()?.toString() ?: UNRESOLVABLE_TRACK_URI
+    return buildUpon().setUri(uri).build()
+}

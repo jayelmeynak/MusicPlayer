@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.musicplayer.feature.impl)
+    // Сохранённая очередь сессии — JSON в DataStore.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -30,6 +32,8 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.common)
+    implementation(libs.androidx.datastore)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(project(":util:testing"))
