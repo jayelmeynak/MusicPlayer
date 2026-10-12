@@ -73,6 +73,18 @@ class CatalogViewModelTest {
     }
 
     @Test
+    fun `тап по иконке Deezer - эффект открытия ссылки, плеер не трогается`() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.effects.test {
+            viewModel.onAction(CatalogAction.OnOpenInDeezerClick("https://www.deezer.com/track/42"))
+
+            assertEquals(CatalogEffect.OpenLink("https://www.deezer.com/track/42"), awaitItem())
+        }
+        assertEquals(emptyList<Command>(), playbackController.commands)
+    }
+
+    @Test
     fun `без тапа эффектов нет`() = runTest {
         val viewModel = viewModel()
 

@@ -11,4 +11,7 @@ internal sealed interface CatalogAction {
      * Список передаётся, а не берётся из состояния: выдача могла смениться между отрисовкой и тапом.
      */
     data class OnTrackClick(val tracks: List<Track>, val index: Int) : CatalogAction
+
+    /** Тап по иконке «Открыть в Deezer» у трека со ссылкой [link]. */
+    data class OnOpenInDeezerClick(val link: String) : CatalogAction
 }

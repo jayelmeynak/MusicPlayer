@@ -12,4 +12,6 @@ internal data class Track(
     val coverUrl: String,
     /** Полная длина трека в мс, 0 — неизвестна; играется 30-секундное превью. */
     val duration: Long,
+    /** Страница трека на Deezer, `null` — ссылки нет. */
+    val link: String?,
 )

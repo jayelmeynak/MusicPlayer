@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +36,7 @@ internal fun CatalogScreen(
     modifier: Modifier = Modifier,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val previewLabel = stringResource(CatalogR.string.preview_label)
 
     Column(
         modifier = modifier
@@ -90,13 +95,34 @@ internal fun CatalogScreen(
                         tracks = content.tracks,
                         key = { it.id },
                         title = { it.title },
-                        artistName = { it.artistName },
+                        // Реальная длительность и пометка превью (ADR-15): играет 30-секундный отрывок.
+                        artistName = { formatTrackSubtitle(it.artistName, it.duration) },
+                        supportingText = { previewLabel },
+                        trailing = { track ->
+                            track.link?.let { link ->
+                                OpenInDeezerButton(
+                                    trackTitle = track.title,
+                                    onClick = { onAction(CatalogAction.OnOpenInDeezerClick(link)) },
+                                )
+                            }
+                        },
                         onTrackClick = { tracks, index -> onAction(CatalogAction.OnTrackClick(tracks, index)) },
                         image = { RemoteTrackImage(it.coverUrl) },
                     )
                 }
             }
         }
+    }
+}
+
+/** Открыть страницу трека на Deezer; описание с названием трека — для TalkBack. */
+@Composable
+private fun OpenInDeezerButton(trackTitle: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+            contentDescription = stringResource(CatalogR.string.open_in_deezer, trackTitle),
+        )
     }
 }
 

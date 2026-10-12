@@ -2,4 +2,7 @@
 <resources>
     <string name="retry">Повторить</string>
     <string name="chart_empty">Чарт пуст</string>
+    <string name="preview_label">Превью 30\u00A0с</string>
+    <string name="open_in_deezer">Открыть «%1$s» в Deezer</string>
+    <string name="no_app_for_link">Нет приложения, чтобы открыть ссылку</string>
 </resources>

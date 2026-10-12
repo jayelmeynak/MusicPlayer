@@ -23,6 +23,7 @@ class MappersTest {
                 artistName = "Artist",
                 coverUrl = "cover",
                 duration = 180_000L,
+                link = "https://www.deezer.com/track/42",
             ),
             track,
         )
@@ -52,5 +53,28 @@ class MappersTest {
     @Test
     fun `альбом без обложки - пустая обложка`() {
         assertEquals("", trackDto().copy(album = albumDto().copy(cover = null)).toTrack()?.coverUrl)
+    }
+
+    @Test
+    fun `ссылка на страницу трека Deezer сохраняется`() {
+        assertEquals("https://www.deezer.com/track/42", trackDto().toTrack()?.link)
+        assertEquals("https://deezer.com/track/42", trackDto().copy(link = "https://deezer.com/track/42").toTrack()?.link)
+    }
+
+    @Test
+    fun `ссылка не на сайт Deezer по https или пустая - null`() {
+        listOf(
+            "http://www.deezer.com/track/42",
+            "file:///sdcard/track.mp3",
+            "intent://deezer.com/track/42#Intent;scheme=https;end",
+            "https://evil.com/track/42",
+            "https://deezer.com.evil.com/track/42",
+            "  ",
+            "",
+            "https://deezer com/track",
+            null,
+        ).forEach { link ->
+            assertNull(link, trackDto().copy(link = link).toTrack()?.link)
+        }
     }
 }
