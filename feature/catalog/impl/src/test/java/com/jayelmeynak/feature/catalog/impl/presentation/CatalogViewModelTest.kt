@@ -11,7 +11,10 @@ import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import com.jayelmeynak.lib.designsystem.R
 import com.jayelmeynak.lib.designsystem.UiText
+import com.jayelmeynak.lib.designsystem.search.SEARCH_DEBOUNCE_MS
 import com.jayelmeynak.util.testing.MainDispatcherRule
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -21,7 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-class ChartTracksViewModelTest {
+class CatalogViewModelTest {
 
     @get:Rule
     val mainRule = MainDispatcherRule()
@@ -31,7 +34,7 @@ class ChartTracksViewModelTest {
 
     private val playbackController = FakePlaybackController()
 
-    private fun viewModel() = ChartTracksViewModel(
+    private fun viewModel() = CatalogViewModel(
         GetChartUseCase(repository),
         SearchTrackUseCase(repository),
         playbackController,
@@ -41,12 +44,42 @@ class ChartTracksViewModelTest {
     fun `тап по треку чарта запускает весь чарт с индексом трека`() = runTest {
         val viewModel = viewModel()
 
-        viewModel.onAction(ChartTracksAction.OnTrackClick(chart, 1))
+        viewModel.onAction(CatalogAction.OnTrackClick(chart, 1))
 
         assertEquals(
             listOf(Command.Play(chart.map { it.toQueueItem() }, 1)),
             playbackController.commands,
         )
+    }
+
+    @Test
+    fun `тап - сначала play нарисованного списка, затем эффект открытия плеера`() = runTest {
+        val viewModel = viewModel()
+
+        // Сколько команд play фейк получил к моменту, когда пришёл эффект: сборщик без диспетчеризации
+        // получает эффект прямо в отправке, поэтому видит состояние фейка на тот момент.
+        val playsAtEffect = mutableListOf<Int>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.effects.collect { effect ->
+                assertEquals(CatalogEffect.OpenPlayer, effect)
+                playsAtEffect += playbackController.commands.count { it is Command.Play }
+            }
+        }
+
+        viewModel.onAction(CatalogAction.OnTrackClick(chart, 0))
+
+        assertEquals(listOf(1), playsAtEffect)
+        assertEquals(listOf(Command.Play(chart.map { it.toQueueItem() }, 0)), playbackController.commands)
+    }
+
+    @Test
+    fun `без тапа эффектов нет`() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.effects.test {
+            viewModel.onAction(CatalogAction.OnRetryClick)
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -59,11 +92,11 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("found"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("found"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             assertEquals(found, expectMostRecentItem().searchList)
         }
-        viewModel.onAction(ChartTracksAction.OnTrackClick(found, 1))
+        viewModel.onAction(CatalogAction.OnTrackClick(found, 1))
 
         assertEquals(
             listOf(Command.Play(found.map { it.toQueueItem() }, 1)),
@@ -80,11 +113,11 @@ class ChartTracksViewModelTest {
         val drawn = viewModel.state.value.charts
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("found"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("found"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             assertEquals(found, expectMostRecentItem().searchList)
         }
-        viewModel.onAction(ChartTracksAction.OnTrackClick(drawn, 1))
+        viewModel.onAction(CatalogAction.OnTrackClick(drawn, 1))
 
         assertEquals(
             listOf(Command.Play(drawn.map { it.toQueueItem() }, 1)),
@@ -159,11 +192,11 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             assertNull(expectMostRecentItem().errorMessage)
 
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
 
             val state = expectMostRecentItem()
             assertEquals(UiText.StringResourceId(R.string.error_no_internet), state.errorMessage)
@@ -176,7 +209,7 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("zzzzzz"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("zzzzzz"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(emptyList<Any>(), expectMostRecentItem().searchList)
@@ -189,9 +222,9 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
 
             val state = expectMostRecentItem()
             assertNull(state.searchList)
@@ -210,9 +243,9 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("a"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("a"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("ab"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("ab"))
             // "ab" готов через паузу + 100 мс, а "a" ещё шёл бы до паузы + 1000 мс.
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 150)
 
@@ -233,14 +266,15 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 100)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
             advanceTimeBy(2_000)
 
             val state = expectMostRecentItem()
             assertNull(state.searchList)
             assertFalse(state.isLoading)
+            assertEquals(SearchState.Inactive, state.search)
         }
     }
 
@@ -250,11 +284,11 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
             advanceTimeBy(100)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
@@ -270,7 +304,7 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             assertEquals("abc", expectMostRecentItem().query)
 
             advanceTimeBy(SEARCH_DEBOUNCE_MS - 1)
@@ -290,11 +324,11 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abcd"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abcd"))
             advanceTimeBy(100)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             assertEquals(listOf("abc"), repository.searchQueries)
@@ -308,13 +342,14 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
             assertNull(state.searchList)
+            assertEquals(SearchState.Inactive, state.search)
             assertEquals("", state.query)
             assertEquals(listOf("abc"), repository.searchQueries)
         }
@@ -326,7 +361,7 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
@@ -346,7 +381,7 @@ class ChartTracksViewModelTest {
             assertTrue(expectMostRecentItem().isChartError)
 
             repository.chartResult = Result.Success(chart)
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
 
             val state = expectMostRecentItem()
             assertEquals(chart, state.charts)
@@ -366,7 +401,7 @@ class ChartTracksViewModelTest {
         viewModel.state.test {
             expectMostRecentItem()
             repository.chartResult = Result.Success(chart)
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
 
             val loading = expectMostRecentItem()
             assertTrue(loading.isLoading)
@@ -385,7 +420,7 @@ class ChartTracksViewModelTest {
         viewModel.state.test {
             expectMostRecentItem()
             repository.chartResult = Result.Error(DataError.Remote.REQUEST_TIMEOUT)
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
 
             val state = expectMostRecentItem()
             assertEquals(UiText.StringResourceId(R.string.error_request_timeout), state.errorMessage)
@@ -408,8 +443,8 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
             advanceTimeBy(2_000)
 
             assertEquals(chart, expectMostRecentItem().charts)
@@ -423,7 +458,7 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
@@ -440,16 +475,16 @@ class ChartTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange("abc"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             repository.chartResult = Result.Success(chart)
-            viewModel.onAction(ChartTracksAction.OnRetryClick)
+            viewModel.onAction(CatalogAction.OnRetryClick)
 
             val searching = expectMostRecentItem()
             assertEquals(found, searching.searchList)
             assertFalse(searching.isLoading)
 
-            viewModel.onAction(ChartTracksAction.OnSearchQueryChange(""))
+            viewModel.onAction(CatalogAction.OnSearchQueryChange(""))
             val cleared = expectMostRecentItem()
             assertEquals(chart, cleared.charts)
             assertNull(cleared.errorMessage)
@@ -485,10 +520,25 @@ class ChartTracksViewModelTest {
         repository.chartResult = Result.Success(emptyList())
         val empty = viewModel()
 
-        failed.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
-        empty.onAction(ChartTracksAction.OnSearchQueryChange("abc"))
+        failed.onAction(CatalogAction.OnSearchQueryChange("abc"))
+        empty.onAction(CatalogAction.OnSearchQueryChange("abc"))
 
         assertFalse(failed.state.value.isChartError)
         assertFalse(empty.state.value.isChartEmpty)
     }
+
+    // Наблюдаемые свойства экрана в терминах прежних тестов: что показано (content) и исходы загрузок.
+    private val CatalogUiState.charts get() = (chart as? ChartState.Loaded)?.tracks.orEmpty()
+    private val CatalogUiState.isLoading get() = content == CatalogContent.Loading
+    private val CatalogUiState.errorMessage get() = (content as? CatalogContent.Error)?.message
+    private val CatalogUiState.isChartError get() = (content as? CatalogContent.Error)?.canRetry == true
+    private val CatalogUiState.isChartEmpty get() = content == CatalogContent.ChartEmpty
+
+    /** Выдача поиска: `null` — поиск не активен, при ошибке поиска — пустой список. */
+    private val CatalogUiState.searchList
+        get() = when (val search = search) {
+            SearchState.Inactive, SearchState.Loading -> null
+            is SearchState.Loaded -> search.tracks
+            is SearchState.Failed -> emptyList()
+        }
 }
