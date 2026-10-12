@@ -11,6 +11,9 @@
 # (по умолчанию 20m; нужен timeout или gtimeout, иначе без таймаута с предупреждением).
 set -euo pipefail
 
+# Скрипт стартовал: CI отличает упавшие тесты от сбоя эмулятора до них (такой сбой шаг повторяет).
+echo "started=true" >> "${GITHUB_OUTPUT:-/dev/null}"
+
 root=$(cd "$(dirname "$0")/../.." && pwd)
 app_apk=${1:-$root/app/build/outputs/apk/debug/app-debug.apk}
 test_apk=${2:-$root/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk}
