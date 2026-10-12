@@ -20,10 +20,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.compose)
-    implementation(libs.kotlinx.coroutines.core)
+    // Flow — в публичном API (debounceSearchQuery).
+    api(libs.kotlinx.coroutines.core)
 
     api(project(":util:result"))
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
