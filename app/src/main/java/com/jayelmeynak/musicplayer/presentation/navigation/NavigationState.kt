@@ -18,21 +18,28 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import kotlinx.serialization.json.Json
 
+/**
+ * [roots] — корень стека вкладки, если это не сама вкладка (экран фичи, например каталога). Вкладка
+ * остаётся [TopLevelDestination]: её хранит и показывает `app`, а корень её стека может быть ключом
+ * из `:api` фичи.
+ */
 @Composable
 fun rememberNavigationState(
     startRoute: TopLevelDestination,
     topLevelRoutes: Set<TopLevelDestination>,
+    roots: Map<TopLevelDestination, NavKey> = emptyMap(),
 ): NavigationState {
     val topLevelRoute = rememberSaveable(saver = topLevelRouteSaver(startRoute, topLevelRoutes)) {
         mutableStateOf(startRoute)
     }
     // Keyed by tab, so each stack is saved under its tab rather than its position in the set.
-    val backStacks = topLevelRoutes.associateWith { tab -> key(tab) { rememberNavBackStack(tab) } }
-    return remember(startRoute, topLevelRoutes) {
+    val backStacks = topLevelRoutes.associateWith { tab -> key(tab) { rememberNavBackStack(roots[tab] ?: tab) } }
+    return remember(startRoute, topLevelRoutes, roots) {
         NavigationState(
             startRoute = startRoute,
             topLevelRoute = topLevelRoute,
             backStacks = backStacks,
+            roots = roots,
         )
     }
 }
@@ -56,8 +63,16 @@ class NavigationState(
     val startRoute: TopLevelDestination,
     topLevelRoute: MutableState<TopLevelDestination>,
     val backStacks: Map<TopLevelDestination, NavBackStack<NavKey>>,
+    private val roots: Map<TopLevelDestination, NavKey> = emptyMap(),
 ) {
     var topLevelRoute: TopLevelDestination by topLevelRoute
+
+    /** Корень стека вкладки [tab]: ключ из `roots` или сама вкладка. */
+    fun rootOf(tab: TopLevelDestination): NavKey = roots[tab] ?: tab
+
+    /** Вкладка, корень стека которой — [key], или `null`, если [key] не корень. */
+    fun tabOfRoot(key: NavKey): TopLevelDestination? =
+        (key as? TopLevelDestination) ?: roots.entries.firstOrNull { it.value == key }?.key
 
     val stacksInUse: List<TopLevelDestination>
         get() = if (topLevelRoute == startRoute) {

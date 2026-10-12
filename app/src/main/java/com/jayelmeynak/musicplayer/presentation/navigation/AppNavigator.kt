@@ -6,9 +6,11 @@ import com.jayelmeynak.lib.navigation.Navigator
 class AppNavigator(private val state: NavigationState) : Navigator {
 
     override fun navigateTo(destination: NavKey) {
-        if (destination is TopLevelDestination) {
-            if (state.topLevelRoute != destination) {
-                state.topLevelRoute = destination
+        // Вкладка или корень её стека — переключить вкладку: корень не переносится в другой стек.
+        val tab = state.tabOfRoot(destination)
+        if (tab != null) {
+            if (state.topLevelRoute != tab) {
+                state.topLevelRoute = tab
             }
         } else {
             val stack = state.backStacks[state.topLevelRoute] ?: return
@@ -22,8 +24,10 @@ class AppNavigator(private val state: NavigationState) : Navigator {
     }
 
     override fun navigateToRoot(destination: NavKey) {
-        require(destination is TopLevelDestination) { "Only a top-level destination can be a root: $destination" }
-        navigateToRoot(destination)
+        // Вкладка или корень её стека (ключ фичи из roots), как в navigateTo и remove.
+        val tab = state.tabOfRoot(destination)
+        require(tab != null) { "Only a top-level destination or its root can be a root: $destination" }
+        navigateToRoot(tab)
     }
 
     fun navigateToRoot(destination: TopLevelDestination) {
@@ -31,10 +35,11 @@ class AppNavigator(private val state: NavigationState) : Navigator {
             state.topLevelRoute = destination
         }
 
+        val root = state.rootOf(destination)
         val stack = state.backStacks[destination]
-        if (stack != null && (stack.size != 1 || stack.first() != destination)) {
+        if (stack != null && (stack.size != 1 || stack.first() != root)) {
             stack.clear()
-            stack.add(destination)
+            stack.add(root)
         }
     }
 
@@ -55,7 +60,7 @@ class AppNavigator(private val state: NavigationState) : Navigator {
 
     override fun remove(destination: NavKey) {
         // Корень вкладки не убирается: стек без корня NavDisplay не покажет.
-        if (destination is TopLevelDestination) return
+        if (state.tabOfRoot(destination) != null) return
         state.backStacks.values.forEach { stack -> stack.removeAll { it == destination } }
     }
 }

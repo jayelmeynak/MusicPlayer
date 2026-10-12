@@ -1,42 +1,26 @@
 package com.jayelmeynak.musicplayer.presentation.navigation
 
+import android.net.Uri
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
-import com.jayelmeynak.search_tracks.domain.models.Album
-import com.jayelmeynak.search_tracks.domain.models.Track
+import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+/** Маппинг локального трека; Deezer-трек маппит каталог. Robolectric — ради `Uri` в `LocalTrack`. */
+@RunWith(RobolectricTestRunner::class)
 class QueueMappingTest {
 
     @Test
-    fun `трек Deezer - id, метаданные, обложка альбома и полная длина, без URL превью`() {
-        val track = Track(
-            id = 42L,
-            title = "Title",
-            album = Album(id = 1, title = "Album", cover = "https://cover", trackList = "", type = ""),
-            artistName = "Artist",
-            preview = "https://preview?hdnea=exp=1",
-            duration = 180_000L,
-        )
+    fun `локальный трек - id и обложка равны content-URI трека, длина в мс`() {
+        val uri = "content://media/external/audio/media/7"
+        val track = LocalTrack(id = 7L, title = "Title", artistName = "Artist", duration = 180_000, uri = Uri.parse(uri))
 
         assertEquals(
-            QueueItem("42", TrackSource.DEEZER, "Title", "Artist", "https://cover", 180_000L),
+            QueueItem(uri, TrackSource.LOCAL, "Title", "Artist", uri, 180_000L),
             track.toQueueItem(),
         )
-    }
-
-    @Test
-    fun `альбом без обложки - обложки нет`() {
-        val track = Track(
-            id = 1L,
-            title = "T",
-            album = Album(id = 0, title = "", cover = "", trackList = "", type = ""),
-            artistName = "A",
-            preview = "p",
-        )
-
-        assertNull(track.toQueueItem().artworkUri)
     }
 }

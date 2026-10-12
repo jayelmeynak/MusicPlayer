@@ -33,7 +33,9 @@ android {
 
 dependencies {
 
-    implementation(project(":features:search-tracks"))
+    // ChartDestination — корень стека вкладки «Remote»; экран и резолвер Deezer приходят через :di.
+    implementation(project(":feature:catalog:api"))
+    implementation(project(":feature:catalog:di"))
     implementation(project(":feature:player:api"))
     implementation(project(":feature:player:ui"))
     implementation(project(":feature:player:di"))
