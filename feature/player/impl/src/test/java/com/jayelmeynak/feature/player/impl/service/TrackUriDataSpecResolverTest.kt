@@ -24,12 +24,6 @@ import androidx.media3.test.utils.robolectric.TestPlayerRunHelper.run
 import com.jayelmeynak.feature.player.api.PlaybackError
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.impl.playback.toPlaybackError
-import com.jayelmeynak.feature.player.impl.resolver.DeezerPreviewUriResolver
-import com.jayelmeynak.lib.network.data.RemoteTrackDataSource
-import com.jayelmeynak.lib.network.data.dto.ResponseChart
-import com.jayelmeynak.lib.network.data.dto.TrackDto
-import com.jayelmeynak.util.result.DataError
-import com.jayelmeynak.util.result.Result
 import org.robolectric.RuntimeEnvironment
 import java.io.InterruptedIOException
 import java.util.concurrent.CountDownLatch
@@ -156,21 +150,15 @@ class TrackUriDataSpecResolverTest {
         assertTrue(stillInterrupted)
     }
 
+    /**
+     * Плеер целиком: `null` резолвера — одна попытка загрузки и ошибка источника. `null` резолвер
+     * Deezer отдаёт и на ошибку сети, и по истечении лимита ожидания ответа; сам лимит проверяет
+     * `DeezerPreviewUriResolverTest` в `feature:catalog:impl`.
+     */
     @Test
-    fun `резолвер Deezer не ответил - одна попытка, ошибка источника без повторов загрузки`() {
+    fun `резолвер вернул null - одна попытка, ошибка источника без повторов загрузки`() {
         var calls = 0
-        val silent = object : RemoteTrackDataSource {
-            override suspend fun getTrack(id: String): Result<TrackDto, DataError.Remote> {
-                calls++
-                awaitCancellation()
-            }
-
-            override suspend fun getAlbum(id: String): Result<ResponseChart, DataError.Remote> = error("not used")
-        }
-        // Таймаут — 1 мс реального времени: часы TestExoPlayer идут сами, и за долгое реальное ожидание
-        // загрузчика цикл буферизации «проживает» 10 минут и падает проверкой зависшей буферизации
-        // (ERROR_CODE_TIMEOUT) раньше ошибки источника — под нагрузкой тест мигал.
-        val deezerResolver = DeezerPreviewUriResolver(silent, now = { 0L }, ttlMs = 1L, timeoutMs = 1L)
+        val deezerResolver = deezerResolver { calls++; null }
         val player = TestExoPlayerBuilder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(

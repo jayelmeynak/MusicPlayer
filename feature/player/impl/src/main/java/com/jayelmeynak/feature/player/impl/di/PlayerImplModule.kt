@@ -23,7 +23,6 @@ import com.jayelmeynak.feature.player.impl.persistence.savedPositionFile
 import com.jayelmeynak.feature.player.impl.persistence.savedQueueDataStore
 import com.jayelmeynak.feature.player.impl.persistence.savedQueueFile
 import com.jayelmeynak.feature.player.impl.playback.SessionServiceConnector
-import com.jayelmeynak.feature.player.impl.resolver.DeezerPreviewUriResolver
 import com.jayelmeynak.feature.player.impl.resolver.LocalContentUriResolver
 import com.jayelmeynak.feature.player.impl.service.ExoPlayerFactory
 import com.jayelmeynak.feature.player.impl.service.PlayerFactory
@@ -58,12 +57,8 @@ internal abstract class PlayerImplModule {
     @Binds
     abstract fun bindPlaybackStateStore(impl: DataStorePlaybackStateStore): PlaybackStateStore
 
-    // Адаптеры-резолверы — internal, поэтому привязаны здесь, а не в PlayerModule; уйдут отсюда,
-    // когда резолверы источников переедут в фичи каталога и локальной музыки.
-    @Binds
-    @IntoSet
-    abstract fun bindDeezerResolver(impl: DeezerPreviewUriResolver): TrackUriResolver
-
+    // Адаптер-резолвер локальных треков — internal, поэтому привязан здесь, а не в PlayerModule;
+    // уйдёт в фичу локальной музыки. Резолвер Deezer привязывает каталог (CatalogModule).
     @Binds
     @IntoSet
     abstract fun bindLocalResolver(impl: LocalContentUriResolver): TrackUriResolver

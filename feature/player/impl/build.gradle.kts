@@ -16,9 +16,7 @@ android {
 dependencies {
     implementation(project(":feature:player:api"))
     implementation(project(":lib:designsystem"))
-    implementation(project(":lib:network"))
     implementation(project(":lib:mediastore"))
-    implementation(project(":util:result"))
     implementation(project(":util:coroutines"))
 
     implementation(libs.androidx.material.icons.extended)

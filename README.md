@@ -33,12 +33,15 @@ feature/player/
   impl/                   # сервис, ExoPlayer/MediaSession, контроллер, экран плеера
   ui/                     # мини-плеер
   di/                     # Hilt-привязки контрактов
+feature/catalog/
+  api/                    # ключ экрана каталога ChartDestination (JVM)
+  impl/                   # чарт и поиск Deezer, резолвер ссылок превью для плеера
+  di/                     # Hilt-привязки экрана и резолвера
 features/
-  search-tracks/          # чарт и поиск Deezer
   download-tracks/        # аудиофайлы устройства
 ```
 
-Зависимости: `app` → `feature:player:api|ui|di`, `features:*`, `lib:designsystem`, `lib:mediastore`, `lib:navigation`, `util:coroutines`; `features:*` → `lib:*` → `util:*`; `feature:player:impl` подключается только из `feature:player:di` (это проверяет сборка), фичи друг от друга не зависят. Архитектура — Clean Architecture и MVVM на Compose; идёт поэтапная миграция `features:*` в модули `feature:<домен>:api|impl|ui|di`.
+Зависимости: `app` → `feature:player:api|ui|di`, `feature:catalog:api|di`, `features:*`, `lib:designsystem`, `lib:mediastore`, `lib:navigation`, `util:coroutines`; `features:*` → `lib:*` → `util:*`; `feature:<домен>:impl` подключается только из своего `:di` (это проверяет сборка), фичи друг от друга не зависят. Архитектура — Clean Architecture и MVVM на Compose; идёт поэтапная миграция `features:*` в модули `feature:<домен>:api|impl|ui|di`.
 
 ## Технологии
 

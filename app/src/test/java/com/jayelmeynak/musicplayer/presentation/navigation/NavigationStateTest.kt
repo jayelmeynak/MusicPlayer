@@ -238,4 +238,20 @@ class NavigationStateTest {
         assertEquals(TopLevelDestination.ApiTracks, saver.restore(checkNotNull(removedTab))?.value)
         assertEquals(TopLevelDestination.ApiTracks, saver.restore("not a saved tab")?.value)
     }
+
+    @Test
+    fun `стек вкладки начинается с корня из roots`() {
+        compose.setContent {
+            val navigationState = rememberNavigationState(
+                startRoute = TopLevelDestination.ApiTracks,
+                topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
+                roots = mapOf(TopLevelDestination.ApiTracks to ProbeScreen("root")),
+            )
+            state = navigationState
+        }
+        compose.waitForIdle()
+
+        assertEquals(listOf<NavKey>(ProbeScreen("root")), api)
+        assertEquals(listOf<NavKey>(TopLevelDestination.DownloadTracks), local)
+    }
 }

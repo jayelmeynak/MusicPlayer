@@ -222,4 +222,66 @@ class AppNavigatorTest {
 
         assertEquals(listOf(TopLevelDestination.ApiTracks), api)
     }
+
+    /** Корень вкладки — ключ фичи, а не сама вкладка (так у вкладки «Remote» — экран каталога). */
+    private data object FeatureRoot : NavKey
+
+    private fun navigatorWithFeatureRoot(): AppNavigator {
+        state = NavigationState(
+            startRoute = TopLevelDestination.ApiTracks,
+            topLevelRoute = mutableStateOf<TopLevelDestination>(TopLevelDestination.ApiTracks),
+            backStacks = mapOf(
+                TopLevelDestination.ApiTracks to NavBackStack(FeatureRoot),
+                TopLevelDestination.DownloadTracks to NavBackStack(TopLevelDestination.DownloadTracks),
+            ),
+            roots = mapOf(TopLevelDestination.ApiTracks to FeatureRoot),
+        )
+        return AppNavigator(state)
+    }
+
+    @Test
+    fun `корень вкладки из roots - navigateToRoot сбрасывает стек до него`() {
+        val navigator = navigatorWithFeatureRoot()
+        navigator.navigateTo(Screen("player"))
+        navigator.navigateTo(TopLevelDestination.DownloadTracks)
+
+        navigator.navigateToRoot(TopLevelDestination.ApiTracks)
+
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
+        assertEquals(listOf<NavKey>(FeatureRoot), api)
+    }
+
+    @Test
+    fun `navigateTo корня вкладки переключает на неё и не переносит корень в текущий стек`() {
+        val navigator = navigatorWithFeatureRoot()
+        navigator.navigateTo(TopLevelDestination.DownloadTracks)
+
+        navigator.navigateTo(FeatureRoot)
+
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
+        assertEquals(listOf<NavKey>(FeatureRoot), api)
+        assertEquals(listOf<NavKey>(TopLevelDestination.DownloadTracks), local)
+    }
+
+    @Test
+    fun `remove корня вкладки из roots ничего не делает`() {
+        val navigator = navigatorWithFeatureRoot()
+        navigator.navigateTo(Screen("1"))
+
+        navigator.remove(FeatureRoot)
+
+        assertEquals(listOf(FeatureRoot, Screen("1")), api)
+    }
+
+    @Test
+    fun `navigateToRoot ключа корня переключает на его вкладку и сбрасывает её стек`() {
+        val navigator: Navigator = navigatorWithFeatureRoot()
+        navigator.navigateTo(Screen("player"))
+        navigator.navigateTo(TopLevelDestination.DownloadTracks)
+
+        navigator.navigateToRoot(FeatureRoot)
+
+        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
+        assertEquals(listOf<NavKey>(FeatureRoot), api)
+    }
 }
