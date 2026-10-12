@@ -156,15 +156,25 @@ class PlaybackStateMappingTest {
     }
 
     @Test
-    fun `ошибки ввода-вывода - недоступный источник, остальные - неизвестная ошибка`() {
-        val io = PlaybackException("io", null, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED)
-        val decoder = PlaybackException("decoder", null, PlaybackException.ERROR_CODE_DECODING_FAILED)
+    fun `сетевые ошибки потока - ошибка сети`() {
+        val failed = PlaybackException("net", null, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED)
+        val timeout = PlaybackException("timeout", null, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT)
 
+        assertEquals(PlaybackError.NETWORK, failed.toPlaybackError())
+        assertEquals(PlaybackError.NETWORK, timeout.toPlaybackError())
+    }
+
+    @Test
+    fun `прочие ошибки ввода-вывода - недоступный источник, остальные - неизвестная ошибка`() {
         val file = PlaybackException("file", null, PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND)
+        val http = PlaybackException("http", null, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS)
+        val io = PlaybackException("io", null, PlaybackException.ERROR_CODE_IO_UNSPECIFIED)
+        val decoder = PlaybackException("decoder", null, PlaybackException.ERROR_CODE_DECODING_FAILED)
         val parsing = PlaybackException("parsing", null, PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED)
 
-        assertEquals(PlaybackError.SOURCE_UNAVAILABLE, io.toPlaybackError())
         assertEquals(PlaybackError.SOURCE_UNAVAILABLE, file.toPlaybackError())
+        assertEquals(PlaybackError.SOURCE_UNAVAILABLE, http.toPlaybackError())
+        assertEquals(PlaybackError.SOURCE_UNAVAILABLE, io.toPlaybackError())
         assertEquals(PlaybackError.UNKNOWN, decoder.toPlaybackError())
         assertEquals(PlaybackError.UNKNOWN, parsing.toPlaybackError())
     }

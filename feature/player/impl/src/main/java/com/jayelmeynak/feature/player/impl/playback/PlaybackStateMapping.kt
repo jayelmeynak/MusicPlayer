@@ -41,9 +41,20 @@ internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): Play
     )
 }
 
-/** Input/output errors (no URI from the resolver, network, file) mean the track is unavailable. */
-internal fun PlaybackException.toPlaybackError(): PlaybackError =
-    if (errorCode / ERROR_GROUP == IO_ERROR_GROUP) PlaybackError.SOURCE_UNAVAILABLE else PlaybackError.UNKNOWN
+/**
+ * Сеть (нет подключения, истекло ожидание соединения) — [PlaybackError.NETWORK]; прочие ошибки
+ * ввода-вывода (резолвер не дал ссылку, ответ сервера, файл) — трек недоступен; остальное — неизвестная.
+ */
+internal fun PlaybackException.toPlaybackError(): PlaybackError = when {
+    errorCode in NETWORK_ERROR_CODES -> PlaybackError.NETWORK
+    errorCode / ERROR_GROUP == IO_ERROR_GROUP -> PlaybackError.SOURCE_UNAVAILABLE
+    else -> PlaybackError.UNKNOWN
+}
+
+private val NETWORK_ERROR_CODES = setOf(
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+)
 
 /** Media3 groups error codes by thousands; 2xxx are input/output errors. */
 private const val ERROR_GROUP = 1000
