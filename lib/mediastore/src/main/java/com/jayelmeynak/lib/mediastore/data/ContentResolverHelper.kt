@@ -3,19 +3,16 @@ package com.jayelmeynak.lib.mediastore.data
 
 import android.content.ContentUris
 import android.content.Context
-import android.database.Cursor
-import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import androidx.annotation.WorkerThread
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-internal class ContentResolverHelper @Inject constructor(
-    @ApplicationContext val context: Context
+/** Чтение аудио устройства из MediaStore. */
+public class ContentResolverHelper @Inject constructor(
+    @ApplicationContext private val context: Context
 ) {
-    private var mCursor: Cursor? = null
-
     private val projection: Array<String> = arrayOf(
         MediaStore.Audio.AudioColumns._ID,
         MediaStore.Audio.AudioColumns.ARTIST,
@@ -31,60 +28,20 @@ internal class ContentResolverHelper @Inject constructor(
 
 
     @WorkerThread
-    fun getAudioData(): List<TrackDbo> {
+    public fun getAudioData(): List<TrackDbo> {
         return getCursorData()
     }
-
-    @WorkerThread
-    fun getTrackByUri(uriString: String): TrackDbo? {
-        val uri = Uri.parse(uriString)
-
-        mCursor = context.contentResolver.query(
-            uri,
-            projection,
-            selectionClause,
-            selectionArg,
-            sortOrder
-        )
-
-        mCursor?.use { cursor ->
-            val idColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
-            val artistColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
-            val durationColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
-            val titleColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.TITLE)
-
-            if (cursor.moveToFirst()) {
-                val id = cursor.getLong(idColumn)
-                val artist = cursor.getString(artistColumn)
-                val duration = cursor.getInt(durationColumn)
-                val title = cursor.getString(titleColumn)
-                val trackUri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    id
-                )
-                return TrackDbo(trackUri, id, artist, duration, title)
-            }
-        }
-        return null
-    }
-
 
     private fun getCursorData(): MutableList<TrackDbo> {
         val audioList = mutableListOf<TrackDbo>()
 
-        mCursor = context.contentResolver.query(
+        context.contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
             projection,
             selectionClause,
             selectionArg,
             sortOrder
-        )
-
-        mCursor?.use { cursor ->
+        )?.use { cursor ->
             val idColumn =
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
             val artistColumn =

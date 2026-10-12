@@ -25,7 +25,7 @@ util/
 lib/
   network/                # Deezer API: Retrofit, OkHttp, Gson
   database/               # Room-кэш обложек локальных треков
-  mediastore/             # MediaStore: локальные треки и их обложки
+  mediastore/             # чтение MediaStore, кэш обложек локальных треков
   designsystem/           # тема Material 3, общие Compose-компоненты, UiText
   navigation/             # контракт навигации: Navigator, EntryInstaller (JVM)
 feature/player/
@@ -37,11 +37,13 @@ feature/catalog/
   api/                    # ключ экрана каталога ChartDestination (JVM)
   impl/                   # чарт и поиск Deezer, резолвер ссылок превью для плеера
   di/                     # Hilt-привязки экрана и резолвера
-features/
-  download-tracks/        # аудиофайлы устройства
+feature/local-music/
+  api/                    # ключ вкладки «Local» LocalMusicDestination (JVM)
+  impl/                   # аудиофайлы устройства, поиск, резолвер локальных треков для плеера
+  di/                     # Hilt-привязки экрана и резолвера
 ```
 
-Зависимости: `app` → `feature:player:api|ui|di`, `feature:catalog:api|di`, `features:*`, `lib:designsystem`, `lib:mediastore`, `lib:navigation`, `util:coroutines`; `features:*` → `lib:*` → `util:*`; `feature:<домен>:impl` подключается только из своего `:di` (это проверяет сборка), фичи друг от друга не зависят. Архитектура — Clean Architecture и MVVM на Compose; идёт поэтапная миграция `features:*` в модули `feature:<домен>:api|impl|ui|di`.
+Зависимости: `app` → `feature:player:api|ui|di`, `feature:catalog:api|di`, `feature:local-music:api|di`, `lib:designsystem`, `lib:navigation`, `util:coroutines`; `feature:*:impl` → `lib:*` → `util:*`; `feature:<домен>:impl` подключается только из своего `:di` (это проверяет сборка), фичи друг от друга не зависят. Архитектура — Clean Architecture и MVVM на Compose; все фичи — модули `feature:<домен>:api|impl|ui|di`.
 
 ## Технологии
 

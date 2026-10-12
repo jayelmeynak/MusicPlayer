@@ -1,8 +1,7 @@
 package com.jayelmeynak.feature.player.impl.artwork
 
 import android.net.Uri
-import com.jayelmeynak.lib.mediastore.domain.model.LocalTrack
-import com.jayelmeynak.lib.mediastore.domain.repository.LocalTracksRepository
+import com.jayelmeynak.lib.mediastore.domain.repository.ArtworkRepository
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
@@ -35,9 +34,8 @@ class MediaStoreArtworkSourceTest {
         assertTrue(repository.requested.isEmpty())
     }
 
-    private class RecordingRepository : LocalTracksRepository {
+    private class RecordingRepository : ArtworkRepository {
         val requested = mutableListOf<Long>()
-        override suspend fun getTracksList(): List<LocalTrack> = emptyList()
         override suspend fun getArtwork(trackId: Long, uri: Uri): ByteArray? {
             requested += trackId
             return byteArrayOf(trackId.toByte())
