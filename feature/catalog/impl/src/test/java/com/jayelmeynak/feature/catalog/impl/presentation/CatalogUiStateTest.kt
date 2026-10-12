@@ -78,5 +78,5 @@ class CatalogUiStateTest {
         search: SearchState = SearchState.Inactive,
     ) = CatalogUiState(query = query, chart = chart, search = search)
 
-    private fun track(id: Long) = Track(id = id, title = "T$id", artistName = "A", coverUrl = "", duration = 0L)
+    private fun track(id: Long) = Track(id = id, title = "T$id", artistName = "A", coverUrl = "", duration = 0L, link = null)
 }

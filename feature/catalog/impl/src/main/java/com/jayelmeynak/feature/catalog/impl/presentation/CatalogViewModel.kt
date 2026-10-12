@@ -56,6 +56,8 @@ internal class CatalogViewModel @Inject constructor(
                 searchQueries.value = action.query
             }
 
+            is CatalogAction.OnOpenInDeezerClick -> _effects.trySend(CatalogEffect.OpenLink(action.link))
+
             // Очередь — нарисованный список; переход на плеер — после play (docs/playback.md).
             is CatalogAction.OnTrackClick -> {
                 playbackController.play(action.tracks.map { it.toQueueItem() }, action.index)

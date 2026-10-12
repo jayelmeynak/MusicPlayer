@@ -17,6 +17,7 @@ class TrackQueueMappingTest {
             artistName = "Artist",
             coverUrl = "https://cover",
             duration = 180_000L,
+            link = null,
         )
 
         assertEquals(
@@ -27,7 +28,7 @@ class TrackQueueMappingTest {
 
     @Test
     fun `альбом без обложки - обложки нет`() {
-        val track = Track(id = 1L, title = "T", artistName = "A", coverUrl = "", duration = 0L)
+        val track = Track(id = 1L, title = "T", artistName = "A", coverUrl = "", duration = 0L, link = null)
 
         assertNull(track.toQueueItem().artworkUri)
     }

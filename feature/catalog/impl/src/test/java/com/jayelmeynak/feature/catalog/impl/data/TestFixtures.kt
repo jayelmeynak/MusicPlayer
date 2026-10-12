@@ -38,6 +38,6 @@ internal fun trackDto() = TrackDto(
     explicitContentCover = 0,
     explicitContentLyrics = 0,
     explicitLyrics = false,
-    link = "link",
+    link = "https://www.deezer.com/track/42",
     preview = "https://preview",
 )

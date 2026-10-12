@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
  *
  * @param key ключ строки `LazyColumn`: уникален в списке и сохраняем в `Bundle` (примитив,
  *   `String`, `Parcelable`) — по нему список хранит позицию прокрутки при пересоздании.
+ * @param supportingText мелкая строка под подписью трека, `null` — нет.
+ * @param trailing элемент справа в строке трека (своё нажатие), `null` — нет.
  */
 @Composable
 public fun <T> TrackList(
@@ -22,6 +24,8 @@ public fun <T> TrackList(
     artistName: (T) -> String,
     onTrackClick: (tracks: List<T>, index: Int) -> Unit,
     modifier: Modifier = Modifier,
+    supportingText: (T) -> String? = { null },
+    trailing: (@Composable (T) -> Unit)? = null,
     image: @Composable (T) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
@@ -30,6 +34,8 @@ public fun <T> TrackList(
                 title = title(track),
                 artistName = artistName(track),
                 onClick = { onTrackClick(tracks, index) },
+                supportingText = supportingText(track),
+                trailing = trailing?.let { slot -> { slot(track) } },
                 image = { image(track) },
             )
         }

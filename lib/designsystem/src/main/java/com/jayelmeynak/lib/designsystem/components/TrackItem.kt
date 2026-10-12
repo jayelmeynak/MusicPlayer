@@ -16,12 +16,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Строка трека: обложка, название, подпись. [supportingText] — необязательная мелкая строка под
+ * подписью; [trailing] — необязательный элемент справа со своим нажатием (нажатие на него не
+ * считается нажатием на строку).
+ */
 @Composable
 public fun TrackItem(
     title: String,
     artistName: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    supportingText: String? = null,
+    trailing: (@Composable () -> Unit)? = null,
     image: @Composable () -> Unit
 ) {
     Row(
@@ -33,7 +40,7 @@ public fun TrackItem(
     ) {
         image()
         Spacer(modifier = Modifier.width(12.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 fontSize = 16.sp,
@@ -45,6 +52,14 @@ public fun TrackItem(
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
+            }
         }
+        if (trailing != null) trailing()
     }
 }

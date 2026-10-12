@@ -1,6 +1,11 @@
 package com.jayelmeynak.lib.designsystem.components
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
@@ -51,5 +56,41 @@ class TrackListTest {
                 image = {},
             )
         }
+    }
+
+    @Test
+    fun `дополнительная строка и элемент справа показаны, тап по элементу не запускает трек`() {
+        val clicks = mutableListOf<Int>()
+        val trailingClicks = mutableListOf<String>()
+        composeRule.setContent {
+            TrackList(
+                tracks = songs,
+                key = { it.id },
+                title = { it.name },
+                artistName = { it.singer },
+                onTrackClick = { _, index -> clicks += index },
+                supportingText = { "Пометка ${it.id}" },
+                trailing = { song ->
+                    IconButton(onClick = { trailingClicks += song.name }) {
+                        Icon(Icons.Filled.Star, contentDescription = "Действие ${song.name}")
+                    }
+                },
+                image = {},
+            )
+        }
+
+        composeRule.onNodeWithText("Пометка 2").assertExists()
+        composeRule.onNodeWithContentDescription("Действие Вторая").performClick()
+
+        assertEquals(listOf("Вторая"), trailingClicks)
+        assertEquals(emptyList<Int>(), clicks)
+    }
+
+    @Test
+    fun `без дополнительной строки и элемента справа - строка как раньше`() {
+        setList { _, _ -> }
+
+        composeRule.onNodeWithText("Пометка 1").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Действие Первая").assertDoesNotExist()
     }
 }
