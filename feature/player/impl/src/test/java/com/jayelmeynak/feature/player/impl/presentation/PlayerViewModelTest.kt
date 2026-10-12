@@ -182,6 +182,18 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `ошибка сети - своё сообщение на экране`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        val viewModel = PlayerViewModel(controller, artworks)
+
+        controller.state.value = (controller.state.value as PlaybackState.Active)
+            .copy(error = PlaybackError.NETWORK, isPlaying = false)
+
+        assertEquals(UiText.StringResourceId(R.string.player_error_network), ready(viewModel).errorMessage)
+    }
+
+    @Test
     fun `ошибка трека - сообщение на экране, экран не закрывается`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)

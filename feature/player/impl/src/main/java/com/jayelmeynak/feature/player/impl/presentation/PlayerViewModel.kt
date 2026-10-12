@@ -135,6 +135,7 @@ internal class PlayerViewModel @Inject constructor(
     private fun PlaybackError.toUiText(): UiText = UiText.StringResourceId(
         when (this) {
             PlaybackError.SOURCE_UNAVAILABLE -> R.string.player_error_source_unavailable
+            PlaybackError.NETWORK -> R.string.player_error_network
             PlaybackError.UNKNOWN -> R.string.player_error_unknown
         }
     )

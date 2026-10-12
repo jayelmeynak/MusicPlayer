@@ -57,8 +57,14 @@ public sealed interface PlaybackState {
 
 /** Why playback failed, without player library types. */
 public enum class PlaybackError {
-    /** The track could not be loaded: no URI from [TrackUriResolver], network or file error. */
+    /**
+     * Трек не загрузился: резолвер не дал ссылку ([TrackUriResolver] вернул `null`, в том числе без
+     * сети), сервер ответил ошибкой, файла нет.
+     */
     SOURCE_UNAVAILABLE,
+
+    /** Поток трека не загрузился из-за сети: нет подключения или истекло ожидание соединения. */
+    NETWORK,
 
     /** Any other player error. */
     UNKNOWN,
