@@ -9,18 +9,12 @@ import com.jayelmeynak.feature.localmusic.impl.domain.usecase.SearchLocalTracksU
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.designsystem.search.debounceSearchQuery
-import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
-import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.onError
 import com.jayelmeynak.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,8 +33,6 @@ import javax.inject.Inject
 internal class LocalTracksViewModel @Inject constructor(
     private val getLocalTracksUseCase: GetLocalTracksUseCase,
     private val searchLocalTracksUseCase: SearchLocalTracksUseCase,
-    private val getTrackArtworkUseCase: GetTrackArtworkUseCase,
-    private val pruneArtworkCacheUseCase: PruneArtworkCacheUseCase,
     private val playbackController: PlaybackController,
 ) : ViewModel() {
 
@@ -105,39 +97,10 @@ internal class LocalTracksViewModel @Inject constructor(
         }
     }
 
-    private suspend fun showTracks(tracks: List<LocalTrack>) {
-        coroutineScope {
-            // Поиск, набранный до перезагрузки, должен показать перезагруженные треки.
-            val search = search(tracks, searchQueries.value)
-            _state.update {
-                it.copy(library = LibraryState.Loaded(tracks), search = search, artworks = emptyMap())
-            }
-
-            // Обложки подгружаются пачками: ограниченный параллелизм и одно обновление state на пачку.
-            // Сломанная обложка оставляет у трека заглушку.
-            tracks.chunked(ARTWORK_BATCH_SIZE).forEach { batch ->
-                val artworks = batch
-                    .map { track -> async { track.id to loadArtwork(track) } }
-                    .awaitAll()
-                _state.update { it.copy(artworks = it.artworks + artworks) }
-            }
-
-            try {
-                pruneArtworkCacheUseCase(tracks.map { it.id })
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Лишняя запись кэша безвредна: список уже показан.
-            }
-        }
-    }
-
-    private suspend fun loadArtwork(track: LocalTrack): ByteArray? = try {
-        getTrackArtworkUseCase(track.id, track.uri)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        null
+    private fun showTracks(tracks: List<LocalTrack>) {
+        // Поиск, набранный до перезагрузки, должен показать перезагруженные треки.
+        val search = search(tracks, searchQueries.value)
+        _state.update { it.copy(library = LibraryState.Loaded(tracks), search = search) }
     }
 
     private fun onAudioPermissionChecked(granted: Boolean) {
@@ -159,8 +122,6 @@ internal class LocalTracksViewModel @Inject constructor(
         }
     }
 }
-
-private const val ARTWORK_BATCH_SIZE = 20
 
 /** Треки медиатеки; пока она не загружена — пусто. */
 private val LocalTracksUiState.libraryTracks: List<LocalTrack>

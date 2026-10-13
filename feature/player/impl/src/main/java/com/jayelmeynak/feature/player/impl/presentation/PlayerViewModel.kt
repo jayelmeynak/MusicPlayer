@@ -5,15 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlaybackError
 import com.jayelmeynak.feature.player.api.PlaybackState
-import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.key
 import com.jayelmeynak.feature.player.api.positionForPercent
 import com.jayelmeynak.feature.player.impl.R
-import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkSource
 import com.jayelmeynak.lib.designsystem.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +29,6 @@ import javax.inject.Inject
 @HiltViewModel
 internal class PlayerViewModel @Inject constructor(
     private val playbackController: PlaybackController,
-    private val artworkSource: LocalArtworkSource,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Connecting)
@@ -42,9 +38,6 @@ internal class PlayerViewModel @Inject constructor(
     val effects: Flow<PlayerEffect> = _effects.receiveAsFlow()
 
     private var closeSent = false
-    private var artworkJob: Job? = null
-    private var artworkFor: QueueItem? = null
-    private var artworkData: ByteArray? = null
 
     init {
         viewModelScope.launch {
@@ -100,13 +93,11 @@ internal class PlayerViewModel @Inject constructor(
         // A foreign current item (added by another controller) has no metadata of ours: show the
         // controls without track details rather than an endless progress indicator.
         val current = active.current
-        if (current != artworkFor) loadArtwork(current)
         _state.value = PlayerUiState.Ready(
             trackKey = current?.key ?: "foreign|${active.currentIndex}",
             title = current?.title.orEmpty(),
             artist = current?.artist.orEmpty(),
-            artworkUri = current?.artworkUri?.takeIf { current.source == TrackSource.DEEZER },
-            artworkData = artworkData,
+            artworkUri = current?.artworkUri,
             isPreview = current?.source == TrackSource.DEEZER,
             trackLengthMs = current?.durationMs ?: 0L,
             showPlayButton = active.showPlayButton,
@@ -115,21 +106,6 @@ internal class PlayerViewModel @Inject constructor(
             positionMs = playbackController.positionMs.value,
             errorMessage = active.error?.toUiText(),
         )
-    }
-
-    /** A new current item drops the previous cover and any load still running for it. */
-    private fun loadArtwork(item: QueueItem?) {
-        artworkJob?.cancel()
-        artworkFor = item
-        artworkData = null
-        if (item?.source != TrackSource.LOCAL) return
-        artworkJob = viewModelScope.launch {
-            val data = artworkSource.artwork(item.id) ?: return@launch
-            artworkData = data
-            _state.update { state ->
-                if (state is PlayerUiState.Ready) state.copy(artworkData = data) else state
-            }
-        }
     }
 
     private fun PlaybackError.toUiText(): UiText = UiText.StringResourceId(

@@ -16,14 +16,12 @@ android {
 dependencies {
     implementation(project(":feature:player:api"))
     implementation(project(":lib:designsystem"))
-    implementation(project(":lib:mediastore"))
     implementation(project(":util:coroutines"))
 
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.coil.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)

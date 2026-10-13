@@ -12,7 +12,6 @@ import com.jayelmeynak.feature.player.impl.R
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
-import com.jayelmeynak.feature.player.impl.artwork.FakeLocalArtworkSource
 import com.jayelmeynak.lib.navigation.testing.FakeNavigator
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import org.junit.Assert.assertEquals
@@ -114,7 +113,7 @@ class PlayerRouteTest {
     }
 
     private fun setPlayerRoute(controller: FakePlaybackController) {
-        val viewModel = PlayerViewModel(controller, FakeLocalArtworkSource())
+        val viewModel = PlayerViewModel(controller)
         composeRule.setContent { PlayerRoute(navigator = navigator, viewModel = viewModel) }
         composeRule.waitForIdle()
     }

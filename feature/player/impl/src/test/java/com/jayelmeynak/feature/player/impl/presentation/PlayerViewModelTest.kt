@@ -8,12 +8,9 @@ import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import com.jayelmeynak.feature.player.impl.R
-import com.jayelmeynak.feature.player.impl.artwork.FakeLocalArtworkSource
 import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.util.testing.MainDispatcherRule
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -26,12 +23,10 @@ class PlayerViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private val artworks = FakeLocalArtworkSource()
-
     @Test
     fun `контроллер не подключён - Connecting, экран не закрывается`() = runTest {
         val controller = FakePlaybackController(connected = false)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         assertEquals(PlayerUiState.Connecting, viewModel.state.value)
         viewModel.effects.test { expectNoEvents() }
@@ -40,7 +35,7 @@ class PlayerViewModelTest {
     @Test
     fun `подключён с пустой очередью - Close ровно один раз`() = runTest {
         val controller = FakePlaybackController(connected = false)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.connect()
@@ -54,7 +49,7 @@ class PlayerViewModelTest {
     @Test
     fun `отложенный play до подключения - экран показывает трек, не закрывается`() = runTest {
         val controller = FakePlaybackController(connected = false)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
         controller.play(listOf(deezer(1)), 0)
 
         viewModel.effects.test {
@@ -69,7 +64,7 @@ class PlayerViewModelTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1, durationMs = 224_000L)), 0)
 
-        val state = ready(PlayerViewModel(controller, artworks))
+        val state = ready(PlayerViewModel(controller))
 
         assertTrue(state.isPreview)
         assertEquals(224_000L, state.trackLengthMs)
@@ -77,49 +72,28 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `локальный трек - без подписи превью, обложка из кэша обложек`() = runTest {
-        artworks.artworks = mapOf(LOCAL_ID to byteArrayOf(7))
+    fun `локальный трек - без подписи превью, обложка - его content URI`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(local()), 0)
 
-        val state = ready(PlayerViewModel(controller, artworks))
+        val state = ready(PlayerViewModel(controller))
 
         assertFalse(state.isPreview)
-        assertNull(state.artworkUri)
-        assertArrayEquals(byteArrayOf(7), state.artworkData)
+        assertEquals(LOCAL_ID, state.artworkUri)
     }
 
     @Test
-    fun `смена трека меняет заголовок и сбрасывает обложку прошлого трека`() = runTest {
-        val pending = CompletableDeferred<ByteArray?>()
-        artworks.artworks = mapOf(LOCAL_ID to byteArrayOf(7))
+    fun `смена трека меняет заголовок и обложку`() = runTest {
         val controller = FakePlaybackController()
-        val queue = listOf(local(), local(id = OTHER_LOCAL_ID, title = "Other"))
-        controller.play(queue, 0)
-        val viewModel = PlayerViewModel(controller, artworks)
-        assertArrayEquals(byteArrayOf(7), ready(viewModel).artworkData)
-        artworks.pending[OTHER_LOCAL_ID] = pending
+        controller.play(listOf(local(), local(id = OTHER_LOCAL_ID, title = "Other"), deezer(2)), 0)
+        val viewModel = PlayerViewModel(controller)
+        assertEquals(LOCAL_ID, ready(viewModel).artworkUri)
 
         controller.state.value = (controller.state.value as PlaybackState.Active).copy(currentIndex = 1)
-
         assertEquals("Other", ready(viewModel).title)
-        assertNull(ready(viewModel).artworkData)
-        pending.complete(byteArrayOf(9))
-        assertArrayEquals(byteArrayOf(9), ready(viewModel).artworkData)
-    }
+        assertEquals(OTHER_LOCAL_ID, ready(viewModel).artworkUri)
 
-    @Test
-    fun `обложка прошлого трека, пришедшая после смены, не показывается`() = runTest {
-        val late = CompletableDeferred<ByteArray?>()
-        artworks.pending[LOCAL_ID] = late
-        val controller = FakePlaybackController()
-        controller.play(listOf(local(), deezer(2)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
-
-        controller.state.value = (controller.state.value as PlaybackState.Active).copy(currentIndex = 1)
-        late.complete(byteArrayOf(7))
-
-        assertNull(ready(viewModel).artworkData)
+        controller.state.value = (controller.state.value as PlaybackState.Active).copy(currentIndex = 2)
         assertEquals("https://example.com/2.jpg", ready(viewModel).artworkUri)
     }
 
@@ -128,7 +102,7 @@ class PlayerViewModelTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
         controller.state.value = (controller.state.value as PlaybackState.Active).copy(durationMs = 30_000L)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         controller.positionMs.value = 15_000L
 
@@ -142,7 +116,7 @@ class PlayerViewModelTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
         controller.state.value = (controller.state.value as PlaybackState.Active).copy(durationMs = 0L)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
         controller.positionMs.value = 5_000L
 
         viewModel.onAction(PlayerAction.SeekTo(50f))
@@ -156,7 +130,7 @@ class PlayerViewModelTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
         controller.state.value = (controller.state.value as PlaybackState.Active).copy(durationMs = 30_000L)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.onAction(PlayerAction.SeekTo(25f))
 
@@ -167,7 +141,7 @@ class PlayerViewModelTest {
     fun `кнопки транспорта уходят в контроллер`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.onAction(PlayerAction.TogglePlayPause)
         viewModel.onAction(PlayerAction.Next)
@@ -185,7 +159,7 @@ class PlayerViewModelTest {
     fun `ошибка сети - своё сообщение на экране`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         controller.state.value = (controller.state.value as PlaybackState.Active)
             .copy(error = PlaybackError.NETWORK, isPlaying = false)
@@ -197,7 +171,7 @@ class PlayerViewModelTest {
     fun `ошибка трека - сообщение на экране, экран не закрывается`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.state.value = (controller.state.value as PlaybackState.Active)
@@ -214,7 +188,7 @@ class PlayerViewModelTest {
     fun `потеря подключения после показа трека - Connecting, без закрытия`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.state.value = PlaybackState.Idle
@@ -227,7 +201,7 @@ class PlayerViewModelTest {
     fun `уход в фон - трек остаётся на экране, без закрытия`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.disconnect()
@@ -239,13 +213,13 @@ class PlayerViewModelTest {
     @Test
     fun `не подключённый снапшот с пустой очередью - экран ждёт, не закрывается`() = runTest {
         val controller = FakePlaybackController()
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
         viewModel.effects.test {
             // Подключённая пустая сессия закрывает экран; здесь снапшот уже не подключён.
             controller.state.value = emptyActive().copy(isConnected = false)
             cancelAndIgnoreRemainingEvents()
         }
-        val fresh = PlayerViewModel(controller, artworks)
+        val fresh = PlayerViewModel(controller)
 
         fresh.effects.test { expectNoEvents() }
         assertEquals(PlayerUiState.Connecting, fresh.state.value)
@@ -254,7 +228,7 @@ class PlayerViewModelTest {
     @Test
     fun `подключиться не удалось - экран показывает ошибку подключения, без закрытия`() = runTest {
         val controller = FakePlaybackController(connected = false)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.failConnection()
@@ -267,7 +241,7 @@ class PlayerViewModelTest {
     fun `текущий элемент чужой - экран с управлением без метаданных, без закрытия`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         viewModel.effects.test {
             controller.state.value = (controller.state.value as PlaybackState.Active).copy(currentIndex = -1)
@@ -283,7 +257,7 @@ class PlayerViewModelTest {
     fun `буферизация при запрошенном воспроизведении - кнопка паузы и индикатор, тап уходит в контроллер`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
 
         controller.state.value = (controller.state.value as PlaybackState.Active)
             .copy(isPlaying = false, playWhenReady = true, isBuffering = true, showPlayButton = false)
@@ -299,7 +273,7 @@ class PlayerViewModelTest {
     fun `пауза и ошибка - кнопка воспроизведения`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
-        val viewModel = PlayerViewModel(controller, artworks)
+        val viewModel = PlayerViewModel(controller)
         val playing = controller.state.value as PlaybackState.Active
 
         controller.state.value = playing.copy(isPlaying = false, playWhenReady = false, showPlayButton = true)

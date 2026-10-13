@@ -11,8 +11,6 @@ import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.designsystem.search.SEARCH_DEBOUNCE_MS
-import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
-import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
@@ -21,11 +19,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -40,42 +35,31 @@ class LocalTracksViewModelTest {
     private val help = localTrack(3, title = "Help!", artist = "The Beatles")
 
     private val repository = FakeLocalTracksRepository(tracks = listOf(yesterday, numb, help))
-    private val artworkRepository = FakeArtworkRepository(
-        artworks = mapOf(1L to byteArrayOf(1), 2L to null, 3L to byteArrayOf(3)),
-    )
     private val playbackController = FakePlaybackController()
 
     private fun viewModel() = LocalTracksViewModel(
         GetLocalTracksUseCase(repository),
         SearchLocalTracksUseCase(),
-        GetTrackArtworkUseCase(artworkRepository),
-        PruneArtworkCacheUseCase(artworkRepository),
         playbackController,
     )
 
     @Test
-    fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest {
+    fun `загрузка - треки медиатеки`() = runTest {
         viewModel().state.test {
-            val state = awaitState { it.isLoadFinished && it.artworks.size == 3 }
+            val state = awaitLoaded()
             assertEquals(listOf(yesterday, numb, help), state.tracks)
-            assertEquals(setOf(1L, 2L, 3L), state.artworks.keys)
-            assertArrayEquals(byteArrayOf(1), state.artworks[1L])
-            assertNull(state.artworks[2L])
-            assertEquals(listOf(listOf(1L, 2L, 3L)), artworkRepository.prunedIds)
             assertEquals(LocalTracksContent.Tracks(listOf(yesterday, numb, help)), state.content)
         }
     }
 
     @Test
-    fun `нет треков - пустое состояние, очистка кэша вызвана с пустым списком`() = runTest {
+    fun `нет треков - пустое состояние`() = runTest {
         repository.tracks = emptyList()
 
         viewModel().state.test {
             val state = awaitLoaded()
             assertTrue(state.tracks.isEmpty())
-            assertTrue(state.artworks.isEmpty())
             assertEquals(LocalTracksContent.Empty, state.content)
-            assertEquals(listOf(emptyList<Long>()), artworkRepository.prunedIds)
         }
     }
 
@@ -139,21 +123,6 @@ class LocalTracksViewModelTest {
     }
 
     @Test
-    fun `список виден до загрузки медленной обложки`() = runTest {
-        val slowArtwork = CompletableDeferred<ByteArray?>()
-        artworkRepository.pendingArtworks[1L] = slowArtwork
-
-        viewModel().state.test {
-            val state = awaitLoaded()
-            assertEquals(listOf(yesterday, numb, help), state.tracks)
-            assertFalse(1L in state.artworks)
-
-            slowArtwork.complete(byteArrayOf(9))
-            assertArrayEquals(byteArrayOf(9), awaitState { 1L in it.artworks }.artworks[1L])
-        }
-    }
-
-    @Test
     fun `ошибка загрузки - прежний текст «Не удалось загрузить треки», список пуст`() = runTest {
         repository.tracksError = DataError.Local.UNKNOWN
 
@@ -164,18 +133,6 @@ class LocalTracksViewModelTest {
                 state.content,
             )
             assertTrue(state.tracks.isEmpty())
-        }
-    }
-
-    @Test
-    fun `исключение в обложке одного трека - у него нет обложки, у остальных есть`() = runTest {
-        artworkRepository.failingArtworks = setOf(1L)
-
-        viewModel().state.test {
-            val state = awaitState { it.isLoadFinished && it.artworks.size == 3 }
-            assertNull(state.artworks[1L])
-            assertArrayEquals(byteArrayOf(3), state.artworks[3L])
-            assertTrue(state.content is LocalTracksContent.Tracks)
         }
     }
 

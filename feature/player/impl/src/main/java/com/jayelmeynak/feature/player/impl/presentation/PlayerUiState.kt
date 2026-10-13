@@ -15,8 +15,8 @@ internal sealed interface PlayerUiState {
      * The current track.
      *
      * @property trackKey Changes with the current item; drops an unfinished seek gesture.
-     * @property artworkUri Cover image URL (Deezer); `null` for a local track.
-     * @property artworkData Cover of a local track from the artwork cache, while it is loaded.
+     * @property artworkUri Обложка: адрес картинки (Deezer) или `content://` URI, обложка которого —
+     *   эскиз провайдера (локальный трек); `null` — обложки нет.
      * @property isPreview The media is a 30-second Deezer preview, not the full track.
      * @property trackLengthMs Full length of the track; `0` when unknown.
      * @property durationMs Length of what is playing, from the player; `0` when unknown.
@@ -29,7 +29,6 @@ internal sealed interface PlayerUiState {
         val title: String,
         val artist: String,
         val artworkUri: String?,
-        val artworkData: ByteArray?,
         val isPreview: Boolean,
         val trackLengthMs: Long,
         val showPlayButton: Boolean,

@@ -24,7 +24,7 @@ import com.jayelmeynak.feature.player.impl.persistence.SavedPosition
 import com.jayelmeynak.feature.player.impl.persistence.SavedQueue
 import com.jayelmeynak.feature.player.impl.persistence.SavedQueueItem
 import com.jayelmeynak.feature.player.impl.persistence.toSaved
-import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkBitmapLoader
+import com.jayelmeynak.feature.player.impl.artwork.ContentArtworkBitmapLoader
 import dagger.hilt.android.components.ServiceComponent
 import dagger.hilt.android.internal.builders.ServiceComponentBuilder
 import dagger.hilt.android.internal.managers.ServiceComponentManager.ServiceComponentBuilderEntryPoint
@@ -49,6 +49,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
+import java.io.FileNotFoundException
 
 /**
  * Robolectric runs the real MediaSessionService and an in-process MediaController against it.
@@ -411,9 +412,9 @@ class PlayBackServiceTestApplication : Application(), GeneratedComponentManager<
             playBackService.sessionCallback = testSessionCallback(store)
             playBackService.persistence = PlaybackPersistence(store, scope, Dispatchers.Main.immediate)
             playBackService.restorer = SessionRestorer(PlaybackResumption(store), scope, Dispatchers.Main.immediate)
-            playBackService.bitmapLoader = LocalArtworkBitmapLoader(
+            playBackService.bitmapLoader = ContentArtworkBitmapLoader(
                 context = this@PlayBackServiceTestApplication,
-                artworkSource = { null },
+                thumbnails = { uri, _ -> throw FileNotFoundException(uri.toString()) },
                 scope = CoroutineScope(Dispatchers.Unconfined),
                 ioDispatcher = Dispatchers.Unconfined,
             )

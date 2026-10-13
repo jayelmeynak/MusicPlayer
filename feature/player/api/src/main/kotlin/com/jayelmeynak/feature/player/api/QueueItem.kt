@@ -8,7 +8,8 @@ package com.jayelmeynak.feature.player.api
  * before loading the track.
  *
  * @property id Track id in [source]; see [TrackSource] for its format.
- * @property artworkUri Cover image URI, or `null` if there is none.
+ * @property artworkUri Обложка: адрес картинки или `content://` URI, обложка которого — эскиз его
+ *   провайдера (`ContentResolver.loadThumbnail`); у локального трека — URI самого трека. `null` — нет обложки.
  * @property durationMs Full length of the track in milliseconds; `0` when unknown.
  */
 public data class QueueItem(

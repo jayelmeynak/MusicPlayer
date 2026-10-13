@@ -1,6 +1,5 @@
 package com.jayelmeynak.feature.player.impl.presentation
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,14 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import com.jayelmeynak.feature.player.impl.presentation.components.PlayPauseIconButton
 import com.jayelmeynak.lib.designsystem.components.SeekSlider
-import com.jayelmeynak.lib.designsystem.R
+import com.jayelmeynak.lib.designsystem.components.TrackArtwork
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import com.jayelmeynak.feature.player.impl.R as PlayerR
@@ -84,15 +81,11 @@ private fun PlayerContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly,
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(
-                model = state.artworkUri ?: state.artworkData ?: R.drawable.track_place_holder
-            ),
-            contentDescription = null,
+        TrackArtwork(
+            artworkUri = state.artworkUri,
             modifier = Modifier
                 .size(300.dp)
                 .clip(RoundedCornerShape(16.dp)),
-            contentScale = ContentScale.Crop,
         )
 
         Column(modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)) {

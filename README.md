@@ -24,8 +24,7 @@ util/
   testing/                # MainDispatcherRule для тестов (JVM)
 lib/
   network/                # Deezer API: Retrofit, OkHttp, Gson
-  database/               # Room-кэш обложек локальных треков
-  mediastore/             # чтение MediaStore, кэш обложек локальных треков
+  mediastore/             # чтение аудио из MediaStore
   designsystem/           # тема Material 3, общие Compose-компоненты, UiText
   navigation/             # контракт навигации: Navigator, EntryInstaller (JVM)
 feature/player/
@@ -51,9 +50,8 @@ feature/local-music/
 - Navigation3 1.1.1
 - Hilt 2.59.2 (KSP)
 - Retrofit 3.0.0, OkHttp, Gson
-- Room 2.8.4
 - Media3 1.10.0 (ExoPlayer, MediaSession, MediaController)
-- Coil — изображения
+- Coil — изображения, обложки локальных треков — эскизы MediaStore
 - Корутины и Flow
 - Тесты: JUnit4, kotlinx-coroutines-test, Turbine, Robolectric, MockWebServer
 

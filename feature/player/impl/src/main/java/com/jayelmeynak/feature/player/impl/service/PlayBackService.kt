@@ -13,7 +13,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.R as Media3R
-import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkBitmapLoader
+import com.jayelmeynak.feature.player.impl.artwork.ContentArtworkBitmapLoader
 import com.jayelmeynak.feature.player.impl.persistence.PlaybackPersistence
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -44,7 +44,7 @@ internal class PlayBackService : MediaSessionService() {
     lateinit var sessionCallback: PlaybackSessionCallback
 
     @Inject
-    lateinit var bitmapLoader: LocalArtworkBitmapLoader
+    lateinit var bitmapLoader: ContentArtworkBitmapLoader
 
     @Inject
     lateinit var persistence: PlaybackPersistence

@@ -9,11 +9,7 @@ android {
 }
 
 dependencies {
-
-    implementation(project(":lib:database"))
-    implementation(project(":util:coroutines"))
-    implementation(libs.kotlinx.coroutines.core)
-
+    // Чтение MediaStore синхронное (@WorkerThread): поток выбирает вызывающий, корутины не нужны.
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
