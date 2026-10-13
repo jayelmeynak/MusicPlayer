@@ -1,8 +1,11 @@
 package com.jayelmeynak.feature.localmusic.impl.resolver
 
+import android.content.Context
+import com.jayelmeynak.feature.localmusic.impl.permission.hasAudioReadPermission
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.TrackUriResolver
 import com.jayelmeynak.lib.mediastore.data.isMediaStoreUri
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
@@ -11,11 +14,17 @@ import javax.inject.Inject
  * двух защит: сессия не играет URI, принесённый элементом очереди (до резолвера доходит только ключ
  * трека из `mediaId`), а этот резолвер открывает только строки MediaStore.
  *
+ * Без разрешения на чтение аудио — тоже `null`: восстановленная очередь после отзыва доступа даёт
+ * «трек недоступен», а не `SecurityException` в загрузчике плеера.
+ *
  * `public` только ради привязки `@IntoSet` в `:di`.
  */
-public class LocalContentUriResolver @Inject internal constructor() : TrackUriResolver {
+public class LocalContentUriResolver @Inject internal constructor(
+    @ApplicationContext private val context: Context,
+) : TrackUriResolver {
 
     override val source: TrackSource = TrackSource.LOCAL
 
-    override suspend fun resolve(id: String): String? = id.takeIf(::isMediaStoreUri)
+    override suspend fun resolve(id: String): String? =
+        id.takeIf { isMediaStoreUri(it) && context.hasAudioReadPermission() }
 }

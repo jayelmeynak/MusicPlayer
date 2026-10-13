@@ -23,7 +23,6 @@ class LocalTracksScreenTest {
     val composeRule = createComposeRule()
 
     private val actions = mutableListOf<LocalTracksAction>()
-    private var permissionRequests = 0
 
     private val yesterday = localTrack(1, title = "Yesterday", artist = "The Beatles")
     private val numb = localTrack(2, title = "Numb", artist = "Linkin Park")
@@ -74,7 +73,9 @@ class LocalTracksScreenTest {
 
     @Test
     fun `нет доступа - текст и кнопка, кнопка просит доступ`() {
-        setScreen(LocalTracksUiState(access = AudioAccess.Denied, library = LibraryState.Loaded(listOf(yesterday))))
+        setScreen(
+            LocalTracksUiState(access = AudioAccess.Denied(permanently = false), library = LibraryState.Loaded(listOf(yesterday)))
+        )
 
         composeRule.onNodeWithText("Нет доступа к аудиофайлам").assertExists()
         composeRule.onNodeWithText("Yesterday").assertDoesNotExist()
@@ -82,8 +83,18 @@ class LocalTracksScreenTest {
         composeRule.onNode(hasSetTextAction()).assertExists()
         composeRule.onNodeWithText("Разрешить доступ").performClick()
 
-        assertEquals(1, permissionRequests)
-        assertEquals(emptyList<LocalTracksAction>(), actions)
+        assertEquals(listOf<LocalTracksAction>(LocalTracksAction.OnGrantAccessClick), actions)
+    }
+
+    @Test
+    fun `окончательный отказ - текст про настройки и кнопка «Открыть настройки»`() {
+        setScreen(LocalTracksUiState(access = AudioAccess.Denied(permanently = true)))
+
+        composeRule.onNodeWithText("Доступ к аудиофайлам запрещён. Разрешите его в настройках приложения").assertExists()
+        composeRule.onNodeWithText("Разрешить доступ").assertDoesNotExist()
+        composeRule.onNodeWithText("Открыть настройки").performClick()
+
+        assertEquals(listOf<LocalTracksAction>(LocalTracksAction.OnGrantAccessClick), actions)
     }
 
     @Test
@@ -128,7 +139,6 @@ class LocalTracksScreenTest {
             LocalTracksScreen(
                 state = state,
                 onAction = { actions += it },
-                onRequestPermission = { permissionRequests++ },
             )
         }
     }

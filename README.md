@@ -71,4 +71,4 @@ cd MusicPlayer
 
 Все тесты локальные (`src/test`), инструментальных тестов нет. CI (GitHub Actions) запускает lint, unit-тесты и сборку debug APK на каждый PR и push в `main`.
 
-Для вкладки «Local» на устройстве должны быть аудиофайлы и выдано разрешение на чтение аудио (`READ_MEDIA_AUDIO` на Android 13+, `READ_EXTERNAL_STORAGE` ниже). На Android 13+ уведомлению плеера нужно разрешение `POST_NOTIFICATIONS`.
+Для вкладки «Local» на устройстве должны быть аудиофайлы и выдано разрешение на чтение аудио (`READ_MEDIA_AUDIO` на Android 13+, `READ_EXTERNAL_STORAGE` ниже). Доступ к аудио спрашивает вкладка «Local» при первом показе. На Android 13+ уведомлению плеера нужно разрешение `POST_NOTIFICATIONS` — его один раз спрашивает экран плеера.

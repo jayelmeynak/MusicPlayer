@@ -2,6 +2,7 @@ package com.jayelmeynak.feature.localmusic.impl.data.source
 
 import com.jayelmeynak.lib.mediastore.data.MediaStoreAudio
 import com.jayelmeynak.lib.mediastore.data.MediaStoreAudioReader
+import app.cash.turbine.test
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -45,6 +46,23 @@ class LocalTracksDataSourceImplTest {
         }
     }
 
+    @Test
+    fun `изменения медиатеки - наблюдение на время подписки`() = runTest {
+        assertEquals(0, reader.observers.size)
+
+        dataSource.audioChanges().test {
+            assertEquals(1, reader.observers.size)
+            reader.observers.single().invoke()
+            awaitItem()
+            reader.observers.single().invoke()
+            awaitItem()
+        }
+
+        // Отмена подписки снимает наблюдение.
+        assertEquals(0, reader.observers.size)
+        assertEquals(1, reader.closed)
+    }
+
     private fun audio(id: Long) = MediaStoreAudio(
         id = id,
         uri = "content://media/external/audio/media/$id",
@@ -57,11 +75,21 @@ class LocalTracksDataSourceImplTest {
         var rows: List<MediaStoreAudio> = emptyList()
         var error: Exception? = null
         var readThread: String? = null
+        val observers = mutableListOf<() -> Unit>()
+        var closed = 0
 
         override fun readAudio(): List<MediaStoreAudio> {
             readThread = Thread.currentThread().name
             error?.let { throw it }
             return rows
+        }
+
+        override fun observeAudioChanges(onAudioChanged: () -> Unit): AutoCloseable {
+            observers += onAudioChanged
+            return AutoCloseable {
+                observers -= onAudioChanged
+                closed++
+            }
         }
     }
 

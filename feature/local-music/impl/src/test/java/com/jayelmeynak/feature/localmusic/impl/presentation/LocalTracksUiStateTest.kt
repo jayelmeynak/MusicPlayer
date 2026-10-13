@@ -17,12 +17,22 @@ class LocalTracksUiStateTest {
         val libraries = listOf(LibraryState.Loading, LibraryState.Failed(error), LibraryState.Loaded(listOf(yesterday)))
         libraries.forEach { library ->
             val state = LocalTracksUiState(
-                access = AudioAccess.Denied,
+                access = AudioAccess.Denied(permanently = false),
                 library = library,
                 search = LocalSearchState.Results(emptyList()),
             )
-            assertEquals(LocalTracksContent.NoAccess, state.content)
+            assertEquals(LocalTracksContent.NoAccess(permanently = false), state.content)
         }
+    }
+
+    @Test
+    fun `окончательный отказ - нет доступа с признаком окончательного`() {
+        val state = LocalTracksUiState(
+            access = AudioAccess.Denied(permanently = true),
+            library = LibraryState.Loaded(listOf(yesterday)),
+        )
+
+        assertEquals(LocalTracksContent.NoAccess(permanently = true), state.content)
     }
 
     @Test

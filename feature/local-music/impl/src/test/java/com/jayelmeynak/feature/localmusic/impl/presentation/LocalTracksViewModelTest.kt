@@ -5,6 +5,8 @@ import app.cash.turbine.test
 import com.jayelmeynak.feature.localmusic.impl.R
 import com.jayelmeynak.feature.localmusic.impl.domain.model.LocalTrack
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.feature.localmusic.impl.domain.usecase.LIBRARY_CHANGES_DEBOUNCE_MS
+import com.jayelmeynak.feature.localmusic.impl.domain.usecase.ObserveLibraryChangesUseCase
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.SearchLocalTracksUseCase
 import com.jayelmeynak.feature.localmusic.impl.testing.FakeLocalTracksRepository
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
@@ -37,11 +39,15 @@ class LocalTracksViewModelTest {
     private val repository = FakeLocalTracksRepository(tracks = listOf(yesterday, numb, help))
     private val playbackController = FakePlaybackController()
 
-    private fun viewModel() = LocalTracksViewModel(
+    /** VM вкладки; [granted] — экран уже проверил доступ и он есть (первая загрузка — по нему). */
+    private fun viewModel(granted: Boolean = true) = LocalTracksViewModel(
         GetLocalTracksUseCase(repository),
         SearchLocalTracksUseCase(),
+        ObserveLibraryChangesUseCase(repository),
         playbackController,
-    )
+    ).apply {
+        if (granted) onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
+    }
 
     @Test
     fun `загрузка - треки медиатеки`() = runTest {
@@ -145,8 +151,8 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
 
             val state = expectMostRecentItem()
-            assertEquals(AudioAccess.Denied, state.access)
-            assertEquals(LocalTracksContent.NoAccess, state.content)
+            assertEquals(AudioAccess.Denied(permanently = false), state.access)
+            assertEquals(LocalTracksContent.NoAccess(permanently = false), state.content)
         }
     }
 
@@ -159,7 +165,7 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
 
-            val state = awaitState { it.isLoadFinished && it.access != AudioAccess.Denied }
+            val state = awaitState { it.isLoadFinished && it.access == AudioAccess.Granted }
             assertEquals(2, repository.tracksRequests)
             assertEquals(3, state.tracks.size)
             cancelAndIgnoreRemainingEvents()
@@ -309,16 +315,15 @@ class LocalTracksViewModelTest {
 
         val state = viewModel.state.value
         assertEquals(LibraryState.Loading, state.library)
-        assertEquals(LocalTracksContent.NoAccess, state.content)
+        assertEquals(LocalTracksContent.NoAccess(permanently = false), state.content)
         assertEquals(1, repository.tracksRequests)
     }
 
     @Test
-    fun `первая проверка доступа во время загрузки не перезапускает её`() = runTest {
+    fun `повторная проверка доступа во время загрузки не перезапускает её`() = runTest {
         val pending = CompletableDeferred<Unit>()
         repository.pendingTracks = pending
         val viewModel = viewModel()
-        assertEquals(AudioAccess.Unknown, viewModel.state.value.access)
 
         viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
         assertEquals(1, repository.tracksRequests)
@@ -378,6 +383,213 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
             expectNoEvents()
         }
+    }
+
+    @Test
+    fun `до проверки доступа медиатека не читается`() = runTest {
+        val viewModel = viewModel(granted = false)
+        advanceUntilIdle()
+
+        assertEquals(0, repository.tracksRequests)
+        assertEquals(AudioAccess.Unknown, viewModel.state.value.access)
+        assertEquals(LocalTracksContent.Loading, viewModel.state.value.content)
+    }
+
+    @Test
+    fun `первый доступ - первая загрузка`() = runTest {
+        val viewModel = viewModel(granted = false)
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
+        advanceUntilIdle()
+
+        assertEquals(1, repository.tracksRequests)
+        assertEquals(LibraryState.Loaded(listOf(yesterday, numb, help)), viewModel.state.value.library)
+    }
+
+    @Test
+    fun `первая проверка без доступа - системный запрос один раз`() = runTest {
+        val viewModel = viewModel(granted = false)
+
+        viewModel.effects.test {
+            viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+            assertEquals(LocalTracksEffect.RequestAudioPermission, awaitItem())
+            assertEquals(AudioAccess.Denied(permanently = false), viewModel.state.value.access)
+
+            // Следующий resume (после диалога) не спрашивает сам.
+            viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+            expectNoEvents()
+        }
+        assertEquals(0, repository.tracksRequests)
+    }
+
+    @Test
+    fun `отказ в запросе без возможности спросить снова - окончательный отказ`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = true, rationaleAfterRequest = false))
+        assertEquals(AudioAccess.Denied(permanently = true), viewModel.state.value.access)
+        assertEquals(LocalTracksContent.NoAccess(permanently = true), viewModel.state.value.content)
+
+        // Проверка на resume признак не сбрасывает.
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        assertEquals(AudioAccess.Denied(permanently = true), viewModel.state.value.access)
+    }
+
+    @Test
+    fun `отказ в запросе, который можно повторить, - обычный отказ`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = true))
+
+        assertEquals(AudioAccess.Denied(permanently = false), viewModel.state.value.access)
+    }
+
+    @Test
+    fun `первый диалог закрыт без ответа - обычный отказ, кнопка снова спрашивает`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+
+        // Back или тап мимо диалога: отказ без rationale ни до, ни после — это не «больше не спрашивать».
+        viewModel.onAction(
+            LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = false)
+        )
+
+        assertEquals(AudioAccess.Denied(permanently = false), viewModel.state.value.access)
+    }
+
+    @Test
+    fun `«больше не спрашивать» после первого отказа - окончательный отказ`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        viewModel.onAction(
+            LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = true)
+        )
+        viewModel.onAction(LocalTracksAction.OnGrantAccessClick)
+
+        viewModel.onAction(
+            LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = true, rationaleAfterRequest = false)
+        )
+
+        assertEquals(AudioAccess.Denied(permanently = true), viewModel.state.value.access)
+    }
+
+    @Test
+    fun `отказ без диалога после прошлого отказа в этой VM - окончательный отказ`() = runTest {
+        // Окончательный отказ из прошлой версии: система отвечает отказом без диалога, rationale — false всегда.
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        viewModel.onAction(
+            LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = false)
+        )
+        assertEquals(AudioAccess.Denied(permanently = false), viewModel.state.value.access)
+
+        viewModel.onAction(LocalTracksAction.OnGrantAccessClick)
+        viewModel.onAction(
+            LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = false)
+        )
+
+        assertEquals(AudioAccess.Denied(permanently = true), viewModel.state.value.access)
+    }
+
+    @Test
+    fun `кнопка после обычного отказа - снова системный запрос`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = false, rationaleAfterRequest = true))
+
+        viewModel.effects.test {
+            assertEquals(LocalTracksEffect.RequestAudioPermission, awaitItem())
+            viewModel.onAction(LocalTracksAction.OnGrantAccessClick)
+            assertEquals(LocalTracksEffect.RequestAudioPermission, awaitItem())
+        }
+    }
+
+    @Test
+    fun `кнопка после окончательного отказа - настройки приложения`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionResult(granted = false, rationaleBeforeRequest = true, rationaleAfterRequest = false))
+
+        viewModel.effects.test {
+            assertEquals(LocalTracksEffect.RequestAudioPermission, awaitItem())
+            viewModel.onAction(LocalTracksAction.OnGrantAccessClick)
+            assertEquals(LocalTracksEffect.OpenAppSettings, awaitItem())
+        }
+    }
+
+    @Test
+    fun `доступ выдан в системном диалоге - список загружается`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionResult(granted = true, rationaleBeforeRequest = false, rationaleAfterRequest = false))
+        advanceUntilIdle()
+
+        assertEquals(AudioAccess.Granted, viewModel.state.value.access)
+        assertEquals(1, repository.tracksRequests)
+        assertEquals(LibraryState.Loaded(listOf(yesterday, numb, help)), viewModel.state.value.library)
+    }
+
+    @Test
+    fun `до доступа изменения медиатеки не наблюдаются, после - одна подписка`() = runTest {
+        val viewModel = viewModel(granted = false)
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        advanceUntilIdle()
+        assertEquals(0, repository.changes.subscriptionCount.value)
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
+        advanceUntilIdle()
+
+        assertEquals(1, repository.changes.subscriptionCount.value)
+    }
+
+    @Test
+    fun `изменение медиатеки - список перезагружается без индикатора загрузки`() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.state.test {
+            awaitLoaded()
+            repository.tracks = listOf(numb)
+            repository.changes.emit(Unit)
+            repository.changes.emit(Unit)
+            advanceTimeBy(LIBRARY_CHANGES_DEBOUNCE_MS + 1)
+
+            // Следующее состояние — сразу новый список: прежний виден, пока идёт перезагрузка.
+            assertEquals(LibraryState.Loaded(listOf(numb)), awaitItem().library)
+            assertEquals(2, repository.tracksRequests)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `изменение медиатеки без доступа - перезагрузки нет`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+
+        repository.changes.emit(Unit)
+        advanceTimeBy(LIBRARY_CHANGES_DEBOUNCE_MS + 1)
+
+        assertEquals(1, repository.tracksRequests)
+    }
+
+    @Test
+    fun `изменение медиатеки и ошибка чтения - ошибка загрузки`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.tracksError = DataError.Local.UNKNOWN
+
+        repository.changes.emit(Unit)
+        advanceTimeBy(LIBRARY_CHANGES_DEBOUNCE_MS + 1)
+
+        assertEquals(
+            LibraryState.Failed(UiText.StringResourceId(R.string.local_tracks_load_error)),
+            viewModel.state.value.library,
+        )
     }
 
     private val LocalTracksUiState.isLoadFinished: Boolean

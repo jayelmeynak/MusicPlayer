@@ -6,4 +6,7 @@ internal sealed interface PlayerEffect {
      * экран восстановлен из стека, а сохранённой очереди нет). Экран убирает свой ключ из стека.
      */
     data object Close : PlayerEffect
+
+    /** Показать системный диалог разрешения уведомлений (один раз на установку). */
+    data object RequestNotificationPermission : PlayerEffect
 }

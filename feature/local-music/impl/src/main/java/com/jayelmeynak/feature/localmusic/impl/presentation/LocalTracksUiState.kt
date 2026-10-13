@@ -22,7 +22,7 @@ internal data class LocalTracksUiState(
      */
     val content: LocalTracksContent
         get() = when {
-            access == AudioAccess.Denied -> LocalTracksContent.NoAccess
+            access is AudioAccess.Denied -> LocalTracksContent.NoAccess(access.permanently)
             else -> when (library) {
                 LibraryState.Loading -> LocalTracksContent.Loading
                 is LibraryState.Failed -> LocalTracksContent.Error(library.message)
@@ -46,7 +46,12 @@ internal data class LocalTracksUiState(
 internal sealed interface AudioAccess {
     data object Unknown : AudioAccess
     data object Granted : AudioAccess
-    data object Denied : AudioAccess
+
+    /**
+     * Доступа нет. [permanently] — система больше не покажет диалог (известно только по результату
+     * запроса): кнопка ведёт в настройки приложения.
+     */
+    data class Denied(val permanently: Boolean) : AudioAccess
 }
 
 /** Исход загрузки треков устройства. */
@@ -64,7 +69,8 @@ internal sealed interface LocalSearchState {
 
 /** Что показывает вкладка «Local». */
 internal sealed interface LocalTracksContent {
-    data object NoAccess : LocalTracksContent
+    /** [permanently] — помощь только в настройках приложения. */
+    data class NoAccess(val permanently: Boolean) : LocalTracksContent
     data object Loading : LocalTracksContent
     data class Error(val message: UiText) : LocalTracksContent
     data object NothingFound : LocalTracksContent

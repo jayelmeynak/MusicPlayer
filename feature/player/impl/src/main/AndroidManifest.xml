@@ -2,9 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <!-- Медиауведомление на API 33+; запрашивает экран плеера. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application>
         <service
             android:name=".service.PlayBackService"

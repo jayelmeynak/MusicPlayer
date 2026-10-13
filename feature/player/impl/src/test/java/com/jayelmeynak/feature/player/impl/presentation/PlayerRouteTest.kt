@@ -3,7 +3,9 @@ package com.jayelmeynak.feature.player.impl.presentation
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.junit4.createComposeRule
+import android.Manifest
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.jayelmeynak.feature.player.api.PlaybackState
@@ -16,6 +18,7 @@ import com.jayelmeynak.lib.navigation.testing.FakeNavigator
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
-/** Robolectric hosts the Compose test rule and records started services. */
+/** Robolectric — Compose-правило с тестовой Activity, запущенные сервисы и запросы разрешений (API 34). */
 @RunWith(RobolectricTestRunner::class)
 class PlayerRouteTest {
 
@@ -31,7 +34,9 @@ class PlayerRouteTest {
     val mainRule = MainDispatcherRule()
 
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val promptStore = FakeNotificationPromptStore()
 
     private val navigator = FakeNavigator()
 
@@ -112,8 +117,26 @@ class PlayerRouteTest {
             .assertDoesNotExist()
     }
 
+    @Test
+    fun `первый показ без разрешения уведомлений - системный запрос`() {
+        setPlayerRoute(FakePlaybackController())
+
+        val request = shadowOf(composeRule.activity).lastRequestedPermission
+        assertTrue(request?.requestedPermissions.orEmpty().contains(Manifest.permission.POST_NOTIFICATIONS))
+        assertTrue(promptStore.prompted)
+    }
+
+    @Test
+    fun `разрешение уведомлений есть - запроса нет`() {
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
+        setPlayerRoute(FakePlaybackController())
+
+        assertNull(shadowOf(composeRule.activity).lastRequestedPermission)
+    }
+
     private fun setPlayerRoute(controller: FakePlaybackController) {
-        val viewModel = PlayerViewModel(controller)
+        val viewModel = PlayerViewModel(controller, promptStore)
         composeRule.setContent { PlayerRoute(navigator = navigator, viewModel = viewModel) }
         composeRule.waitForIdle()
     }

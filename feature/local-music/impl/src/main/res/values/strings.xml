@@ -3,5 +3,7 @@
     <string name="local_tracks_load_error">Не удалось загрузить треки</string>
     <string name="local_tracks_permission_denied">Нет доступа к аудиофайлам</string>
     <string name="grant_access">Разрешить доступ</string>
+    <string name="local_tracks_permission_denied_permanently">Доступ к аудиофайлам запрещён. Разрешите его в настройках приложения</string>
+    <string name="open_settings">Открыть настройки</string>
     <string name="local_tracks_empty">На устройстве нет аудио</string>
 </resources>
