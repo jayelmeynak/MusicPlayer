@@ -201,7 +201,7 @@ jobs:
         id: tests
         continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
-        with: &emulator-with
+        with:
           api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
@@ -224,11 +224,24 @@ jobs:
           rm -f ~/.android/avd/*.avd/*.lock
           "$adb" kill-server || true
 
+      # Повтор — холодная загрузка (`-no-snapshot-load`): из снапшота сервис input бывает не готов и во втором
+      # запуске (PR #54, #57), а при холодной загрузке раннер ждёт полного старта системы.
       - name: Instrumented tests (emulator retry)
         id: tests-retry
         if: ${{ steps.tests.outcome == 'failure' && steps.tests.outputs.started != 'true' }}
         uses: reactivecircus/android-emulator-runner@v2
-        with: *emulator-with
+        # Опции — как у шага «Instrumented tests», кроме -no-snapshot-load: держать в синхроне (якоря YAML
+        # GitHub Actions не сливает).
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          # Экран реального телефона: без профиля AVD — 320x640 mdpi, экран плеера на нём не помещается.
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash .github/scripts/android-tests.sh
 
       # continue-on-error оставляет job зелёным — итог по обоим шагам выставляется здесь; упавший повтор
       # роняет job сам.
