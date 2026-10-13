@@ -5,16 +5,14 @@ import com.jayelmeynak.lib.designsystem.UiText
 
 /**
  * Состояние вкладки «Local»: введённый запрос, доступ к аудио и исходы загрузки медиатеки и поиска.
- * Что показать, вычисляется из них ([content]), а не хранится отдельными флагами.
- *
- * @property artworks обложки треков по id; `null` — у трека нет обложки, нет ключа — ещё грузится.
+ * Что показать, вычисляется из них ([content]), а не хранится отдельными флагами. Обложек здесь нет:
+ * строка грузит эскиз сама по URI трека.
  */
 internal data class LocalTracksUiState(
     val query: String = "",
     val access: AudioAccess = AudioAccess.Unknown,
     val library: LibraryState = LibraryState.Loading,
     val search: LocalSearchState = LocalSearchState.Inactive,
-    val artworks: Map<Long, ByteArray?> = emptyMap(),
 ) {
     /**
      * Нет доступа — важнее всего; затем загрузка и ошибка медиатеки; затем выдача поиска (пустая —

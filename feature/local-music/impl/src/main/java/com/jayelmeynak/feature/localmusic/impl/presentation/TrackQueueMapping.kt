@@ -5,8 +5,8 @@ import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 
 /**
- * Трек устройства как элемент очереди. URI обложки — собственный `content://` URI трека: обложку
- * для него плеер читает из кэша обложек.
+ * Трек устройства как элемент очереди. URI обложки — собственный `content://` URI трека: обложка
+ * трека — эскиз провайдера (`ContentResolver.loadThumbnail`): так его читают список и плеер.
  */
 internal fun LocalTrack.toQueueItem(): QueueItem = QueueItem(
     id = uri,

@@ -21,7 +21,7 @@ dependencies {
     // Воспроизведение (PlaybackController, QueueItem, TrackUriResolver) и ключ экрана плеера.
     implementation(project(":feature:player:api"))
     implementation(project(":lib:designsystem"))
-    // Чтение MediaStore и кэш обложек.
+    // Чтение MediaStore.
     implementation(project(":lib:mediastore"))
     implementation(project(":util:coroutines"))
     // Result и DataError.Local списка треков.

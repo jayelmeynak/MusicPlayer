@@ -98,7 +98,7 @@ internal fun LocalTracksScreen(
                         title = { it.title },
                         artistName = { it.artistName },
                         onTrackClick = { tracks, index -> onAction(LocalTracksAction.OnTrackClick(tracks, index)) },
-                        image = { LocalTrackImage(state.artworks[it.id]) },
+                        image = { LocalTrackImage(it.uri) },
                     )
                 }
             }

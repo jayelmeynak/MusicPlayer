@@ -8,8 +8,8 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
-import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkSource
-import com.jayelmeynak.feature.player.impl.artwork.MediaStoreArtworkSource
+import com.jayelmeynak.feature.player.impl.artwork.ContentResolverThumbnailSource
+import com.jayelmeynak.feature.player.impl.artwork.ContentThumbnailSource
 import com.jayelmeynak.feature.player.impl.playback.MediaControllerConnector
 import com.jayelmeynak.feature.player.impl.playback.ProcessLifecycle
 import com.jayelmeynak.feature.player.impl.persistence.DataStorePlaybackStateStore
@@ -49,7 +49,7 @@ internal abstract class PlayerImplModule {
     abstract fun bindMediaControllerConnector(impl: SessionServiceConnector): MediaControllerConnector
 
     @Binds
-    abstract fun bindLocalArtworkSource(impl: MediaStoreArtworkSource): LocalArtworkSource
+    abstract fun bindContentThumbnailSource(impl: ContentResolverThumbnailSource): ContentThumbnailSource
 
     @Binds
     abstract fun bindPlaybackStateStore(impl: DataStorePlaybackStateStore): PlaybackStateStore
