@@ -2,7 +2,7 @@ package com.jayelmeynak.lib.mediastore.data
 
 import android.content.Context
 import android.media.MediaMetadataRetriever
-import android.net.Uri
+import androidx.core.net.toUri
 import com.jayelmeynak.lib.database.data.db.ArtworkDao
 import com.jayelmeynak.lib.database.data.db.ArtworkEntity
 import com.jayelmeynak.lib.mediastore.domain.repository.ArtworkRepository
@@ -19,7 +19,7 @@ internal class ArtworkRepositoryImpl @Inject constructor(
     @Dispatcher(MusicPlayerDispatchers.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ArtworkRepository {
 
-    override suspend fun getArtwork(trackId: Long, uri: Uri): ByteArray? =
+    override suspend fun getArtwork(trackId: Long, uri: String): ByteArray? =
         withContext(ioDispatcher) {
             artworkDao.getByTrackId(trackId)?.let { cached ->
                 return@withContext cached.data
@@ -27,7 +27,7 @@ internal class ArtworkRepositoryImpl @Inject constructor(
 
             val artwork = runCatching {
                 MediaMetadataRetriever().use { retriever ->
-                    retriever.setDataSource(context, uri)
+                    retriever.setDataSource(context, uri.toUri())
                     retriever.embeddedPicture
                 }
             }.getOrNull()

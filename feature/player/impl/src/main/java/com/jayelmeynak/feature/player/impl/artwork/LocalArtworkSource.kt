@@ -6,7 +6,7 @@ import com.jayelmeynak.lib.mediastore.data.isMediaStoreUri
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import javax.inject.Inject
 
-/** Cover art of a local track from the artwork cache; the id is the track's `content://` URI. */
+/** Обложка локального трека из кэша обложек; id — `content://` URI трека. */
 internal fun interface LocalArtworkSource {
     suspend fun artwork(trackId: String): ByteArray?
 }
@@ -17,10 +17,9 @@ internal class MediaStoreArtworkSource @Inject constructor(
 
     override suspend fun artwork(trackId: String): ByteArray? {
         if (!isMediaStoreUri(trackId)) return null
-        val uri = trackId.toUri()
-        // The cache is keyed by the MediaStore row id, the last segment of the content URI.
-        val rowId = runCatching { ContentUris.parseId(uri) }.getOrNull()?.takeIf { it >= 0 }
+        // Ключ кэша — id строки MediaStore, последний сегмент content URI.
+        val rowId = runCatching { ContentUris.parseId(trackId.toUri()) }.getOrNull()?.takeIf { it >= 0 }
             ?: return null
-        return getTrackArtworkUseCase(rowId, uri)
+        return getTrackArtworkUseCase(rowId, trackId)
     }
 }

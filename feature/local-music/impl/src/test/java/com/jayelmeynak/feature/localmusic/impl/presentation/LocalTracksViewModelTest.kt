@@ -1,14 +1,18 @@
 package com.jayelmeynak.feature.localmusic.impl.presentation
 
-import android.net.Uri
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
+import com.jayelmeynak.feature.localmusic.impl.R
 import com.jayelmeynak.feature.localmusic.impl.domain.model.LocalTrack
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.feature.localmusic.impl.domain.usecase.SearchLocalTracksUseCase
+import com.jayelmeynak.feature.localmusic.impl.testing.FakeLocalTracksRepository
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
+import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
+import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceTimeBy
@@ -16,16 +20,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-// Robolectric — только ради android.net.Uri в LocalTrack.
-@RunWith(RobolectricTestRunner::class)
 class LocalTracksViewModelTest {
 
     @get:Rule
@@ -43,6 +42,7 @@ class LocalTracksViewModelTest {
 
     private fun viewModel() = LocalTracksViewModel(
         GetLocalTracksUseCase(repository),
+        SearchLocalTracksUseCase(),
         GetTrackArtworkUseCase(artworkRepository),
         PruneArtworkCacheUseCase(artworkRepository),
         playbackController,
@@ -147,12 +147,12 @@ class LocalTracksViewModelTest {
     }
 
     @Test
-    fun `исключение при чтении треков - текст ошибки`() = runTest {
-        repository.tracksError = SecurityException("no audio permission")
+    fun `ошибка загрузки - прежний текст «Не удалось загрузить треки», список пуст`() = runTest {
+        repository.tracksError = DataError.Local.UNKNOWN
 
         viewModel().state.test {
             val state = awaitLoaded()
-            assertNotNull(state.errorMessage)
+            assertEquals(UiText.StringResourceId(R.string.local_tracks_load_error), state.errorMessage)
             assertTrue(state.tracks.isEmpty())
         }
     }
@@ -199,7 +199,7 @@ class LocalTracksViewModelTest {
 
     @Test
     fun `ошибка загрузки и разрешение есть - список загружается заново`() = runTest {
-        repository.tracksError = SecurityException("no audio permission")
+        repository.tracksError = DataError.Local.UNKNOWN
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -229,7 +229,7 @@ class LocalTracksViewModelTest {
 
     @Test
     fun `поиск, набранный до перезагрузки, применяется к новым трекам`() = runTest {
-        repository.tracksError = SecurityException("no audio permission")
+        repository.tracksError = DataError.Local.UNKNOWN
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -288,7 +288,7 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
             assertFalse(expectMostRecentItem().isLibraryEmpty)
         }
-        repository.tracksError = SecurityException("no audio permission")
+        repository.tracksError = DataError.Local.UNKNOWN
         viewModel().state.test {
             assertFalse(awaitLoaded().isLibraryEmpty)
         }
@@ -343,6 +343,6 @@ class LocalTracksViewModelTest {
         title = title,
         artistName = artist,
         duration = 200,
-        uri = Uri.parse("content://media/external/audio/media/$id"),
+        uri = "content://media/external/audio/media/$id",
     )
 }
