@@ -2,7 +2,6 @@ package com.jayelmeynak.musicplayer.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,11 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.jayelmeynak.download_tracks.presentation.DownloadTrackScreen
 import com.jayelmeynak.feature.catalog.api.ChartDestination
+import com.jayelmeynak.feature.localmusic.api.LocalMusicDestination
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.ui.MiniPlayer
@@ -41,8 +39,14 @@ fun AppNavigation(
     val navigationState = rememberNavigationState(
         startRoute = TopLevelDestination.ApiTracks,
         topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
-        // Экран вкладки «Remote» регистрирует каталог (CatalogEntryInstaller).
-        roots = remember { mapOf(TopLevelDestination.ApiTracks to ChartDestination) },
+        // Экраны вкладок регистрируют фичи: «Remote» — каталог (CatalogEntryInstaller),
+        // «Local» — локальная музыка (LocalMusicEntryInstaller).
+        roots = remember {
+            mapOf(
+                TopLevelDestination.ApiTracks to ChartDestination,
+                TopLevelDestination.DownloadTracks to LocalMusicDestination,
+            )
+        },
     )
     val navigator = remember(navigationState) { AppNavigator(navigationState) }
     val currentTop = navigationState.topLevelRoute
@@ -53,16 +57,6 @@ fun AppNavigation(
 
     val entries = navigationState.toEntries(
         entryProvider {
-            entry<TopLevelDestination.DownloadTracks> {
-                DownloadTrackScreen(
-                    scaffoldPadding = PaddingValues(),
-                    viewModel = hiltViewModel(),
-                    onTrackClicked = { tracks, index ->
-                        playbackController.play(tracks.map { it.toQueueItem() }, index)
-                        navigator.navigateTo(PlayerDestination)
-                    },
-                )
-            }
             entryInstallers.forEach { installer -> with(installer) { install(navigator) } }
         }
     )

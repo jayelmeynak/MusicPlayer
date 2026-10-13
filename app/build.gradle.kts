@@ -36,13 +36,13 @@ dependencies {
     // ChartDestination — корень стека вкладки «Remote»; экран и резолвер Deezer приходят через :di.
     implementation(project(":feature:catalog:api"))
     implementation(project(":feature:catalog:di"))
+    // LocalMusicDestination — корень стека вкладки «Local»; экран и резолвер локальных треков — через :di.
+    implementation(project(":feature:local-music:api"))
+    implementation(project(":feature:local-music:di"))
     implementation(project(":feature:player:api"))
     implementation(project(":feature:player:ui"))
     implementation(project(":feature:player:di"))
-    implementation(project(":features:download-tracks"))
     implementation(project(":lib:designsystem"))
-    // LocalTrack: the local tab hands its visible list to the player.
-    implementation(project(":lib:mediastore"))
     implementation(project(":lib:navigation"))
     implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)

@@ -8,7 +8,6 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
-import com.jayelmeynak.feature.player.api.TrackUriResolver
 import com.jayelmeynak.feature.player.impl.artwork.LocalArtworkSource
 import com.jayelmeynak.feature.player.impl.artwork.MediaStoreArtworkSource
 import com.jayelmeynak.feature.player.impl.playback.MediaControllerConnector
@@ -23,7 +22,6 @@ import com.jayelmeynak.feature.player.impl.persistence.savedPositionFile
 import com.jayelmeynak.feature.player.impl.persistence.savedQueueDataStore
 import com.jayelmeynak.feature.player.impl.persistence.savedQueueFile
 import com.jayelmeynak.feature.player.impl.playback.SessionServiceConnector
-import com.jayelmeynak.feature.player.impl.resolver.LocalContentUriResolver
 import com.jayelmeynak.feature.player.impl.service.ExoPlayerFactory
 import com.jayelmeynak.feature.player.impl.service.PlayerFactory
 import dagger.Binds
@@ -35,7 +33,6 @@ import com.jayelmeynak.util.coroutines.MusicPlayerDispatchers
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dagger.multibindings.IntoSet
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Singleton
@@ -56,12 +53,6 @@ internal abstract class PlayerImplModule {
 
     @Binds
     abstract fun bindPlaybackStateStore(impl: DataStorePlaybackStateStore): PlaybackStateStore
-
-    // Адаптер-резолвер локальных треков — internal, поэтому привязан здесь, а не в PlayerModule;
-    // уйдёт в фичу локальной музыки. Резолвер Deezer привязывает каталог (CatalogModule).
-    @Binds
-    @IntoSet
-    abstract fun bindLocalResolver(impl: LocalContentUriResolver): TrackUriResolver
 
     companion object {
 

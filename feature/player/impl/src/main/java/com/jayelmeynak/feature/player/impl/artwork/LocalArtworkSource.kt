@@ -2,7 +2,7 @@ package com.jayelmeynak.feature.player.impl.artwork
 
 import android.content.ContentUris
 import androidx.core.net.toUri
-import com.jayelmeynak.feature.player.impl.resolver.isMediaStoreUri
+import com.jayelmeynak.lib.mediastore.data.isMediaStoreUri
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import javax.inject.Inject
 
