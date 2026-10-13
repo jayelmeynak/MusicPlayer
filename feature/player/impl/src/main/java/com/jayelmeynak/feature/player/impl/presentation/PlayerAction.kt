@@ -9,4 +9,7 @@ internal sealed interface PlayerAction {
 
     /** The seek gesture ended at [percent] of the duration. */
     data class SeekTo(val percent: Float) : PlayerAction
+
+    /** Экран показан на API 33+: выдано ли разрешение на уведомления. */
+    data class OnNotificationPermissionChecked(val granted: Boolean) : PlayerAction
 }

@@ -7,6 +7,7 @@ import com.jayelmeynak.lib.mediastore.data.MediaStoreAudio
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.Result
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 internal class LocalTracksRepositoryImpl @Inject constructor(
@@ -21,6 +22,8 @@ internal class LocalTracksRepositoryImpl @Inject constructor(
         // Без доступа к аудио MediaStore бросает SecurityException; причина экрану не нужна.
         Result.Error(DataError.Local.UNKNOWN)
     }
+
+    override fun libraryChanges(): Flow<Unit> = dataSource.audioChanges()
 }
 
 private fun MediaStoreAudio.toLocalTrack() = LocalTrack(

@@ -2,6 +2,8 @@ package com.jayelmeynak.lib.mediastore.data
 
 import android.content.ContentUris
 import android.content.Context
+import android.database.ContentObserver
+import android.net.Uri
 import android.provider.MediaStore
 import androidx.annotation.WorkerThread
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +43,17 @@ internal class ContentResolverAudioReader @Inject constructor(
                 )
             }
         }
+    }
+
+    override fun observeAudioChanges(onAudioChanged: () -> Unit): AutoCloseable {
+        // Без Handler колбэк приходит на binder-потоке: подписчику поток не важен.
+        val observer = object : ContentObserver(null) {
+            override fun onChange(selfChange: Boolean, uri: Uri?) = onAudioChanged()
+        }
+        val resolver = context.contentResolver
+        // С потомками: провайдер сообщает об изменении отдельного трека его собственным URI.
+        resolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, observer)
+        return AutoCloseable { resolver.unregisterContentObserver(observer) }
     }
 
     private companion object {

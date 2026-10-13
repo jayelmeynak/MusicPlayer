@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jayelmeynak.feature.localmusic.impl.R
 import com.jayelmeynak.feature.localmusic.impl.domain.model.LocalTrack
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.feature.localmusic.impl.domain.usecase.ObserveLibraryChangesUseCase
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.SearchLocalTracksUseCase
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.lib.designsystem.UiText
@@ -28,11 +29,17 @@ import javax.inject.Inject
 /**
  * Вкладка «Local»: треки устройства, поиск по вводу, доступ к аудио и запуск воспроизведения.
  * Хранит исходы загрузки и поиска; что показать, вычисляет [LocalTracksUiState].
+ *
+ * Доступ: решает VM, системные вызовы делает экран по эффектам. Медиатека читается только после
+ * первого «доступ есть»; первая проверка без доступа сразу просит системный диалог, дальше — кнопка
+ * (диалог или, после окончательного отказа, настройки). С первого доступа и до очистки VM список
+ * перечитывается при изменении медиатеки.
  */
 @HiltViewModel
 internal class LocalTracksViewModel @Inject constructor(
     private val getLocalTracksUseCase: GetLocalTracksUseCase,
     private val searchLocalTracksUseCase: SearchLocalTracksUseCase,
+    private val observeLibraryChangesUseCase: ObserveLibraryChangesUseCase,
     private val playbackController: PlaybackController,
 ) : ViewModel() {
 
@@ -46,8 +53,12 @@ internal class LocalTracksViewModel @Inject constructor(
 
     private var loadJob: Job? = null
 
+    private var libraryChangesJob: Job? = null
+
+    /** В этой VM системный запрос уже заканчивался отказом. */
+    private var deniedByRequest = false
+
     init {
-        loadTracks()
         observeSearchQueries()
     }
 
@@ -59,6 +70,18 @@ internal class LocalTracksViewModel @Inject constructor(
             }
 
             is LocalTracksAction.OnAudioPermissionChecked -> onAudioPermissionChecked(action.granted)
+
+            is LocalTracksAction.OnAudioPermissionResult -> onAudioPermissionResult(action)
+
+            LocalTracksAction.OnGrantAccessClick -> {
+                val access = _state.value.access
+                val effect = if (access is AudioAccess.Denied && access.permanently) {
+                    LocalTracksEffect.OpenAppSettings
+                } else {
+                    LocalTracksEffect.RequestAudioPermission
+                }
+                _effects.trySend(effect)
+            }
 
             // Очередь — нарисованный список; переход на плеер — после play (docs/playback.md).
             is LocalTracksAction.OnTrackClick -> {
@@ -84,10 +107,11 @@ internal class LocalTracksViewModel @Inject constructor(
         if (query.isBlank()) LocalSearchState.Inactive
         else LocalSearchState.Results(searchLocalTracksUseCase(tracks, query))
 
-    private fun loadTracks() {
+    /** [showLoading] = false — перезагрузка по изменению медиатеки: прежний список виден до нового. */
+    private fun loadTracks(showLoading: Boolean = true) {
         // Перезагрузка отменяет прежнюю: на экран попадает исход последней.
         loadJob?.cancel()
-        _state.update { it.copy(library = LibraryState.Loading) }
+        if (showLoading) _state.update { it.copy(library = LibraryState.Loading) }
         loadJob = viewModelScope.launch {
             getLocalTracksUseCase()
                 .onSuccess { tracks -> showTracks(tracks) }
@@ -104,21 +128,63 @@ internal class LocalTracksViewModel @Inject constructor(
     }
 
     private fun onAudioPermissionChecked(granted: Boolean) {
+        if (granted) {
+            onAccessGranted()
+            return
+        }
+        when (_state.value.access) {
+            // Первая проверка без доступа — сразу системный диалог, один раз на жизнь VM.
+            AudioAccess.Unknown -> {
+                deny(permanently = false)
+                _effects.trySend(LocalTracksEffect.RequestAudioPermission)
+            }
+
+            AudioAccess.Granted -> deny(permanently = false)
+
+            // Признак окончательного отказа знает только результат запроса — проверка его не сбрасывает.
+            is AudioAccess.Denied -> Unit
+        }
+    }
+
+    /**
+     * Окончательный отказ — `rationale == false` после ответа, и при этом отказ уже был: rationale до
+     * запроса был `true` или прошлый запрос этой VM кончился отказом. Без второго условия закрытие
+     * первого диалога (back, тап мимо — на Android 11+ без rationale) выглядело бы как «больше не
+     * спрашивать».
+     */
+    private fun onAudioPermissionResult(result: LocalTracksAction.OnAudioPermissionResult) {
+        if (result.granted) {
+            onAccessGranted()
+            return
+        }
+        val permanently = !result.rationaleAfterRequest && (result.rationaleBeforeRequest || deniedByRequest)
+        deniedByRequest = true
+        deny(permanently)
+    }
+
+    private fun deny(permanently: Boolean) {
+        loadJob?.cancel()
+        _state.update { it.copy(access = AudioAccess.Denied(permanently)) }
+    }
+
+    private fun onAccessGranted() {
         val state = _state.value
-        when {
-            !granted -> {
-                loadJob?.cancel()
-                _state.update { it.copy(access = AudioAccess.Denied) }
-            }
+        observeLibraryChanges()
+        // Загрузка — при первом доступе и если прошлая загрузка не могла увидеть треки.
+        if (state.access != AudioAccess.Granted || state.library is LibraryState.Failed) {
+            // Одним обновлением: экран не мелькает прежним списком между «доступ есть» и загрузкой.
+            _state.update { it.copy(access = AudioAccess.Granted, library = LibraryState.Loading) }
+            loadTracks()
+        }
+    }
 
-            // Перезагрузка — только если прошлая загрузка не могла увидеть треки.
-            state.access == AudioAccess.Denied || state.library is LibraryState.Failed -> {
-                // Одним обновлением: экран не мелькает прежним списком между «доступ есть» и загрузкой.
-                _state.update { it.copy(access = AudioAccess.Granted, library = LibraryState.Loading) }
-                loadTracks()
+    /** Одна подписка на жизнь VM: снимается вместе с `viewModelScope`. */
+    private fun observeLibraryChanges() {
+        if (libraryChangesJob != null) return
+        libraryChangesJob = viewModelScope.launch {
+            observeLibraryChangesUseCase().collect {
+                if (_state.value.access == AudioAccess.Granted) loadTracks(showLoading = false)
             }
-
-            else -> _state.update { it.copy(access = AudioAccess.Granted) }
         }
     }
 }

@@ -8,12 +8,14 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.provider.MediaStore
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 
 // Robolectric — ради настоящего ContentResolver: курсор MediaStore отдаёт тестовый провайдер.
 @RunWith(RobolectricTestRunner::class)
@@ -57,6 +59,24 @@ class ContentResolverAudioReaderTest {
         val tracks = reader().readAudio()
 
         assertEquals(emptyList<MediaStoreAudio>(), tracks)
+    }
+
+    @Test
+    fun `изменение трека в медиатеке вызывает колбэк, пока наблюдение не закрыто`() {
+        val resolver = RuntimeEnvironment.getApplication().contentResolver
+        var changes = 0
+
+        val observation = reader().observeAudioChanges { changes++ }
+        assertEquals(1, shadowOf(resolver).getContentObservers(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI).size)
+
+        // Изменение отдельного трека — потомок EXTERNAL_CONTENT_URI.
+        resolver.notifyChange(Uri.parse(audioUri(7)), null)
+        assertEquals(1, changes)
+
+        observation.close()
+        resolver.notifyChange(Uri.parse(audioUri(7)), null)
+        assertEquals(1, changes)
+        assertTrue(shadowOf(resolver).getContentObservers(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI).isEmpty())
     }
 
     private fun reader() = ContentResolverAudioReader(RuntimeEnvironment.getApplication())

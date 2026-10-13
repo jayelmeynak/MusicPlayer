@@ -10,6 +10,8 @@ import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import com.jayelmeynak.feature.player.impl.artwork.ContentResolverThumbnailSource
 import com.jayelmeynak.feature.player.impl.artwork.ContentThumbnailSource
+import com.jayelmeynak.feature.player.impl.permission.NotificationPromptStore
+import com.jayelmeynak.feature.player.impl.permission.SharedPreferencesNotificationPromptStore
 import com.jayelmeynak.feature.player.impl.playback.MediaControllerConnector
 import com.jayelmeynak.feature.player.impl.playback.ProcessLifecycle
 import com.jayelmeynak.feature.player.impl.persistence.DataStorePlaybackStateStore
@@ -53,6 +55,9 @@ internal abstract class PlayerImplModule {
 
     @Binds
     abstract fun bindPlaybackStateStore(impl: DataStorePlaybackStateStore): PlaybackStateStore
+
+    @Binds
+    abstract fun bindNotificationPromptStore(impl: SharedPreferencesNotificationPromptStore): NotificationPromptStore
 
     companion object {
 

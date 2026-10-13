@@ -22,6 +22,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    // Запрос разрешения уведомлений с экрана плеера.
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)

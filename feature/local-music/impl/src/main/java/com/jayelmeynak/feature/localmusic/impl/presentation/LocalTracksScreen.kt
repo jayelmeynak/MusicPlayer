@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jayelmeynak.feature.localmusic.impl.R
 import com.jayelmeynak.lib.designsystem.R as DesignR
@@ -26,13 +27,12 @@ import com.jayelmeynak.lib.designsystem.components.TrackSearchBar
 
 /**
  * Вкладка «Local» без состояния: строка поиска и то, что велит [LocalTracksUiState.content].
- * Запрос доступа к аудио — платформенный код вызывающего ([onRequestPermission]).
+ * Кнопка «нет доступа» — действие: диалог или настройки выбирает VM.
  */
 @Composable
 internal fun LocalTracksScreen(
     state: LocalTracksUiState,
     onAction: (LocalTracksAction) -> Unit,
-    onRequestPermission: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -66,14 +66,22 @@ internal fun LocalTracksScreen(
                     .padding(top = 8.dp, start = 8.dp, end = 8.dp),
             ) {
                 when (val content = state.content) {
-                    LocalTracksContent.NoAccess -> CenteredBox {
+                    is LocalTracksContent.NoAccess -> CenteredBox {
                         Column(
                             modifier = Modifier.padding(horizontal = 32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text(text = stringResource(R.string.local_tracks_permission_denied))
-                            Button(onClick = onRequestPermission, modifier = Modifier.padding(top = 16.dp)) {
-                                Text(text = stringResource(R.string.grant_access))
+                            val (message, button) = if (content.permanently) {
+                                R.string.local_tracks_permission_denied_permanently to R.string.open_settings
+                            } else {
+                                R.string.local_tracks_permission_denied to R.string.grant_access
+                            }
+                            Text(text = stringResource(message), textAlign = TextAlign.Center)
+                            Button(
+                                onClick = { onAction(LocalTracksAction.OnGrantAccessClick) },
+                                modifier = Modifier.padding(top = 16.dp),
+                            ) {
+                                Text(text = stringResource(button))
                             }
                         }
                     }

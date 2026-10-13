@@ -9,6 +9,7 @@ import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.key
 import com.jayelmeynak.feature.player.api.positionForPercent
 import com.jayelmeynak.feature.player.impl.R
+import com.jayelmeynak.feature.player.impl.permission.NotificationPromptStore
 import com.jayelmeynak.lib.designsystem.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -29,6 +30,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class PlayerViewModel @Inject constructor(
     private val playbackController: PlaybackController,
+    private val notificationPromptStore: NotificationPromptStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Connecting)
@@ -38,6 +40,9 @@ internal class PlayerViewModel @Inject constructor(
     val effects: Flow<PlayerEffect> = _effects.receiveAsFlow()
 
     private var closeSent = false
+
+    /** Проверка разрешения уведомлений уже обработана: поворот до ответа хранилища не даст второй запрос. */
+    private var notificationPromptHandled = false
 
     init {
         viewModelScope.launch {
@@ -60,6 +65,21 @@ internal class PlayerViewModel @Inject constructor(
             PlayerAction.SeekBack -> playbackController.seekBack()
             PlayerAction.SeekForward -> playbackController.seekForward()
             is PlayerAction.SeekTo -> seekTo(action.percent)
+            is PlayerAction.OnNotificationPermissionChecked -> onNotificationPermissionChecked(action.granted)
+        }
+    }
+
+    /**
+     * Уведомление плеера на API 33+ без разрешения не видно, но воспроизведение работает; поэтому
+     * просим один раз на установку и отказ не переспрашиваем. Флаг ставится до диалога.
+     */
+    private fun onNotificationPermissionChecked(granted: Boolean) {
+        if (granted || notificationPromptHandled) return
+        notificationPromptHandled = true
+        viewModelScope.launch {
+            if (notificationPromptStore.isPrompted()) return@launch
+            notificationPromptStore.markPrompted()
+            _effects.send(PlayerEffect.RequestNotificationPermission)
         }
     }
 

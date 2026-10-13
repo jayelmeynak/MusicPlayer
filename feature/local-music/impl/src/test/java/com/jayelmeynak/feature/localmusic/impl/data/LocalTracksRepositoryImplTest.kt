@@ -1,11 +1,14 @@
 package com.jayelmeynak.feature.localmusic.impl.data
 
+import app.cash.turbine.test
 import com.jayelmeynak.feature.localmusic.impl.data.source.LocalTracksDataSource
 import com.jayelmeynak.feature.localmusic.impl.domain.model.LocalTrack
 import com.jayelmeynak.lib.mediastore.data.MediaStoreAudio
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.result.Result
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -65,6 +68,14 @@ class LocalTracksRepositoryImplTest {
         }
     }
 
+    @Test
+    fun `изменения медиатеки - из источника`() = runTest {
+        repository.libraryChanges().test {
+            dataSource.changes.emit(Unit)
+            awaitItem()
+        }
+    }
+
     private class FakeLocalTracksDataSource : LocalTracksDataSource {
         var rows: List<MediaStoreAudio> = emptyList()
         var error: Exception? = null
@@ -73,5 +84,9 @@ class LocalTracksRepositoryImplTest {
             error?.let { throw it }
             return rows
         }
+
+        val changes = MutableSharedFlow<Unit>()
+
+        override fun audioChanges(): Flow<Unit> = changes
     }
 }

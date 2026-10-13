@@ -5,11 +5,7 @@
     android:versionCode="1" >
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Доступ к аудио объявляет feature:local-music:impl, уведомления — feature:player:impl. -->
 
     <application
         android:name=".MyApp"
