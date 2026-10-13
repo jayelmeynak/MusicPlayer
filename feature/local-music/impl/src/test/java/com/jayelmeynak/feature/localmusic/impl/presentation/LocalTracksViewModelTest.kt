@@ -10,16 +10,21 @@ import com.jayelmeynak.feature.localmusic.impl.testing.FakeLocalTracksRepository
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import com.jayelmeynak.lib.designsystem.UiText
+import com.jayelmeynak.lib.designsystem.search.SEARCH_DEBOUNCE_MS
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
 import com.jayelmeynak.util.result.DataError
 import com.jayelmeynak.util.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,13 +56,13 @@ class LocalTracksViewModelTest {
     @Test
     fun `загрузка - треки, обложки по id, кэш чистится по актуальным id`() = runTest {
         viewModel().state.test {
-            val state = awaitState { !it.isLoading && it.artworks.size == 3 }
+            val state = awaitState { it.isLoadFinished && it.artworks.size == 3 }
             assertEquals(listOf(yesterday, numb, help), state.tracks)
             assertEquals(setOf(1L, 2L, 3L), state.artworks.keys)
             assertArrayEquals(byteArrayOf(1), state.artworks[1L])
             assertNull(state.artworks[2L])
             assertEquals(listOf(listOf(1L, 2L, 3L)), artworkRepository.prunedIds)
-            assertNull(state.errorMessage)
+            assertEquals(LocalTracksContent.Tracks(listOf(yesterday, numb, help)), state.content)
         }
     }
 
@@ -69,7 +74,7 @@ class LocalTracksViewModelTest {
             val state = awaitLoaded()
             assertTrue(state.tracks.isEmpty())
             assertTrue(state.artworks.isEmpty())
-            assertTrue(state.isLibraryEmpty)
+            assertEquals(LocalTracksContent.Empty, state.content)
             assertEquals(listOf(emptyList<Long>()), artworkRepository.prunedIds)
         }
     }
@@ -84,10 +89,10 @@ class LocalTracksViewModelTest {
             assertEquals("beatles", expectMostRecentItem().query)
 
             advanceTimeBy(SEARCH_DEBOUNCE_MS - 1)
-            assertNull(viewModel.state.value.searchList)
+            assertEquals(LocalSearchState.Inactive, viewModel.state.value.search)
 
             advanceTimeBy(2)
-            assertEquals(listOf(yesterday, help), expectMostRecentItem().searchList)
+            assertEquals(LocalSearchState.Results(listOf(yesterday, help)), expectMostRecentItem().search)
         }
     }
 
@@ -100,7 +105,7 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnSearchQueryChange("NUM"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
-            assertEquals(listOf(numb), expectMostRecentItem().searchList)
+            assertEquals(LocalSearchState.Results(listOf(numb)), expectMostRecentItem().search)
         }
     }
 
@@ -113,7 +118,9 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnSearchQueryChange("zzzzzz"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
-            assertEquals(emptyList<LocalTrack>(), expectMostRecentItem().searchList)
+            val state = expectMostRecentItem()
+            assertEquals(LocalSearchState.Results(emptyList()), state.search)
+            assertEquals(LocalTracksContent.NothingFound, state.content)
         }
     }
 
@@ -127,7 +134,7 @@ class LocalTracksViewModelTest {
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
             viewModel.onAction(LocalTracksAction.OnSearchQueryChange(""))
 
-            assertNull(expectMostRecentItem().searchList)
+            assertEquals(LocalSearchState.Inactive, expectMostRecentItem().search)
         }
     }
 
@@ -152,7 +159,10 @@ class LocalTracksViewModelTest {
 
         viewModel().state.test {
             val state = awaitLoaded()
-            assertEquals(UiText.StringResourceId(R.string.local_tracks_load_error), state.errorMessage)
+            assertEquals(
+                LocalTracksContent.Error(UiText.StringResourceId(R.string.local_tracks_load_error)),
+                state.content,
+            )
             assertTrue(state.tracks.isEmpty())
         }
     }
@@ -162,10 +172,10 @@ class LocalTracksViewModelTest {
         artworkRepository.failingArtworks = setOf(1L)
 
         viewModel().state.test {
-            val state = awaitState { !it.isLoading && it.artworks.size == 3 }
+            val state = awaitState { it.isLoadFinished && it.artworks.size == 3 }
             assertNull(state.artworks[1L])
             assertArrayEquals(byteArrayOf(3), state.artworks[3L])
-            assertNull(state.errorMessage)
+            assertTrue(state.content is LocalTracksContent.Tracks)
         }
     }
 
@@ -177,7 +187,9 @@ class LocalTracksViewModelTest {
             awaitLoaded()
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
 
-            assertTrue(expectMostRecentItem().isPermissionDenied)
+            val state = expectMostRecentItem()
+            assertEquals(AudioAccess.Denied, state.access)
+            assertEquals(LocalTracksContent.NoAccess, state.content)
         }
     }
 
@@ -190,7 +202,7 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
 
-            val state = awaitState { !it.isLoading && !it.isPermissionDenied }
+            val state = awaitState { it.isLoadFinished && it.access != AudioAccess.Denied }
             assertEquals(2, repository.tracksRequests)
             assertEquals(3, state.tracks.size)
             cancelAndIgnoreRemainingEvents()
@@ -207,9 +219,9 @@ class LocalTracksViewModelTest {
             repository.tracksError = null
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
 
-            val state = awaitState { !it.isLoading && it.tracks.size == 3 }
-            assertFalse(state.isPermissionDenied)
-            assertNull(state.errorMessage)
+            val state = awaitState { it.isLoadFinished && it.tracks.size == 3 }
+            assertEquals(AudioAccess.Granted, state.access)
+            assertEquals(LocalTracksContent.Tracks(listOf(yesterday, numb, help)), state.content)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -239,8 +251,8 @@ class LocalTracksViewModelTest {
             repository.tracksError = null
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
 
-            val state = awaitState { !it.isLoading && it.tracks.isNotEmpty() }
-            assertEquals(listOf(help), state.searchList)
+            val state = awaitState { it.isLoadFinished && it.tracks.isNotEmpty() }
+            assertEquals(LocalSearchState.Results(listOf(help)), state.search)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -258,12 +270,12 @@ class LocalTracksViewModelTest {
             viewModel.onAction(LocalTracksAction.OnSearchQueryChange("help"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
-            assertEquals(listOf(help), expectMostRecentItem().searchList)
+            assertEquals(LocalSearchState.Results(listOf(help)), expectMostRecentItem().search)
         }
     }
 
     @Test
-    fun `пустой запрос очищает searchList`() = runTest {
+    fun `пустой запрос делает поиск неактивным`() = runTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
@@ -274,7 +286,7 @@ class LocalTracksViewModelTest {
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
 
             val state = expectMostRecentItem()
-            assertNull(state.searchList)
+            assertEquals(LocalSearchState.Inactive, state.search)
             assertEquals("", state.query)
         }
     }
@@ -284,13 +296,13 @@ class LocalTracksViewModelTest {
         val viewModel = viewModel()
 
         viewModel.state.test {
-            assertFalse(awaitLoaded().isLibraryEmpty)
+            assertNotEquals(LocalTracksContent.Empty, awaitLoaded().content)
             viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
-            assertFalse(expectMostRecentItem().isLibraryEmpty)
+            assertNotEquals(LocalTracksContent.Empty, expectMostRecentItem().content)
         }
         repository.tracksError = DataError.Local.UNKNOWN
         viewModel().state.test {
-            assertFalse(awaitLoaded().isLibraryEmpty)
+            assertNotEquals(LocalTracksContent.Empty, awaitLoaded().content)
         }
     }
 
@@ -317,7 +329,7 @@ class LocalTracksViewModelTest {
             awaitLoaded()
             viewModel.onAction(LocalTracksAction.OnSearchQueryChange("beatles"))
             advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
-            val found = expectMostRecentItem().searchList!!
+            val found = (expectMostRecentItem().search as LocalSearchState.Results).tracks
             viewModel.onAction(LocalTracksAction.OnTrackClick(found, 1))
 
             assertEquals(
@@ -327,12 +339,102 @@ class LocalTracksViewModelTest {
         }
     }
 
-    private suspend fun ReceiveTurbine<LocalTracksState>.awaitLoaded(): LocalTracksState =
-        awaitState { !it.isLoading }
+    @Test
+    fun `отказ в доступе во время загрузки отменяет её`() = runTest {
+        val pending = CompletableDeferred<Unit>()
+        repository.pendingTracks = pending
+        val viewModel = viewModel()
+        assertEquals(LibraryState.Loading, viewModel.state.value.library)
 
-    private suspend fun ReceiveTurbine<LocalTracksState>.awaitState(
-        predicate: (LocalTracksState) -> Boolean,
-    ): LocalTracksState {
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+        pending.complete(Unit)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(LibraryState.Loading, state.library)
+        assertEquals(LocalTracksContent.NoAccess, state.content)
+        assertEquals(1, repository.tracksRequests)
+    }
+
+    @Test
+    fun `первая проверка доступа во время загрузки не перезапускает её`() = runTest {
+        val pending = CompletableDeferred<Unit>()
+        repository.pendingTracks = pending
+        val viewModel = viewModel()
+        assertEquals(AudioAccess.Unknown, viewModel.state.value.access)
+
+        viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = true))
+        assertEquals(1, repository.tracksRequests)
+        pending.complete(Unit)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(1, repository.tracksRequests)
+        assertEquals(AudioAccess.Granted, state.access)
+        assertEquals(LibraryState.Loaded(listOf(yesterday, numb, help)), state.library)
+    }
+
+    @Test
+    fun `поиск, сработавший во время загрузки, после загрузки даёт выдачу по трекам`() = runTest {
+        val pending = CompletableDeferred<Unit>()
+        repository.pendingTracks = pending
+        val viewModel = viewModel()
+
+        viewModel.onAction(LocalTracksAction.OnSearchQueryChange("beatles"))
+        advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
+        assertEquals(LocalTracksContent.Loading, viewModel.state.value.content)
+
+        pending.complete(Unit)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(LocalSearchState.Results(listOf(yesterday, help)), state.search)
+        assertEquals(LocalTracksContent.Tracks(listOf(yesterday, help)), state.content)
+    }
+
+    @Test
+    fun `тап по треку - сначала play, затем эффект открытия плеера`() = runTest {
+        val viewModel = viewModel()
+        val tracks = listOf(yesterday, numb, help)
+        // Сколько команд play фейк получил к моменту эффекта: сборщик без диспетчеризации получает
+        // эффект прямо в отправке, поэтому видит состояние фейка на тот момент.
+        val playsAtEffect = mutableListOf<Int>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.effects.collect { effect ->
+                assertEquals(LocalTracksEffect.OpenPlayer, effect)
+                playsAtEffect += playbackController.commands.count { it is Command.Play }
+            }
+        }
+
+        viewModel.onAction(LocalTracksAction.OnTrackClick(tracks, 2))
+
+        assertEquals(listOf(1), playsAtEffect)
+    }
+
+    @Test
+    fun `без тапа эффектов нет`() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.effects.test {
+            viewModel.onAction(LocalTracksAction.OnSearchQueryChange("help"))
+            advanceTimeBy(SEARCH_DEBOUNCE_MS + 1)
+            viewModel.onAction(LocalTracksAction.OnAudioPermissionChecked(granted = false))
+            expectNoEvents()
+        }
+    }
+
+    private val LocalTracksUiState.isLoadFinished: Boolean
+        get() = library is LibraryState.Loaded || library is LibraryState.Failed
+
+    private val LocalTracksUiState.tracks: List<LocalTrack>
+        get() = (library as? LibraryState.Loaded)?.tracks.orEmpty()
+
+    private suspend fun ReceiveTurbine<LocalTracksUiState>.awaitLoaded(): LocalTracksUiState =
+        awaitState { it.isLoadFinished }
+
+    private suspend fun ReceiveTurbine<LocalTracksUiState>.awaitState(
+        predicate: (LocalTracksUiState) -> Boolean,
+    ): LocalTracksUiState {
         var state = awaitItem()
         while (!predicate(state)) state = awaitItem()
         return state
