@@ -5,16 +5,21 @@ import androidx.lifecycle.viewModelScope
 import com.jayelmeynak.feature.localmusic.impl.R
 import com.jayelmeynak.feature.localmusic.impl.domain.model.LocalTrack
 import com.jayelmeynak.feature.localmusic.impl.domain.usecase.GetLocalTracksUseCase
+import com.jayelmeynak.feature.localmusic.impl.domain.usecase.SearchLocalTracksUseCase
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.lib.designsystem.UiText
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import com.jayelmeynak.lib.mediastore.domain.usecase.PruneArtworkCacheUseCase
+import com.jayelmeynak.util.result.DataError
+import com.jayelmeynak.util.result.onError
+import com.jayelmeynak.util.result.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +33,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class LocalTracksViewModel @Inject constructor(
     private val getLocalTracksUseCase: GetLocalTracksUseCase,
+    private val searchLocalTracksUseCase: SearchLocalTracksUseCase,
     private val getTrackArtworkUseCase: GetTrackArtworkUseCase,
     private val pruneArtworkCacheUseCase: PruneArtworkCacheUseCase,
     private val playbackController: PlaybackController,
@@ -56,36 +62,36 @@ internal class LocalTracksViewModel @Inject constructor(
     }
 
     private fun searchTrack(query: String) {
-        _state.update { it.copy(searchList = it.tracks.search(query)) }
+        // Выдача считается внутри update: перезагрузка не перетрёт её результатом по старому списку.
+        _state.update { it.copy(searchList = search(it.tracks, query)) }
     }
 
-    private fun List<LocalTrack>.search(query: String): List<LocalTrack>? =
-        if (query.isBlank()) null else filter { track -> track.matches(query) }
-
-    private fun LocalTrack.matches(query: String): Boolean =
-        title.contains(query, ignoreCase = true) || artistName.contains(query, ignoreCase = true)
+    /** `null` — поиск неактивен (пустой запрос). */
+    private fun search(tracks: List<LocalTrack>, query: String): List<LocalTrack>? =
+        if (query.isBlank()) null else searchLocalTracksUseCase(tracks, query)
 
     private fun loadData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val tracks = try {
-                getLocalTracksUseCase()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, errorMessage = UiText.StringResourceId(R.string.local_tracks_load_error))
+            getLocalTracksUseCase()
+                .onSuccess { tracks -> showTracks(tracks) }
+                .onError { error ->
+                    _state.update { it.copy(isLoading = false, errorMessage = error.toLoadErrorText()) }
                 }
-                return@launch
-            }
+        }
+    }
+
+    private suspend fun showTracks(tracks: List<LocalTrack>) {
+        coroutineScope {
             // Поиск, набранный до перезагрузки, должен показать перезагруженные треки.
+            val searchList = search(tracks, _searchQuery.value)
             _state.update {
                 it.copy(
                     tracks = tracks,
                     artworks = emptyMap(),
                     isLoading = false,
-                    searchList = tracks.search(_searchQuery.value),
+                    searchList = searchList,
                 )
             }
 
@@ -152,3 +158,9 @@ private const val ARTWORK_BATCH_SIZE = 20
 
 /** Пауза после ввода, после которой применяется поиск. */
 internal const val SEARCH_DEBOUNCE_MS = 500L
+
+/**
+ * Текст ошибки загрузки списка. Отклонение от общего `toUiText()`: тот дал бы «Что-то пошло не так»
+ * вместо прежнего «Не удалось загрузить треки», а срез поведение не меняет.
+ */
+private fun DataError.Local.toLoadErrorText(): UiText = UiText.StringResourceId(R.string.local_tracks_load_error)

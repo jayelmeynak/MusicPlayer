@@ -9,10 +9,10 @@ import com.jayelmeynak.feature.player.api.TrackSource
  * для него плеер читает из кэша обложек.
  */
 internal fun LocalTrack.toQueueItem(): QueueItem = QueueItem(
-    id = uri.toString(),
+    id = uri,
     source = TrackSource.LOCAL,
     title = title,
     artist = artistName,
-    artworkUri = uri.toString(),
+    artworkUri = uri,
     durationMs = duration.toLong(),
 )

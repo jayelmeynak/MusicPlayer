@@ -1,17 +1,17 @@
 package com.jayelmeynak.feature.player.impl.artwork
 
-import android.net.Uri
 import com.jayelmeynak.lib.mediastore.domain.repository.ArtworkRepository
 import com.jayelmeynak.lib.mediastore.domain.usecase.GetTrackArtworkUseCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Robolectric: the id is parsed as an android.net.Uri. */
+/** Robolectric: id разбирается как android.net.Uri. */
 @RunWith(RobolectricTestRunner::class)
 class MediaStoreArtworkSourceTest {
 
@@ -24,6 +24,7 @@ class MediaStoreArtworkSourceTest {
 
         assertArrayEquals(byteArrayOf(42), artwork)
         assertTrue(repository.requested.single() == 42L)
+        assertEquals("content://media/external/audio/media/42", repository.requestedUris.single())
     }
 
     @Test
@@ -36,8 +37,10 @@ class MediaStoreArtworkSourceTest {
 
     private class RecordingRepository : ArtworkRepository {
         val requested = mutableListOf<Long>()
-        override suspend fun getArtwork(trackId: Long, uri: Uri): ByteArray? {
+        val requestedUris = mutableListOf<String>()
+        override suspend fun getArtwork(trackId: Long, uri: String): ByteArray? {
             requested += trackId
+            requestedUris += uri
             return byteArrayOf(trackId.toByte())
         }
         override suspend fun pruneArtworkCache(activeTrackIds: List<Long>) = Unit
