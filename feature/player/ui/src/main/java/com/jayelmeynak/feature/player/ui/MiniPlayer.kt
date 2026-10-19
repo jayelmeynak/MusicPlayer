@@ -117,6 +117,7 @@ private fun MiniPlayerContent(
                 .fillMaxWidth()
                 .height(18.dp)
                 .padding(8.dp),
+            enabled = state.canSeek,
             trackKey = state.trackKey,
         )
     }

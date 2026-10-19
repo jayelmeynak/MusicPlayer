@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * [failConnection] даёт [PlaybackState.ConnectionFailed]. Как настоящий контроллер (общий контракт —
  * [PlaybackControllerContract]): [play] сразу обнуляет [positionMs], даже до подключения; [play]
  * текущей очереди и трека не перезапускает трек и не трогает позицию, а только возобновляет;
- * [seekTo] при подключении сразу пишет позицию. Остальные транспортные команды состояние не меняют —
+ * [seekTo] при подключении сразу пишет позицию, если снапшот разрешает перемотку
+ * ([PlaybackState.Active.canSeek]). Пустой снапшот перемотку запрещает, трек из [play] сразу
+ * перематывается (подготовки у фейка нет); трек без перемотки тест задаёт сам через [state].
+ * Остальные транспортные команды состояние не меняют —
  * любой другой переход тест задаёт сам. Расхождение: [play] того же трека в фоне оставляет позицию 0
  * и после [connect], а настоящий контроллер после подключения берёт позицию сессии.
  */
@@ -85,7 +88,8 @@ public class FakePlaybackController(
 
     override fun seekTo(positionMs: Long) {
         recorded += Command.SeekTo(positionMs)
-        if (isConnected) this.positionMs.value = positionMs
+        val canSeek = (state.value as? PlaybackState.Active)?.canSeek == true
+        if (isConnected && canSeek) this.positionMs.value = positionMs
     }
 
     override fun next() {
@@ -132,6 +136,9 @@ public class FakePlaybackController(
             showPlayButton = false,
             durationMs = command.queue[command.startIndex].durationMs,
             error = null,
+            canSeek = true,
+            canSeekBack = true,
+            canSeekForward = true,
         )
     }
 
@@ -156,6 +163,9 @@ public class FakePlaybackController(
             showPlayButton = true,
             durationMs = 0L,
             error = null,
+            canSeek = false,
+            canSeekBack = false,
+            canSeekForward = false,
         )
     }
 }

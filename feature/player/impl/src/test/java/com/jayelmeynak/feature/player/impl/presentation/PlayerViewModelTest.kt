@@ -141,6 +141,66 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun `перемотка доступна и длительность известна - ползунок и кнопки перемотки активны`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        controller.state.value = (controller.state.value as PlaybackState.Active).copy(durationMs = 30_000L)
+        val viewModel = PlayerViewModel(controller, promptStore)
+
+        val state = ready(viewModel)
+        assertTrue(state.canSeek)
+        assertTrue(state.canSeekBack)
+        assertTrue(state.canSeekForward)
+    }
+
+    @Test
+    fun `трек без перемотки - ползунок и кнопки перемотки заблокированы, команды не отправляются`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        controller.state.value = (controller.state.value as PlaybackState.Active)
+            .copy(durationMs = 30_000L, canSeek = false, canSeekBack = false, canSeekForward = false)
+        val viewModel = PlayerViewModel(controller, promptStore)
+
+        viewModel.onAction(PlayerAction.SeekTo(25f))
+        viewModel.onAction(PlayerAction.SeekBack)
+        viewModel.onAction(PlayerAction.SeekForward)
+
+        val state = ready(viewModel)
+        assertFalse(state.canSeek)
+        assertFalse(state.canSeekBack)
+        assertFalse(state.canSeekForward)
+        assertEquals(listOf(Command.Play(listOf(deezer(1)), 0)), controller.commands)
+    }
+
+    @Test
+    fun `перемотка становится доступной после подготовки - ползунок активируется`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        val prepared = (controller.state.value as PlaybackState.Active).copy(durationMs = 30_000L)
+        controller.state.value = prepared.copy(canSeek = false, canSeekBack = false, canSeekForward = false)
+        val viewModel = PlayerViewModel(controller, promptStore)
+        assertFalse(ready(viewModel).canSeek)
+
+        controller.state.value = prepared
+
+        assertTrue(ready(viewModel).canSeek)
+        assertTrue(ready(viewModel).canSeekBack)
+        assertTrue(ready(viewModel).canSeekForward)
+    }
+
+    @Test
+    fun `перемотка доступна, но длительность неизвестна - ползунок заблокирован, кнопки активны`() = runTest {
+        val controller = FakePlaybackController()
+        controller.play(listOf(deezer(1)), 0)
+        controller.state.value = (controller.state.value as PlaybackState.Active).copy(durationMs = 0L)
+        val viewModel = PlayerViewModel(controller, promptStore)
+
+        assertFalse(ready(viewModel).canSeek)
+        assertTrue(ready(viewModel).canSeekBack)
+        assertTrue(ready(viewModel).canSeekForward)
+    }
+
+    @Test
     fun `кнопки транспорта уходят в контроллер`() = runTest {
         val controller = FakePlaybackController()
         controller.play(listOf(deezer(1)), 0)
@@ -303,6 +363,9 @@ class PlayerViewModelTest {
         showPlayButton = true,
         durationMs = 0L,
         error = null,
+        canSeek = false,
+        canSeekBack = false,
+        canSeekForward = false,
     )
 
     @Test

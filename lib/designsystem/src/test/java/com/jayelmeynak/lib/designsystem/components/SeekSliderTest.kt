@@ -2,9 +2,11 @@ package com.jayelmeynak.lib.designsystem.components
 
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -26,6 +28,7 @@ class SeekSliderTest {
     private val seeks = mutableListOf<Float>()
     private val progress = mutableFloatStateOf(0f)
     private val trackKey = mutableLongStateOf(1L)
+    private val enabled = mutableStateOf(true)
 
     @Test
     fun `перетаскивание - одна перемотка на точку отпускания`() {
@@ -101,6 +104,41 @@ class SeekSliderTest {
         assertTrue("seek=${seeks.single()}", seeks.single() in 40f..60f)
     }
 
+    @Test
+    fun `заблокирован - не активен, тап и перетаскивание не перематывают`() {
+        enabled.value = false
+        setSlider(progress = 10f)
+
+        slider().assertIsNotEnabled()
+        slider().performTouchInput { click(center) }
+        slider().performTouchInput {
+            down(percentOffset(0.1f, 0.5f))
+            moveTo(center)
+            moveTo(centerRight)
+            up()
+        }
+
+        assertTrue("seeks=$seeks", seeks.isEmpty())
+        assertEquals(10f, sliderValue())
+    }
+
+    @Test
+    fun `блокировка посреди жеста - перемотки нет, ползунок снова показывает прогресс`() {
+        setSlider(progress = 10f)
+
+        slider().performTouchInput {
+            down(percentOffset(0.1f, 0.5f))
+            moveTo(percentOffset(0.3f, 0.5f))
+            moveTo(center)
+        }
+        enabled.value = false
+        composeRule.waitForIdle()
+        slider().performTouchInput { up() }
+
+        assertTrue("seeks=$seeks", seeks.isEmpty())
+        assertEquals(10f, sliderValue())
+    }
+
     private fun setSlider(progress: Float) {
         this.progress.value = progress
         composeRule.setContent {
@@ -108,6 +146,7 @@ class SeekSliderTest {
                 progress = this.progress.value,
                 onSeek = { seeks += it },
                 modifier = Modifier.testTag(TAG),
+                enabled = enabled.value,
                 trackKey = trackKey.value,
             )
         }

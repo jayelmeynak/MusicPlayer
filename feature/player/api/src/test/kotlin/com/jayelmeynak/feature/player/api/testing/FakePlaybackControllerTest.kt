@@ -40,6 +40,19 @@ class FakePlaybackControllerTest {
     }
 
     @Test
+    fun `перемотка недоступна - seekTo записан, но позицию не меняет`() {
+        val controller = FakePlaybackController()
+        controller.play(listOf(first), 0)
+        controller.seekTo(1_000L)
+        controller.state.value = (controller.state.value as PlaybackState.Active).copy(canSeek = false)
+
+        controller.seekTo(5_000L)
+
+        assertEquals(Command.SeekTo(5_000L), controller.commands.last())
+        assertEquals(1_000L, controller.positionMs.value)
+    }
+
+    @Test
     fun `failConnection - ConnectionFailed`() {
         val controller = FakePlaybackController(connected = false)
 

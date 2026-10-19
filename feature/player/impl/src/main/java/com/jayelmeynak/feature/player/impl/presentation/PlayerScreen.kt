@@ -135,6 +135,7 @@ private fun PlayerContent(
                 progress = state.progress,
                 onSeek = { onAction(PlayerAction.SeekTo(it)) },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = state.canSeek,
                 trackKey = state.trackKey,
             )
             Row(
@@ -154,7 +155,7 @@ private fun PlayerContent(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { onAction(PlayerAction.SeekBack) }) {
+            IconButton(onClick = { onAction(PlayerAction.SeekBack) }, enabled = state.canSeekBack) {
                 Icon(imageVector = Icons.Filled.FastRewind, contentDescription = stringResource(PlayerR.string.player_seek_back))
             }
             IconButton(onClick = { onAction(PlayerAction.Previous) }) {
@@ -168,7 +169,7 @@ private fun PlayerContent(
             IconButton(onClick = { onAction(PlayerAction.Next) }) {
                 Icon(imageVector = Icons.Filled.SkipNext, contentDescription = stringResource(PlayerR.string.player_next))
             }
-            IconButton(onClick = { onAction(PlayerAction.SeekForward) }) {
+            IconButton(onClick = { onAction(PlayerAction.SeekForward) }, enabled = state.canSeekForward) {
                 Icon(imageVector = Icons.Filled.FastForward, contentDescription = stringResource(PlayerR.string.player_seek_forward))
             }
         }

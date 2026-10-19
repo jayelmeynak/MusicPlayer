@@ -5,6 +5,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import android.Manifest
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -123,6 +125,38 @@ class PlayerRouteTest {
     }
 
     @Test
+    fun `трек с перемоткой - ползунок и кнопки перемотки активны`() {
+        val controller = FakePlaybackController().apply {
+            play(listOf(QueueItem("42", TrackSource.DEEZER, "Remote 42", "Artist", null, 0L)), 0)
+            state.value = (state.value as PlaybackState.Active).copy(durationMs = 30_000L)
+        }
+
+        setPlayerRoute(controller)
+
+        slider().assertIsEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_seek_back)).assertIsEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_seek_forward)).assertIsEnabled()
+    }
+
+    @Test
+    fun `трек без перемотки - ползунок и кнопки перемотки заблокированы, остальной транспорт активен`() {
+        val controller = FakePlaybackController().apply {
+            play(listOf(QueueItem("42", TrackSource.DEEZER, "Remote 42", "Artist", null, 0L)), 0)
+            state.value = (state.value as PlaybackState.Active)
+                .copy(durationMs = 30_000L, canSeek = false, canSeekBack = false, canSeekForward = false)
+        }
+
+        setPlayerRoute(controller)
+
+        slider().assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_seek_back)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_seek_forward)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_next)).assertIsEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.player_previous)).assertIsEnabled()
+        composeRule.onNodeWithContentDescription("Пауза").assertIsEnabled()
+    }
+
+    @Test
     fun `первый показ без разрешения уведомлений - системный запрос`() {
         setPlayerRoute(FakePlaybackController())
 
@@ -139,6 +173,11 @@ class PlayerRouteTest {
 
         assertNull(shadowOf(composeRule.activity).lastRequestedPermission)
     }
+
+    /** Ползунок перемотки — единственный узел с диапазоном прогресса, пока трек не буферизуется. */
+    private fun slider() = composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
+
+    private fun string(id: Int) = RuntimeEnvironment.getApplication().getString(id)
 
     private fun setPlayerRoute(controller: FakePlaybackController) {
         val viewModel = PlayerViewModel(controller, promptStore)

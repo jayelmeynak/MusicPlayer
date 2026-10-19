@@ -7,6 +7,7 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.test.utils.FakeMediaSourceFactory
+import androidx.media3.test.utils.FakeTimeline
 import androidx.media3.test.utils.TestExoPlayerBuilder
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper.run
 import com.jayelmeynak.feature.player.api.PlaybackError
@@ -65,6 +66,51 @@ class PlaybackStateMappingTest {
 
         assertEquals(player.duration, player.toPlaybackState().durationMs)
         assertTrue(player.toPlaybackState().durationMs > 0)
+    }
+
+    @Test
+    fun `неподготовленный трек - перемотка недоступна`() {
+        val player = fakePlayer()
+        player.setMediaItems(sessionItems())
+
+        val state = player.toPlaybackState()
+
+        assertFalse(state.canSeek)
+        assertFalse(state.canSeekBack)
+        assertFalse(state.canSeekForward)
+    }
+
+    @Test
+    fun `подготовленный трек с перемоткой - перемотка доступна`() {
+        val player = fakePlayer()
+        player.setMediaItems(sessionItems())
+        player.prepare()
+        run(player).untilState(Player.STATE_READY)
+
+        val state = player.toPlaybackState()
+
+        assertTrue(state.canSeek)
+        assertTrue(state.canSeekBack)
+        assertTrue(state.canSeekForward)
+    }
+
+    @Test
+    fun `источник без перемотки - после подготовки перемотка недоступна`() {
+        val unseekable = FakeTimeline.TimelineWindowDefinition.Builder().setSeekable(false)
+        val player = TestExoPlayerBuilder(context)
+            .setMediaSourceFactory(FakeMediaSourceFactory(unseekable))
+            .build()
+            .also { players += it }
+        player.setMediaItems(sessionItems())
+        player.prepare()
+        run(player).untilState(Player.STATE_READY)
+
+        val state = player.toPlaybackState()
+
+        assertTrue(state.durationMs > 0)
+        assertFalse(state.canSeek)
+        assertFalse(state.canSeekBack)
+        assertFalse(state.canSeekForward)
     }
 
     @Test

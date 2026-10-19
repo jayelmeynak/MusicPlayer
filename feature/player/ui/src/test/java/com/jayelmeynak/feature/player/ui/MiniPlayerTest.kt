@@ -5,6 +5,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -13,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.navigation3.runtime.NavKey
+import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
@@ -98,6 +101,35 @@ class MiniPlayerTest {
         val seeks = controller.commands.filterIsInstance<Command.SeekTo>()
         assertEquals(1, seeks.size)
         assertTrue("seek=${seeks.single()}", seeks.single().positionMs > 170_000L)
+    }
+
+    @Test
+    fun `перемотка недоступна - ползунок заблокирован, жест не перематывает`() {
+        val controller = FakePlaybackController().apply {
+            play(listOf(track().copy(durationMs = 200_000L)), 0)
+            state.value = (state.value as PlaybackState.Active).copy(canSeek = false)
+        }
+        setMiniPlayer(controller)
+
+        val slider = composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
+        slider.assertIsNotEnabled()
+        slider.performTouchInput {
+            down(percentOffset(0.1f, 0.5f))
+            moveTo(percentOffset(0.95f, 0.5f))
+            up()
+        }
+
+        assertTrue(controller.commands.none { it is Command.SeekTo })
+    }
+
+    @Test
+    fun `перемотка доступна - ползунок активен`() {
+        val controller = FakePlaybackController().apply {
+            play(listOf(track().copy(durationMs = 200_000L)), 0)
+        }
+        setMiniPlayer(controller)
+
+        composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)).assertIsEnabled()
     }
 
     private fun setMiniPlayer(controller: FakePlaybackController) {
