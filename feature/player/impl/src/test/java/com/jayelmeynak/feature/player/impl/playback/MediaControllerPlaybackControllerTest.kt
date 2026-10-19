@@ -8,7 +8,10 @@ import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
+import androidx.media3.common.util.Util
+import androidx.media3.test.utils.FakeClock
 import androidx.media3.test.utils.FakeMediaSourceFactory
+import androidx.media3.test.utils.FakeTimeline
 import androidx.media3.test.utils.TestExoPlayerBuilder
 import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
 import com.jayelmeynak.feature.player.api.PlaybackState
@@ -399,6 +402,35 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
+    fun `источник без перемотки - seekTo на паузе не меняет позицию и не доходит до плеера сессии`() {
+        val unseekablePlayer = unseekableSession()
+        lifecycle.start()
+        runMainLooperUntil { controller.state.value is PlaybackState.Active }
+        controller.play(queue, 0)
+        // Часы плеера стоят: подготовка идёт по миллисекунде, готовый трек дальше не играет.
+        runMainLooperUntil {
+            (unseekablePlayer.playbackState == Player.STATE_READY).also { ready ->
+                if (!ready) unseekableClock.advanceTime(1)
+            }
+        }
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.durationMs == UNSEEKABLE_DURATION_MS }
+        controller.togglePlayPause()
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.playWhenReady == false }
+        // Доступные команды сессия рассылает отдельным сообщением: дочитываем их до перемотки.
+        drainMainLooper()
+        assertFalse(unseekablePlayer.isCommandAvailable(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM))
+        val positionBefore = controller.positionMs.value
+        val sessionPositionBefore = unseekablePlayer.currentPosition
+
+        controller.seekTo(SEEK_POSITION_MS)
+
+        assertEquals(positionBefore, controller.positionMs.value)
+        drainMainLooper()
+        assertEquals(sessionPositionBefore, unseekablePlayer.currentPosition)
+        assertEquals(positionBefore, controller.positionMs.value)
+    }
+
+    @Test
     fun `сессия восстанавливает очередь - снапшот публикуется только после восстановления`() {
         val restoringSession = restoringSession()
         val states = recordStates()
@@ -552,6 +584,30 @@ class MediaControllerPlaybackControllerTest {
         return session
     }
 
+    /** Часы плеера [unseekableSession]: стоят, пока тест их не двигает. */
+    private val unseekableClock = FakeClock(/* isAutoAdvancing= */ false)
+
+    /**
+     * Заменяет сессию теста новой над плеером, чьи треки не перематываются (`isSeekable = false`,
+     * как MP3 без таблицы перемотки), но с известной длительностью; часы плеера стоят.
+     */
+    private fun unseekableSession(): ExoPlayer {
+        session.release()
+        val unseekable = FakeTimeline.TimelineWindowDefinition.Builder()
+            .setSeekable(false)
+            .setDurationUs(Util.msToUs(UNSEEKABLE_DURATION_MS))
+        val sessionPlayer = TestExoPlayerBuilder(context)
+            .setMediaSourceFactory(FakeMediaSourceFactory(unseekable))
+            .setClock(unseekableClock)
+            .build()
+            .also { extraPlayers += it }
+        session = MediaSession.Builder(context, sessionPlayer)
+            .setId("unseekable")
+            .setCallback(testSessionCallback())
+            .build()
+        return sessionPlayer
+    }
+
     private fun realConnect(listener: MediaController.Listener): ListenableFuture<MediaController> =
         MediaController.Builder(context, session.token).setListener(listener).buildAsync().also { futures += it }
 
@@ -618,5 +674,6 @@ class MediaControllerPlaybackControllerTest {
     private companion object {
         const val POLL_STEP_MS = 500L
         const val SEEK_POSITION_MS = 3_000L
+        const val UNSEEKABLE_DURATION_MS = 10_000L
     }
 }

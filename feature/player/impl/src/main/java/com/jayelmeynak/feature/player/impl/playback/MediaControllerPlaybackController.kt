@@ -164,8 +164,14 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         controller?.let(Util::handlePlayPauseButtonAction)
     }
 
+    /**
+     * Перематывает текущий трек и сразу пишет позицию. Без команды перемотки (трек не подготовлен,
+     * источник без перемотки) [MediaController] молча отбрасывает `seekTo` — тогда позиция не меняется,
+     * иначе ползунок показал бы ложное место. `seekBack`/`seekForward` позицию сами не пишут.
+     */
     override fun seekTo(positionMs: Long) {
         val controller = controller ?: return
+        if (!controller.isCommandAvailable(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)) return
         controller.seekTo(positionMs)
         _positionMs.value = positionMs
     }
