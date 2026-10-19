@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.os.Build
 import androidx.test.espresso.Espresso
 import com.jayelmeynak.musicplayer.screen.MiniPlayerScreen
+import com.jayelmeynak.musicplayer.screen.NavigationBarScreen
 import com.jayelmeynak.musicplayer.screen.PlayerScreen
 import com.jayelmeynak.musicplayer.testing.MusicPlayerTestCase
 import com.kaspersky.kaspresso.testcases.core.testcontext.BaseTestContext
@@ -15,7 +16,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
-/** Системные точки входа: уведомление, медиакнопки, deep link — одна Activity и текущий трек. */
+/**
+ * Системные точки входа: уведомление, медиакнопки, deep link — одна Activity и текущий трек.
+ * Тап по уведомлению открывает экран плеера, deep link — нет.
+ */
 @HiltAndroidTest
 class SystemEntryPointsTest : MusicPlayerTestCase() {
 
@@ -101,7 +105,7 @@ class SystemEntryPointsTest : MusicPlayerTestCase() {
     }
 
     @Test
-    fun `тап_по_уведомлению_из_фона__одна_Activity_с_текущим_треком`() = run {
+    fun `тап_по_уведомлению_из_фона__одна_Activity_с_экраном_плеера`() = run {
         lateinit var activity: Activity
         step("Трек играет, открыт список") {
             playFromChart(0)
@@ -114,9 +118,68 @@ class SystemEntryPointsTest : MusicPlayerTestCase() {
             flakySafely(LOAD_TIMEOUT_MS) { assertEquals(0, resumedMainActivities().size) }
             // Интент тапа по уведомлению — тот же, что отправляет шторка; разметка шторки у OEM разная.
             sendFromBackground(playerNotification().notification.contentIntent)
-            assertSingleActivityWithTrack(activity, chart[0].title)
+            assertSingleActivityWithPlayer(activity, chart[0].title)
+            onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab.assertIsSelected() }
             awaitPlaying(chart[0].title)
         }
+        step("Back с плеера — список с мини-плеером") {
+            Espresso.pressBack()
+            assertSingleActivityWithTrack(activity, chart[0].title)
+            onComposeScreen<PlayerScreen>(composeRule) { nextButton.assertDoesNotExist() }
+        }
+    }
+
+    @Test
+    fun `тап_по_уведомлению_на_другой_вкладке__плеер_в_ней_поворот_не_повторяет`() = run {
+        lateinit var activity: Activity
+        step("Трек играет, плеер в Remote, открыта Local") {
+            playFromChart(1)
+            onComposeScreen<NavigationBarScreen>(composeRule) { localTab.performClick() }
+            onComposeScreen<MiniPlayerScreen>(composeRule) { root.assertTextContains(chart[1].title) }
+            activity = resumedMainActivities().single()
+            awaitNotificationTitle(chart[1].title)
+        }
+        step("Тап по уведомлению — плеер в Local") {
+            sendFromBackground(playerNotification().notification.contentIntent)
+            assertSingleActivityWithPlayer(activity, chart[1].title)
+            onComposeScreen<NavigationBarScreen>(composeRule) { localTab.assertIsSelected() }
+        }
+        try {
+            step("Back — корень Local; поворот туда и обратно плеер не открывает") {
+                Espresso.pressBack()
+                onComposeScreen<MiniPlayerScreen>(composeRule) { root.assertTextContains(chart[1].title) }
+                device.uiDevice.setOrientationLandscape()
+                flakySafely(LOAD_TIMEOUT_MS) { assertEquals(1, resumedMainActivities().size) }
+                onComposeScreen<PlayerScreen>(composeRule) { nextButton.assertDoesNotExist() }
+                device.uiDevice.setOrientationPortrait()
+                flakySafely(LOAD_TIMEOUT_MS) { assertEquals(1, resumedMainActivities().size) }
+                onComposeScreen<PlayerScreen>(composeRule) { nextButton.assertDoesNotExist() }
+                onComposeScreen<NavigationBarScreen>(composeRule) { localTab.assertIsSelected() }
+                onComposeScreen<MiniPlayerScreen>(composeRule) { root.assertTextContains(chart[1].title) }
+            }
+        } finally {
+            device.uiDevice.setOrientationPortrait()
+            device.uiDevice.unfreezeRotation()
+        }
+        step("Back — Remote без плеера (перенесён в Local)") {
+            Espresso.pressBack()
+            onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab.assertIsSelected() }
+            onComposeScreen<PlayerScreen>(composeRule) { nextButton.assertDoesNotExist() }
+        }
+    }
+
+    /** Одна `MainActivity` в RESUMED — та же, что была; наверху экран плеера с треком, мини-плеера нет. */
+    private fun BaseTestContext.assertSingleActivityWithPlayer(expected: Activity, title: String) {
+        flakySafely(LOAD_TIMEOUT_MS) {
+            val resumed = resumedMainActivities()
+            assertEquals("MainActivity в RESUMED: $resumed", 1, resumed.size)
+            assertSame(expected, resumed.first())
+        }
+        onComposeScreen<PlayerScreen>(composeRule) {
+            flakySafely(LOAD_TIMEOUT_MS) { nextButton.assertIsDisplayed() }
+            title(title).assertIsDisplayed()
+        }
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root.assertDoesNotExist() }
     }
 
     private fun BaseTestContext.assertSingleActivityWithTrack(expected: Activity, title: String) {

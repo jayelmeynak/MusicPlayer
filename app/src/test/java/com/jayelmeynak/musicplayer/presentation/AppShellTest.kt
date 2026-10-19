@@ -1,9 +1,14 @@
 package com.jayelmeynak.musicplayer.presentation
 
+import android.content.Intent
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
+import com.jayelmeynak.feature.player.api.OpenPlayerRequest
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController
 import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import com.jayelmeynak.musicplayer.screen.MiniPlayerScreen
@@ -243,6 +248,113 @@ class AppShellTest {
         waitForPlayerStub(chart[0].title)
         onComposeScreen<NavigationBarScreen>(composeRule) { localTab { assertIsSelected() } }
         onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertDoesNotExist() } }
+    }
+
+    @Test
+    fun `интент открыть плеер на Local - плеер наверху стека Local, без дубля в Remote`() {
+        openPlayerFromChart(index = 1)
+        onComposeScreen<NavigationBarScreen>(composeRule) { localTab { performClick() } }
+        assertPlayerStubAbsent()
+
+        deliverNewIntent(openPlayerIntent())
+
+        waitForPlayerStub(chart[1].title)
+        onComposeScreen<NavigationBarScreen>(composeRule) { localTab { assertIsSelected() } }
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertDoesNotExist() } }
+        back()
+        assertPlayerStubAbsent()
+        onComposeScreen<NavigationBarScreen>(composeRule) { localTab { assertIsSelected() } }
+        back()
+        // Плеер перенесён в Local: в Remote его больше нет.
+        onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab { assertIsSelected() } }
+        waitForTrack(chart[0].title)
+        assertPlayerStubAbsent()
+    }
+
+    @Test
+    fun `интент открыть плеер на списке Remote - плеер наверху, back возвращает к списку`() {
+        openPlayerFromChart(index = 0)
+        back()
+        waitForTrack(chart[0].title)
+
+        deliverNewIntent(openPlayerIntent())
+
+        waitForPlayerStub(chart[0].title)
+        onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab { assertIsSelected() } }
+        back()
+        waitForTrack(chart[0].title)
+        assertPlayerStubAbsent()
+    }
+
+    @Test
+    fun `интент launcher при живой Activity - экран не меняется`() {
+        openPlayerFromChart(index = 0)
+        back()
+
+        deliverNewIntent(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+                .setClass(ApplicationProvider.getApplicationContext(), MainActivity::class.java),
+        )
+
+        waitForTrack(chart[0].title)
+        assertPlayerStubAbsent()
+    }
+
+    @Test
+    fun `запуск с интентом открыть плеер - плеер один раз, пересоздание его не повторяет`() {
+        openPlayerFromChart(index = 2)
+        back()
+
+        relaunch(openPlayerIntent()).use { scenario ->
+            waitForPlayerStub(chart[2].title)
+            onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab { assertIsSelected() } }
+
+            scenario.recreate()
+            waitForPlayerStub(chart[2].title)
+            back(scenario)
+            waitForTrack(chart[0].title)
+            assertPlayerStubAbsent()
+
+            scenario.recreate()
+            waitForTrack(chart[0].title)
+            assertPlayerStubAbsent()
+            onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertTextContains(chart[2].title) } }
+        }
+    }
+
+    @Test
+    fun `запуск из истории с интентом открыть плеер - плеер не открывается`() {
+        openPlayerFromChart(index = 0)
+        back()
+
+        relaunch(openPlayerIntent().addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)).use {
+            waitForTrack(chart[0].title)
+            assertPlayerStubAbsent()
+        }
+    }
+
+    /** Интент тапа по уведомлению плеера — как его собирает сессия: действие контракта, без extras. */
+    private fun openPlayerIntent(): Intent =
+        Intent(OpenPlayerRequest.ACTION).setClass(ApplicationProvider.getApplicationContext(), MainActivity::class.java)
+
+    /** Интент живой `MainActivity` (`singleTop`): так система доставляет его в `onNewIntent`. */
+    private fun deliverNewIntent(intent: Intent) {
+        composeRule.activityRule.scenario.onActivity {
+            InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(it, intent)
+        }
+        composeRule.waitForIdle()
+    }
+
+    /** Новый запуск `MainActivity` с [intent] (без сохранённого состояния); прежняя закрывается. */
+    private fun relaunch(intent: Intent): ActivityScenario<MainActivity> {
+        composeRule.activityRule.scenario.close()
+        return ActivityScenario.launch(intent)
+    }
+
+    private fun back(scenario: ActivityScenario<MainActivity>) {
+        scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
     }
 
     private fun openPlayerFromChart(index: Int) {

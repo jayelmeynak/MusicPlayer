@@ -11,6 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -23,14 +24,22 @@ import com.jayelmeynak.feature.player.api.HideMiniPlayer
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.ui.MiniPlayer
 import com.jayelmeynak.lib.navigation.EntryInstaller
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /** Тег мини-плеера: заголовок трека есть и в списке, и в мини-плеере — UI-тесты ищут по тегу. */
 const val MINI_PLAYER_TAG = "mini_player"
 
+/**
+ * Оболочка: вкладки, их стеки и мини-плеер. [externalDestinations] — ключи, которые надо открыть
+ * по запросу снаружи (тап по уведомлению плеера): `navigateTo` кладёт ключ наверх текущего стека,
+ * вкладка не меняется.
+ */
 @Composable
 fun AppNavigation(
     entryInstallers: Set<EntryInstaller>,
     playbackController: PlaybackController,
+    externalDestinations: Flow<NavKey> = emptyFlow(),
 ) {
     val navigationState = rememberNavigationState(startTab = AppTab.Catalog, tabs = AppTab.entries)
     val navigator = remember(navigationState) { AppNavigator(navigationState) }
@@ -38,6 +47,10 @@ fun AppNavigation(
 
     val entryProvider = remember(entryInstallers, navigator) { appEntryProvider(entryInstallers, navigator) }
     val entries = navigationState.toEntries(entryProvider)
+
+    LaunchedEffect(navigator, externalDestinations) {
+        externalDestinations.collect { navigator.navigateTo(it) }
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
