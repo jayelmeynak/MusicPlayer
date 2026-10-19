@@ -38,6 +38,10 @@ public interface PlaybackController {
 
     public fun togglePlayPause()
 
+    /**
+     * Перематывает текущий элемент. Если он не перематывается (ещё не подготовлен, источник без
+     * перемотки), вызов игнорируется и [positionMs] не меняется.
+     */
     public fun seekTo(positionMs: Long)
 
     public fun next()
