@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.register
 
 /**
  * Общая настройка JVM-модуля (`util:*`, JVM-`lib:*`, `feature:*:api`): Kotlin JVM и Android Lint
- * по алиасам каталога, toolchain, explicit API, проверка графа.
+ * по алиасам каталога, toolchain, explicit API, проверка графа, анализ lint по одному.
  *
  * CI и гейт харнеса вызывают Android-имена задач `lintDebug` и `testDebugUnitTest`, поэтому они
  * есть и у JVM-модулей. `lintDebug` — алиас `lint` (поэтому `lintDebug --rerun` lint не перезапустит). `testDebugUnitTest` — отдельная `Test`-задача
@@ -21,6 +21,7 @@ internal fun Project.configureJvmModule(explicitApi: Boolean) {
     applyPlugin("android-lint")
     configureKotlin(explicitApi)
     forbidForeignImpl()
+    serializeLintAnalysis()
 
     val testSourceSet = extensions.getByType<SourceSetContainer>().getByName("test")
     tasks.register<Test>("testDebugUnitTest") {
