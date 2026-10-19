@@ -8,7 +8,7 @@ import android.content.Context
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.service.notification.StatusBarNotification
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry

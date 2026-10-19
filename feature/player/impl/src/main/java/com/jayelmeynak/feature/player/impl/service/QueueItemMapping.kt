@@ -1,8 +1,8 @@
 package com.jayelmeynak.feature.player.impl.service
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.core.net.toUri
-import androidx.core.os.bundleOf
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.jayelmeynak.feature.player.api.QueueItem
@@ -34,7 +34,7 @@ internal fun QueueItem.toMediaItem(): MediaItem = MediaItem.Builder()
             .setTitle(title)
             .setArtist(artist)
             .setArtworkUri(artworkUri?.toUri())
-            .setExtras(bundleOf(EXTRA_TRACK_DURATION_MS to durationMs))
+            .setExtras(Bundle().apply { putLong(EXTRA_TRACK_DURATION_MS, durationMs) })
             .build()
     )
     .build()
