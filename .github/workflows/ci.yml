@@ -178,7 +178,8 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ matrix.api-level }}-google_apis-x86_64-pixel_6-v2
+          # v3 — снапшот с hide_error_dialogs (шаг «Create AVD snapshot»).
+          key: avd-${{ matrix.api-level }}-google_apis-x86_64-pixel_6-v3
 
       - name: Create AVD snapshot
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -192,7 +193,16 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
-          script: echo "AVD snapshot created"
+          # Системные диалоги ошибок выключены до снапшота, то есть до первого запуска тестов. После загрузки
+          # из снапшота система ещё медленная, и лаунчер на API 33 ловит ANR: диалог «Pixel Launcher isn't
+          # responding» встаёт поверх приложения, держит фокус окна до конца прогона, и все шаги Espresso падают с
+          # RootViewWithoutFocusException. С hide_error_dialogs система вместо диалога перезапускает
+          # зависший процесс. Настройка в снапшоте и в userdata AVD — действует и при холодной загрузке повтора.
+          # Диалог, показанный до настройки, в снапшот не попадает: шаг падает, кэш не сохраняется.
+          script: |
+            adb shell settings put global hide_error_dialogs 1
+            ! adb shell dumpsys window | grep -E "Application Not Responding|Application Error"
+            echo "AVD snapshot created"
 
       # Раннер после загрузки из снапшота шлёт `input keyevent 82` и бывает раньше сервиса input
       # (`No service published for: input`): шаг падает до тестов. Такой сбой повторяется один раз;
