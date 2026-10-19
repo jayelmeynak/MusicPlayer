@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Инструментальные UI-тесты на запущенном эмуляторе CI по готовым APK, без Gradle и пересборки:
 # adb install -r обоих APK, am instrument, разбор вывода (instrumentation_report.py) в сводку и JUnit XML.
-# Один повтор при падении (нестабильность видна предупреждением); после каждой попытки её logcat и артефакты
+# Один повтор при падении (нестабильность видна предупреждением); после каждой попытки её logcat (с буфером
+# events без очистки: am_anr, am_kill), окна (dumpsys window: чьё окно в фокусе, системные диалоги) и артефакты
 # Kaspresso — в app/build/ci-artifacts/attempt-<N>. AdbServer не нужен.
 # Использование: android-tests.sh [app.apk] [androidTest.apk]; по умолчанию — выходы Gradle
 # (:app:assembleDebug :app:assembleDebugAndroidTest). Устройство — единственное подключённое или ANDROID_SERIAL.
@@ -73,6 +74,7 @@ run_tests() {
   mkdir -p "$dir"
   # Каталог Kaspresso на устройстве — только артефакты прошлых прогонов; данные приложения не трогаются.
   adb shell rm -rf "$kaspresso_dir" || true
+  # Буфер events не очищается: ANR системных приложений бывает ещё до тестов, сразу после загрузки.
   adb logcat -c || true
   set +e
   ${timeout_cmd[@]+"${timeout_cmd[@]}"} adb shell am instrument -w -r ${runner_args[@]+"${runner_args[@]}"} \
@@ -86,7 +88,11 @@ run_tests() {
   (( instrument_rc == 0 )) || rc=1
   python3 "$report" "$dir/instrument.txt" "$dir/TEST-android-tests.xml" "android-tests-attempt-$1" \
     | tee "$dir/summary.txt" || rc=1
-  adb logcat -d > "$dir/logcat.txt" 2>/dev/null || true
+  adb logcat -d -b main -b system -b crash -b events > "$dir/logcat.txt" 2>/dev/null || true
+  # Окно в фокусе — в лог job'а: чужое окно (диалог ANR, лаунчер) роняет шаги Espresso с RootViewWithoutFocusException.
+  adb shell dumpsys window > "$dir/window.txt" 2>/dev/null || true
+  grep -E 'mCurrentFocus|mFocusedApp' "$dir/window.txt" | tr -d '\r' | sed "s/^ */Попытка $1, фокус: /" || true
+  echo "Попытка $1, hide_error_dialogs: $(adb shell settings get global hide_error_dialogs | tr -d '\r')" || true
   adb pull "$kaspresso_dir" "$dir/kaspresso" > /dev/null 2>&1 || true
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     { echo "### UI-тесты, попытка $1"; echo '```'; cat "$dir/summary.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
