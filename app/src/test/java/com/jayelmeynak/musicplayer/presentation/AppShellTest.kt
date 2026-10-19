@@ -1,9 +1,10 @@
 package com.jayelmeynak.musicplayer.presentation
 
 import android.content.Intent
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -16,6 +17,7 @@ import com.jayelmeynak.musicplayer.screen.NavigationBarScreen
 import com.jayelmeynak.musicplayer.screen.TrackListScreen
 import com.jayelmeynak.musicplayer.testing.FakeDeezerServer
 import com.jayelmeynak.musicplayer.testing.FakeDeezerServerRule
+import com.jayelmeynak.musicplayer.testing.TestPlayerModule.PLAYER_STUB_SCOPES_TAG
 import com.jayelmeynak.musicplayer.testing.TestPlayerModule.PLAYER_STUB_TAG
 import com.jayelmeynak.musicplayer.testing.TestPlayerModule.PLAYER_STUB_TEXT
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -23,6 +25,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import io.github.kakaocup.compose.node.element.ComposeScreen.Companion.onComposeScreen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -251,6 +254,30 @@ class AppShellTest {
     }
 
     @Test
+    fun `ViewModel и сохранённое состояние записи плеера переживают пересоздание и перенос во вкладку, новая запись получает новые`() {
+        openPlayerFromChart(index = 0)
+        val opened = playerStubScopes()
+
+        composeRule.activityRule.scenario.recreate()
+        waitForPlayerStub(chart[0].title)
+        assertEquals(opened, playerStubScopes())
+
+        onComposeScreen<NavigationBarScreen>(composeRule) { localTab { performClick() } }
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root { performClick() } }
+        waitForPlayerStub(chart[0].title)
+        assertEquals(opened, playerStubScopes())
+
+        // Back снимает запись плеера: её скоупы очищаются, следующая запись создаёт свои.
+        back()
+        assertPlayerStubAbsent()
+        onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab { performClick() } }
+        openPlayerFromChart(index = 1)
+        val reopened = playerStubScopes()
+        assertNotEquals(opened.viewModelId, reopened.viewModelId)
+        assertNotEquals(opened.savedId, reopened.savedId)
+    }
+
+    @Test
     fun `интент открыть плеер на Local - плеер наверху стека Local, без дубля в Remote`() {
         openPlayerFromChart(index = 1)
         onComposeScreen<NavigationBarScreen>(composeRule) { localTab { performClick() } }
@@ -363,6 +390,16 @@ class AppShellTest {
         waitForPlayerStub(chart[index].title)
     }
 
+    private data class StubScopes(val viewModelId: String, val savedId: String)
+
+    /** Номера ViewModel и сохранённого состояния записи из заглушки плеера. */
+    private fun playerStubScopes(): StubScopes {
+        val text = composeRule.onAllNodes(hasTestTag(PLAYER_STUB_SCOPES_TAG)).fetchSemanticsNodes()
+            .single().config[SemanticsProperties.Text].single().text
+        val (viewModelId, savedId) = requireNotNull(SCOPES_REGEX.matchEntire(text)) { text }.destructured
+        return StubScopes(viewModelId, savedId)
+    }
+
     private fun waitForTrack(title: String) = waitFor(hasText(title))
 
     private fun waitForPlayerStub(title: String) =
@@ -384,5 +421,6 @@ class AppShellTest {
 
     private companion object {
         const val WAIT_MS = 5_000L
+        val SCOPES_REGEX = Regex("vm=(\\d+) saved=(\\d+)")
     }
 }
