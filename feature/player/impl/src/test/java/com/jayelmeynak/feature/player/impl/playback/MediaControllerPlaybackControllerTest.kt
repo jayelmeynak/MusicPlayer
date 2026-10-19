@@ -263,7 +263,7 @@ class MediaControllerPlaybackControllerTest {
         connectedPlay(queue, 1)
         var playlistChanges = 0
         player.addListener(object : Player.Listener {
-            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                 if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) playlistChanges++
             }
         })
