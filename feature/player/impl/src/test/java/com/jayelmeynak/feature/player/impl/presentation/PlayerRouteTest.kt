@@ -45,7 +45,8 @@ class PlayerRouteTest {
         val controller = FakePlaybackController()
 
         setPlayerRoute(controller)
-        controller.state.value = controller.state.value
+        // Второй пустой подключённый снапшот (другое значение — StateFlow не отбросит его как повтор).
+        controller.state.value = (controller.state.value as PlaybackState.Active).copy(isPlaying = true)
         composeRule.waitForIdle()
 
         // Экран убирает свой ключ, а не «назад»: поверх него мог открыться другой экран.
@@ -65,15 +66,18 @@ class PlayerRouteTest {
     }
 
     @Test
-    fun `до подключения экран ждёт, не закрывается`() {
+    fun `до подключения экран ждёт с индикатором, не закрывается`() {
         setPlayerRoute(FakePlaybackController(connected = false))
 
+        composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate))
+            .assertExists()
+        composeRule.onNodeWithContentDescription("Воспроизведение").assertDoesNotExist()
         assertEquals(0, navigator.backCount)
         assertEquals(emptyList<Any>(), navigator.removed)
     }
 
     @Test
-    fun `с треком - экран показывает его и не стартует сервис`() {
+    fun `с треком - экран показывает его, не закрывается и не стартует сервис`() {
         val controller = FakePlaybackController().apply {
             play(listOf(QueueItem("42", TrackSource.DEEZER, "Remote 42", "Artist", null, 0L)), 0)
         }
@@ -82,6 +86,7 @@ class PlayerRouteTest {
 
         composeRule.onNodeWithText("Remote 42").assertExists()
         assertEquals(0, navigator.backCount)
+        assertEquals(emptyList<Any>(), navigator.removed)
         assertNull(shadowOf(RuntimeEnvironment.getApplication()).nextStartedService)
     }
 

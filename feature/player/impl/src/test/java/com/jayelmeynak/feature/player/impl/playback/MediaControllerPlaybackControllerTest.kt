@@ -25,7 +25,6 @@ import com.jayelmeynak.feature.player.impl.service.withTrackUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.robolectric.shadows.ShadowLooper
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,6 +45,10 @@ import java.time.Duration
  * Robolectric runs an in-process media session over a test ExoPlayer; the controller connects to
  * its token instead of the service. Media3 delivers everything through the main looper, which the
  * test runs explicitly (`runMainLooperUntil`); position polling runs on a test dispatcher.
+ *
+ * Общий контракт и доставка транспортных команд до плеера сессии — в
+ * [MediaControllerPlaybackControllerContractTest] (часы плеера там стоят); здесь — поведение
+ * реализации, которому нужна игра по часам: переходы, конец очереди, опрос позиции, восстановление.
  */
 @RunWith(RobolectricTestRunner::class)
 class MediaControllerPlaybackControllerTest {
@@ -131,19 +134,6 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
-    fun `play при подключённом контроллере сразу публикует новую очередь`() {
-        lifecycle.start()
-        connectedPlay(queue, 0)
-        val next = queue.reversed()
-
-        controller.play(next, 2)
-
-        val state = controller.state.value as PlaybackState.Active
-        assertEquals(next, state.queue)
-        assertEquals(2, state.currentIndex)
-    }
-
-    @Test
     fun `сессия оборвалась - снапшот не подключён и переподключение к новой сессии`() {
         lifecycle.start()
         connectedPlay(queue, 0)
@@ -172,7 +162,7 @@ class MediaControllerPlaybackControllerTest {
         lifecycle.stop()
 
         session.release()
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
 
         assertEquals(false, (controller.state.value as PlaybackState.Active).isConnected)
         assertEquals(1, futures.size)
@@ -203,19 +193,21 @@ class MediaControllerPlaybackControllerTest {
 
         lifecycle.start()
         runMainLooperUntil { slow.state.value is PlaybackState.Active }
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
 
         assertEquals(0, player.mediaItemCount)
         assertTrue((slow.state.value as PlaybackState.Active).queue.isEmpty())
     }
 
     @Test
-    fun `до подключения - Idle, транспортные команды игнорируются`() {
+    fun `транспортные команды до подключения не запускают подключение`() {
         controller.togglePlayPause()
-        controller.next()
         controller.seekTo(1_000L)
+        controller.next()
+        controller.previous()
+        controller.seekBack()
+        controller.seekForward()
 
-        assertEquals(PlaybackState.Idle, controller.state.value)
         assertTrue(futures.isEmpty())
     }
 
@@ -233,15 +225,6 @@ class MediaControllerPlaybackControllerTest {
         assertEquals(1, state.currentIndex)
         assertEquals(1, player.currentMediaItemIndex)
         assertTrue(state.playWhenReady)
-    }
-
-    @Test
-    fun `после подключения к пустой сессии - Active с пустой очередью`() {
-        lifecycle.start()
-
-        runMainLooperUntil { controller.state.value is PlaybackState.Active }
-
-        assertTrue((controller.state.value as PlaybackState.Active).queue.isEmpty())
     }
 
     @Test
@@ -275,19 +258,6 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
-    fun `next и пауза из UI доходят до плеера сессии`() {
-        lifecycle.start()
-        connectedPlay(queue, 0)
-
-        controller.next()
-        runMainLooperUntil { player.currentMediaItemIndex == 1 }
-        controller.togglePlayPause()
-        runMainLooperUntil { !player.playWhenReady }
-
-        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.playWhenReady == false }
-    }
-
-    @Test
     fun `повторный play того же трека той же очереди не перезапускает его`() {
         lifecycle.start()
         connectedPlay(queue, 1)
@@ -309,8 +279,7 @@ class MediaControllerPlaybackControllerTest {
     fun `отложенный play той же очереди и трека при возврате из фона не перезапускает трек`() {
         lifecycle.start()
         connectedPlay(queue, 1)
-        // Трек уже не в начале: перемотка прямо в плеере сессии (seek контроллера под Robolectric
-        // до сессии не доходит).
+        // Трек уже не в начале: перемотка прямо в плеере сессии — контроллер в этот момент уходит в фон.
         player.seekTo(1, SEEK_POSITION_MS)
         val playlistChanges = countPlaylistChanges()
         lifecycle.stop()
@@ -320,7 +289,7 @@ class MediaControllerPlaybackControllerTest {
         controller.play(queue, 1)
         lifecycle.start()
         runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.currentIndex == 1 }
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
 
         assertEquals(0, playlistChanges())
         assertEquals(1, player.currentMediaItemIndex)
@@ -387,44 +356,18 @@ class MediaControllerPlaybackControllerTest {
         dispatcher.scheduler.advanceTimeBy(POLL_STEP_MS + 1)
         val before = controller.positionMs.value
 
-        // The session reports the position periodically; the controller extrapolates it with the
-        // system clock, which Robolectric moves only on request.
+        // MediaController экстраполирует позицию по SystemClock, а Robolectric двигает его только по
+        // запросу.
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4))
         dispatcher.scheduler.advanceTimeBy(POLL_STEP_MS)
         assertTrue(controller.positionMs.value > before)
 
         controller.togglePlayPause()
         runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.isPlaying == false }
-        val paused = controller.positionMs.value
-        // An endless polling loop would never let the scheduler become idle.
+        // Проверка — само завершение: бесконечный цикл опроса не дал бы планировщику дойти до простоя.
+        // Сравнивать позицию до и после бессмысленно — на паузе MediaController отдаёт одну и ту же.
         dispatcher.scheduler.advanceUntilIdle()
-        assertEquals(paused, controller.positionMs.value)
         assertFalse((controller.state.value as PlaybackState.Active).isPlaying)
-    }
-
-    @Test
-    fun `seek на паузе сразу обновляет позицию`() {
-        lifecycle.start()
-        connectedPlay(queue, 0)
-        controller.togglePlayPause()
-        runMainLooperUntil { !player.playWhenReady }
-
-        controller.seekTo(5_000L)
-
-        assertEquals(5_000L, controller.positionMs.value)
-        // Under Robolectric the seek command of MediaController does not reach the session player
-        // (next and pause do); delivery is checked manually on a device.
-    }
-
-    @Test
-    fun `play сбрасывает позицию в 0`() {
-        lifecycle.start()
-        connectedPlay(queue, 0)
-        controller.seekTo(5_000L)
-
-        controller.play(queue.reversed(), 0)
-
-        assertEquals(0L, controller.positionMs.value)
     }
 
     @Test
@@ -449,7 +392,7 @@ class MediaControllerPlaybackControllerTest {
 
         controller.next()
         controller.togglePlayPause()
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
 
         assertEquals(0, player.currentMediaItemIndex)
         assertTrue(player.playWhenReady)
@@ -462,7 +405,7 @@ class MediaControllerPlaybackControllerTest {
 
         lifecycle.start()
         runMainLooperUntil { futures.isNotEmpty() && futures.last().isDone }
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
         assertEquals(PlaybackState.Idle, controller.state.value)
 
         player.setMediaItems(queue.map { it.toMediaItem().withTrackUri() }, 2, 0L)
@@ -487,7 +430,7 @@ class MediaControllerPlaybackControllerTest {
 
         lifecycle.start()
         runMainLooperUntil { futures.size == 2 && futures.last().isDone }
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
 
         assertEquals(before, controller.positionMs.value)
         assertFalse((controller.state.value as PlaybackState.Active).isConnected)
@@ -582,7 +525,7 @@ class MediaControllerPlaybackControllerTest {
         val states = recordStates()
         lifecycle.start()
         runMainLooperUntil { futures.isNotEmpty() && futures.last().isDone }
-        repeat(5) { ShadowLooper.idleMainLooper() }
+        drainMainLooper()
         assertEquals(listOf<PlaybackState>(PlaybackState.Idle), states)
 
         controller.next()
@@ -621,6 +564,15 @@ class MediaControllerPlaybackControllerTest {
             scope = scope,
             mainDispatcher = dispatcher,
         )
+    }
+
+    /**
+     * Выполняет все задачи главного лупера, в том числе поставленные по ходу, — перед проверкой «ничего
+     * не произошло». In-process контроллер и сессия общаются только через главный лупер, поэтому после
+     * него команда контроллера уже дошла бы до плеера, а ответ сессии — до контроллера.
+     */
+    private fun drainMainLooper() {
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     /** Считает замены плейлиста плеера сессии с момента вызова. */

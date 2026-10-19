@@ -12,9 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * Фейк с [connected] стартует пустым [PlaybackState.Active]; созданный с `connected = false` — в
  * [PlaybackState.Idle], откладывает [play] (выигрывает последний вызов) и применяет его в [connect].
  * [disconnect] оставляет последний снапшот с `isConnected = false`, как настоящий контроллер в фоне;
- * [failConnection] даёт [PlaybackState.ConnectionFailed]. [state] и [positionMs] меняют только
- * [play], [connect], [disconnect] и [failConnection]; любой другой переход тест задаёт сам.
- * Транспортные команды состояние не меняют.
+ * [failConnection] даёт [PlaybackState.ConnectionFailed]. Как настоящий контроллер (общий контракт —
+ * [PlaybackControllerContract]): [play] сразу обнуляет [positionMs], даже до подключения; [play]
+ * текущей очереди и трека не перезапускает трек и не трогает позицию, а только возобновляет;
+ * [seekTo] при подключении сразу пишет позицию. Остальные транспортные команды состояние не меняют —
+ * любой другой переход тест задаёт сам. Расхождение: [play] того же трека в фоне оставляет позицию 0
+ * и после [connect], а настоящий контроллер после подключения берёт позицию сессии.
  */
 public class FakePlaybackController(
     connected: Boolean = true,
@@ -67,7 +70,13 @@ public class FakePlaybackController(
         require(startIndex in queue.indices) { "startIndex $startIndex is not in the queue of ${queue.size}" }
         val command = Command.Play(queue, startIndex)
         recorded += command
-        if (isConnected) start(command) else deferredPlay = command
+        if (isConnected) {
+            start(command)
+        } else {
+            // Как у настоящего контроллера: тап сразу показывает начало трека, не дожидаясь подключения.
+            positionMs.value = 0L
+            deferredPlay = command
+        }
     }
 
     override fun togglePlayPause() {
@@ -76,6 +85,7 @@ public class FakePlaybackController(
 
     override fun seekTo(positionMs: Long) {
         recorded += Command.SeekTo(positionMs)
+        if (isConnected) this.positionMs.value = positionMs
     }
 
     override fun next() {
@@ -94,7 +104,24 @@ public class FakePlaybackController(
         recorded += Command.SeekForward
     }
 
+    private fun isCurrent(command: Command.Play): Boolean {
+        val current = state.value as? PlaybackState.Active ?: return false
+        return current.queue == command.queue && current.currentIndex == command.startIndex
+    }
+
     private fun start(command: Command.Play) {
+        val current = state.value as? PlaybackState.Active
+        if (current != null && isCurrent(command)) {
+            // Тот же трек той же очереди: возобновление без перезапуска, позиция прежняя.
+            state.value = current.copy(
+                isPlaying = true,
+                playWhenReady = true,
+                isBuffering = false,
+                showPlayButton = false,
+                isConnected = true,
+            )
+            return
+        }
         positionMs.value = 0L
         state.value = PlaybackState.Active(
             queue = command.queue,

@@ -7,111 +7,19 @@ import com.jayelmeynak.feature.player.api.testing.FakePlaybackController.Command
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/** То, что есть только у фейка и на что опираются тесты экранов; общий контракт — [FakePlaybackControllerContractTest]. */
 class FakePlaybackControllerTest {
 
-    private val first = item("1", durationMs = 30_000)
-    private val second = item("2", durationMs = 45_000)
+    private val first = QueueItem("1", TrackSource.DEEZER, "One", "A", null, 30_000L)
+    private val second = QueueItem("2", TrackSource.DEEZER, "Two", "B", null, 45_000L)
 
     @Test
-    fun `connected controller is active with an empty queue`() {
-        val controller = FakePlaybackController()
-
-        assertEquals(emptyActive(), controller.state.value)
-        assertEquals(0L, controller.positionMs.value)
-    }
-
-    @Test
-    fun `play on a connected controller makes the state active with the queue and the start index`() {
-        val controller = FakePlaybackController()
-
-        controller.play(listOf(first, second), startIndex = 1)
-
-        assertEquals(playing(listOf(first, second), currentIndex = 1, durationMs = 45_000), controller.state.value)
-    }
-
-    @Test
-    fun `play resets the position`() {
-        val controller = FakePlaybackController()
-        controller.play(listOf(first), startIndex = 0)
-        controller.positionMs.value = 12_000
-
-        controller.play(listOf(second), startIndex = 0)
-
-        assertEquals(0L, controller.positionMs.value)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `play rejects an empty queue`() {
-        FakePlaybackController().play(emptyList(), startIndex = 0)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `play rejects an index past the queue`() {
-        FakePlaybackController().play(listOf(first), startIndex = 1)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `play rejects a negative index`() {
-        FakePlaybackController().play(listOf(first), startIndex = -1)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `idle controller also rejects an invalid play`() {
-        FakePlaybackController(connected = false).play(emptyList(), startIndex = 0)
-    }
-
-    @Test
-    fun `not connected controller stays idle on play and records the command`() {
+    fun `commands - все вызовы по порядку, и игнорируемые без подключения тоже`() {
         val controller = FakePlaybackController(connected = false)
 
-        controller.play(listOf(first), startIndex = 0)
-
-        assertEquals(PlaybackState.Idle, controller.state.value)
-        assertEquals(listOf(Command.Play(listOf(first), startIndex = 0)), controller.commands)
-    }
-
-    @Test
-    fun `connect plays the queue of the last deferred play`() {
-        val controller = FakePlaybackController(connected = false)
-        controller.play(listOf(first), startIndex = 0)
-        controller.play(listOf(first, second), startIndex = 1)
-        controller.positionMs.value = 5_000
-
-        controller.connect()
-
-        assertEquals(playing(listOf(first, second), currentIndex = 1, durationMs = 45_000), controller.state.value)
-        assertEquals(0L, controller.positionMs.value)
-    }
-
-    @Test
-    fun `connect without a deferred play gives an empty active state`() {
-        val controller = FakePlaybackController(connected = false)
-
-        controller.connect()
-
-        assertEquals(emptyActive(), controller.state.value)
-    }
-
-    @Test
-    fun `transport commands while idle are recorded but do not change the state`() {
-        val controller = FakePlaybackController(connected = false)
-
+        controller.play(listOf(first), 0)
         controller.togglePlayPause()
-        controller.seekTo(1_000)
-        controller.next()
-
-        assertEquals(PlaybackState.Idle, controller.state.value)
-        assertEquals(0L, controller.positionMs.value)
-        assertEquals(listOf(Command.TogglePlayPause, Command.SeekTo(1_000), Command.Next), controller.commands)
-    }
-
-    @Test
-    fun `commands are recorded in call order`() {
-        val controller = FakePlaybackController()
-
-        controller.play(listOf(first), startIndex = 0)
-        controller.togglePlayPause()
-        controller.seekTo(1_000)
+        controller.seekTo(1_000L)
         controller.next()
         controller.previous()
         controller.seekBack()
@@ -119,9 +27,9 @@ class FakePlaybackControllerTest {
 
         assertEquals(
             listOf(
-                Command.Play(listOf(first), startIndex = 0),
+                Command.Play(listOf(first), 0),
                 Command.TogglePlayPause,
-                Command.SeekTo(1_000),
+                Command.SeekTo(1_000L),
                 Command.Next,
                 Command.Previous,
                 Command.SeekBack,
@@ -129,66 +37,6 @@ class FakePlaybackControllerTest {
             ),
             controller.commands,
         )
-    }
-
-    @Test
-    fun `transport commands leave the state to the test`() {
-        val controller = FakePlaybackController()
-        controller.play(listOf(first, second), startIndex = 0)
-        val afterPlay = controller.state.value
-
-        controller.next()
-        controller.togglePlayPause()
-
-        assertEquals(afterPlay, controller.state.value)
-    }
-
-    private fun playing(queue: List<QueueItem>, currentIndex: Int, durationMs: Long) = PlaybackState.Active(
-        queue = queue,
-        currentIndex = currentIndex,
-        isPlaying = true,
-        playWhenReady = true,
-        isBuffering = false,
-        showPlayButton = false,
-        durationMs = durationMs,
-        error = null,
-    )
-
-    @Test
-    fun `disconnect оставляет последний снапшот с признаком не подключён`() {
-        val controller = FakePlaybackController()
-        controller.play(listOf(first, second), 1)
-
-        controller.disconnect()
-
-        val state = controller.state.value as PlaybackState.Active
-        assertEquals(listOf(first, second), state.queue)
-        assertEquals(1, state.currentIndex)
-        assertEquals(false, state.isConnected)
-    }
-
-    @Test
-    fun `disconnect без снапшота оставляет Idle, connect после него - подключённый снапшот`() {
-        val controller = FakePlaybackController(connected = false)
-
-        controller.disconnect()
-        assertEquals(PlaybackState.Idle, controller.state.value)
-
-        controller.connect()
-        assertEquals(emptyActive(), controller.state.value)
-    }
-
-    @Test
-    fun `connect после disconnect возвращает очередь подключённой`() {
-        val controller = FakePlaybackController()
-        controller.play(listOf(first), 0)
-        controller.disconnect()
-
-        controller.connect()
-
-        val state = controller.state.value as PlaybackState.Active
-        assertEquals(listOf(first), state.queue)
-        assertEquals(true, state.isConnected)
     }
 
     @Test
@@ -200,23 +48,21 @@ class FakePlaybackControllerTest {
         assertEquals(PlaybackState.ConnectionFailed, controller.state.value)
     }
 
-    private fun emptyActive() = PlaybackState.Active(
-        queue = emptyList(),
-        currentIndex = 0,
-        isPlaying = false,
-        playWhenReady = false,
-        isBuffering = false,
-        showPlayButton = true,
-        durationMs = 0,
-        error = null,
-    )
+    @Test
+    fun `disconnect без снапшота оставляет Idle`() {
+        val controller = FakePlaybackController(connected = false)
 
-    private fun item(id: String, durationMs: Long) = QueueItem(
-        id = id,
-        source = TrackSource.DEEZER,
-        title = "Title $id",
-        artist = "Artist",
-        artworkUri = null,
-        durationMs = durationMs,
-    )
+        controller.disconnect()
+
+        assertEquals(PlaybackState.Idle, controller.state.value)
+    }
+
+    @Test
+    fun `play - длительность из элемента очереди`() {
+        val controller = FakePlaybackController()
+
+        controller.play(listOf(first, second), 1)
+
+        assertEquals(45_000L, (controller.state.value as PlaybackState.Active).durationMs)
+    }
 }

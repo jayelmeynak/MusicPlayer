@@ -6,23 +6,17 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+/** `requested` и `source` фейка проверяют тесты загрузки треков в `player:impl`. */
 class FakeTrackUriResolverTest {
 
     @Test
-    fun `returns the mapped uri, null otherwise, and records requested ids`() = runTest {
-        val resolver = FakeTrackUriResolver(
-            TrackSource.DEEZER,
-            mapOf("1" to "https://example.com/1.mp3", "2" to null),
-        )
+    fun `отдаёт ссылку по id, null для остальных, записывает запрошенные id и называет источник`() = runTest {
+        val resolver = FakeTrackUriResolver(TrackSource.LOCAL, mapOf("1" to "content://1", "2" to null))
 
-        assertEquals("https://example.com/1.mp3", resolver.resolve("1"))
+        assertEquals("content://1", resolver.resolve("1"))
         assertNull(resolver.resolve("2"))
         assertNull(resolver.resolve("3"))
         assertEquals(listOf("1", "2", "3"), resolver.requested)
-    }
-
-    @Test
-    fun `фейк называет переданный источник`() {
-        assertEquals(TrackSource.LOCAL, FakeTrackUriResolver(TrackSource.LOCAL).source)
+        assertEquals(TrackSource.LOCAL, resolver.source)
     }
 }
