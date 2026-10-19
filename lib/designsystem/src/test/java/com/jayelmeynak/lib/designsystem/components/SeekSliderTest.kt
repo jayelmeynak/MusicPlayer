@@ -32,7 +32,7 @@ class SeekSliderTest {
         setSlider(progress = 10f)
 
         slider().performTouchInput {
-            down(centerLeft)
+            down(percentOffset(0.1f, 0.5f))
             moveTo(center)
             moveTo(centerRight)
         }
@@ -50,7 +50,7 @@ class SeekSliderTest {
 
         // The first move only passes the touch slop; the slider follows from the second one.
         slider().performTouchInput {
-            down(centerLeft)
+            down(percentOffset(0.1f, 0.5f))
             moveTo(percentOffset(0.3f, 0.5f))
             moveTo(center)
         }
@@ -65,7 +65,7 @@ class SeekSliderTest {
         setSlider(progress = 10f)
 
         slider().performTouchInput {
-            down(centerLeft)
+            down(percentOffset(0.1f, 0.5f))
             moveTo(percentOffset(0.3f, 0.5f))
             moveTo(center)
             up()
@@ -80,7 +80,7 @@ class SeekSliderTest {
         setSlider(progress = 10f)
 
         slider().performTouchInput {
-            down(centerLeft)
+            down(percentOffset(0.1f, 0.5f))
             moveTo(percentOffset(0.3f, 0.5f))
             moveTo(center)
         }

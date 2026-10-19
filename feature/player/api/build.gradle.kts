@@ -9,6 +9,9 @@ dependencies {
     api(project(":lib:navigation"))
     api(libs.kotlinx.coroutines.core)
 
+    // Общий набор контрактных тестов PlaybackController — JUnit-тесты в testFixtures.
+    testFixturesImplementation(libs.junit)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
