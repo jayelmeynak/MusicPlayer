@@ -5,7 +5,8 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
 /**
- * База Android-библиотеки: SDK, JVM toolchain, build types, проверка графа; без explicit API.
+ * База Android-библиотеки: SDK, JVM toolchain, build types, проверка графа, анализ lint по одному;
+ * без explicit API.
  * Отдельного id плагина нет — её вызывают `musicplayer.lib` и `musicplayer.feature.impl|ui|di`.
  */
 internal fun Project.configureAndroidLibrary() {
@@ -16,4 +17,5 @@ internal fun Project.configureAndroidLibrary() {
     }
     configureKotlin(explicitApi = false)
     forbidForeignImpl()
+    serializeLintAnalysis()
 }

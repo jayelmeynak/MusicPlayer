@@ -6,8 +6,8 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
 /**
- * Модуль `app`: Android-приложение (SDK, toolchain, build types, проверка графа). Compose и Hilt
- * подключаются плагинами `musicplayer.compose` и `musicplayer.hilt`.
+ * Модуль `app`: Android-приложение (SDK, toolchain, build types, проверка графа, анализ lint по
+ * одному). Compose и Hilt подключаются плагинами `musicplayer.compose` и `musicplayer.hilt`.
  */
 class ApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -18,5 +18,6 @@ class ApplicationConventionPlugin : Plugin<Project> {
         }
         configureKotlin(explicitApi = false)
         forbidForeignImpl()
+        serializeLintAnalysis()
     }
 }

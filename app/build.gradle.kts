@@ -21,24 +21,14 @@ android {
 
     // Фейковый сервер Deezer — общий для Robolectric- и инструментальных UI-тестов.
     sourceSets {
-        getByName("test").kotlin.srcDir("src/sharedTest/java")
-        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
+        getByName("test").kotlin.directories += "src/sharedTest/java"
+        getByName("androidTest").kotlin.directories += "src/sharedTest/java"
     }
 
     // Compose UI-тестам на Robolectric нужен объединённый манифест с тестовой ComponentActivity.
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
-}
-
-// Lint анализирует unit- и инструментальные тесты app в процессе Gradle, общие исходники sharedTest входят
-// в оба анализа. Одновременный анализ двух тестовых вариантов изредка роняет K2 UAST («Unexpected failure
-// during lint analysis …: Error while resolving FirRegularClassImpl from RAW_FIR»), повтор проходит.
-// Поэтому анализ инструментальных тестов идёт после анализа unit-тестов; остальные задачи lint — параллельно.
-tasks.configureEach {
-    val variant = Regex("lintAnalyze(\\w+)AndroidTest").matchEntire(name)?.groupValues?.get(1)
-        ?: return@configureEach
-    mustRunAfter("lintAnalyze${variant}UnitTest")
 }
 
 dependencies {
