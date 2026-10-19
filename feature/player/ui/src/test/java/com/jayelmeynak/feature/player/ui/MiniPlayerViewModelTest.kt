@@ -182,6 +182,35 @@ class MiniPlayerViewModelTest {
         assertTrue(controller.commands.none { it is Command.SeekTo })
     }
 
+    @Test
+    fun `перемотка доступна и длительность известна - ползунок активен`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1, durationMs = 200_000L)), 0) }
+        val viewModel = subscribed(MiniPlayerViewModel(controller))
+
+        assertTrue(viewModel.state.value.canSeek)
+    }
+
+    @Test
+    fun `перемотка недоступна - ползунок заблокирован, перемотка не отправляется`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1, durationMs = 200_000L)), 0) }
+        controller.state.value = active(controller).copy(canSeek = false)
+        val viewModel = subscribed(MiniPlayerViewModel(controller))
+
+        viewModel.onAction(MiniPlayerAction.SeekTo(percent = 50f))
+
+        assertFalse(viewModel.state.value.canSeek)
+        assertTrue(controller.commands.none { it is Command.SeekTo })
+    }
+
+    @Test
+    fun `перемотка доступна, но длительность неизвестна - ползунок заблокирован`() = runTest {
+        val controller = FakePlaybackController().apply { play(listOf(track(1, durationMs = 0L)), 0) }
+        val viewModel = subscribed(MiniPlayerViewModel(controller))
+
+        assertTrue(active(controller).canSeek)
+        assertFalse(viewModel.state.value.canSeek)
+    }
+
     /** Состояние собирается только при подписке — как composable на экране. */
     private fun TestScope.subscribed(viewModel: MiniPlayerViewModel): MiniPlayerViewModel {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }

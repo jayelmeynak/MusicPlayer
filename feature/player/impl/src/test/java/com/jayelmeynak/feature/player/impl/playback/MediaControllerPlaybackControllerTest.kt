@@ -402,7 +402,25 @@ class MediaControllerPlaybackControllerTest {
     }
 
     @Test
-    fun `источник без перемотки - seekTo на паузе не меняет позицию и не доходит до плеера сессии`() {
+    fun `пустая сессия - перемотки нет, подготовленный трек - снапшот разрешает перемотку`() {
+        lifecycle.start()
+        runMainLooperUntil { controller.state.value is PlaybackState.Active }
+        val empty = controller.state.value as PlaybackState.Active
+        assertFalse(empty.canSeek)
+        assertFalse(empty.canSeekBack)
+        assertFalse(empty.canSeekForward)
+
+        controller.play(queue, 0)
+
+        // Доступные команды приходят отдельным событием сессии после подготовки трека.
+        runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.canSeek == true }
+        val ready = controller.state.value as PlaybackState.Active
+        assertTrue(ready.canSeekBack)
+        assertTrue(ready.canSeekForward)
+    }
+
+    @Test
+    fun `источник без перемотки - снапшот запрещает перемотку, seekTo на паузе не меняет позицию и не доходит до плеера сессии`() {
         val unseekablePlayer = unseekableSession()
         lifecycle.start()
         runMainLooperUntil { controller.state.value is PlaybackState.Active }
@@ -419,6 +437,10 @@ class MediaControllerPlaybackControllerTest {
         // Доступные команды сессия рассылает отдельным сообщением: дочитываем их до перемотки.
         drainMainLooper()
         assertFalse(unseekablePlayer.isCommandAvailable(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM))
+        val snapshot = controller.state.value as PlaybackState.Active
+        assertFalse(snapshot.canSeek)
+        assertFalse(snapshot.canSeekBack)
+        assertFalse(snapshot.canSeekForward)
         val positionBefore = controller.positionMs.value
         val sessionPositionBefore = unseekablePlayer.currentPosition
 

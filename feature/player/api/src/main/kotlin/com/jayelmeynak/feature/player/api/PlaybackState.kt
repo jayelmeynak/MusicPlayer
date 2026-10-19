@@ -34,6 +34,11 @@ public sealed interface PlaybackState {
      *   play/pause рисовать по нему, а не по [isPlaying].
      * @property durationMs Длительность текущего элемента по данным плеера; `0`, если неизвестна.
      * @property error Причина остановки воспроизведения или `null`.
+     * @property canSeek Сессия примет [PlaybackController.seekTo]: текущий трек подготовлен и
+     *   перематывается. `false` до подготовки трека и у источника без перемотки (например, MP3 с
+     *   переменным битрейтом без таблицы перемотки) — тогда `seekTo` игнорируется.
+     * @property canSeekBack Сессия примет [PlaybackController.seekBack].
+     * @property canSeekForward Сессия примет [PlaybackController.seekForward].
      * @property isConnected `false` — последний известный снапшот, контроллер сейчас не подключён
      *   (приложение в фоне, сессия переподключается или ещё восстанавливает очередь): показывать
      *   можно; команды игнорируются, пока нет подключения (см. [PlaybackController]).
@@ -47,6 +52,9 @@ public sealed interface PlaybackState {
         val showPlayButton: Boolean,
         val durationMs: Long,
         val error: PlaybackError?,
+        val canSeek: Boolean,
+        val canSeekBack: Boolean,
+        val canSeekForward: Boolean,
         val isConnected: Boolean = true,
     ) : PlaybackState {
 

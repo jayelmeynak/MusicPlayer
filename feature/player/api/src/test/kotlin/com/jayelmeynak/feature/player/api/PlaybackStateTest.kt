@@ -34,6 +34,9 @@ class PlaybackStateTest {
         showPlayButton = true,
         durationMs = 0,
         error = null,
+        canSeek = false,
+        canSeekBack = false,
+        canSeekForward = false,
     )
 
     private fun item(id: String) = QueueItem(

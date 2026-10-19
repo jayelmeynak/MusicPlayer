@@ -76,6 +76,21 @@ public abstract class PlaybackControllerContract {
         val state = active()
         assertTrue(state.queue.isEmpty())
         assertTrue(state.isConnected)
+        assertFalse(state.canSeek)
+        assertFalse(state.canSeekBack)
+        assertFalse(state.canSeekForward)
+    }
+
+    @Test
+    public fun `подготовленный трек - снапшот разрешает перемотку`() {
+        connect()
+        controller.play(queue, 0)
+        awaitSeekable()
+
+        val state = active()
+        assertTrue(state.canSeek)
+        assertTrue(state.canSeekBack)
+        assertTrue(state.canSeekForward)
     }
 
     @Test

@@ -12,16 +12,20 @@ import androidx.compose.ui.Modifier
  * Слайдер прогресса воспроизведения в процентах. Во время перетаскивания следует за пальцем и
  * игнорирует [progress]; [onSeek] срабатывает один раз, с итоговым значением, когда жест кончается;
  * отменённый жест перематывает к последней позиции пальца. Новый [trackKey] сбрасывает незаконченный
- * жест, чтобы тот не перемотал следующий трек.
+ * жест, чтобы тот не перемотал следующий трек. Заблокированный ([enabled] = `false`, перемотка
+ * недоступна) не принимает касаний и рисуется как неактивный слайдер Material3; блокировка посреди
+ * жеста отменяет его без перемотки.
  */
 @Composable
 public fun SeekSlider(
     progress: Float,
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     trackKey: Any? = null,
 ) {
-    var dragValue by remember(trackKey) { mutableStateOf<Float?>(null) }
+    // Блокировка посреди жеста сбрасывает его: отпускание уже не дойдёт до слайдера.
+    var dragValue by remember(trackKey, enabled) { mutableStateOf<Float?>(null) }
 
     Slider(
         value = dragValue ?: progress,
@@ -30,7 +34,8 @@ public fun SeekSlider(
             dragValue?.let(onSeek)
             dragValue = null
         },
-        valueRange = 0f..100f,
         modifier = modifier,
+        enabled = enabled,
+        valueRange = 0f..100f,
     )
 }

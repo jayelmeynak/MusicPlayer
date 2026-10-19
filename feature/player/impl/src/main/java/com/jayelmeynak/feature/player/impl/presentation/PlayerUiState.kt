@@ -22,6 +22,9 @@ internal sealed interface PlayerUiState {
      * @property durationMs Длина того, что играет, по данным плеера; `0`, если неизвестна.
      * @property showPlayButton Тап по play/pause запустит воспроизведение; иконка рисуется по нему.
      * @property isBuffering Текущий элемент загружается: кольцо прогресса вокруг play/pause.
+     * @property canSeek Ползунок перемотки активен: сессия примет перемотку, длительность известна.
+     * @property canSeekBack Кнопка перемотки назад активна.
+     * @property canSeekForward Кнопка перемотки вперёд активна.
      * @property progress Позиция в процентах от [durationMs]; `0`, если длительность неизвестна.
      */
     data class Ready(
@@ -36,6 +39,9 @@ internal sealed interface PlayerUiState {
         val durationMs: Long,
         val positionMs: Long,
         val errorMessage: UiText?,
+        val canSeek: Boolean,
+        val canSeekBack: Boolean,
+        val canSeekForward: Boolean,
     ) : PlayerUiState {
 
         val progress: Float

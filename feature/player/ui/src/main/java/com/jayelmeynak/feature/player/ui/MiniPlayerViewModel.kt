@@ -38,9 +38,10 @@ internal class MiniPlayerViewModel @Inject constructor(
         }
     }
 
+    /** Перемотка недоступна — команда не отправляется: сессия её всё равно отбросит. */
     private fun seekTo(percent: Float) {
-        val duration = (playbackController.state.value as? PlaybackState.Active)?.durationMs ?: return
-        positionForPercent(percent, duration)?.let(playbackController::seekTo)
+        val active = (playbackController.state.value as? PlaybackState.Active)?.takeIf { it.canSeek } ?: return
+        positionForPercent(percent, active.durationMs)?.let(playbackController::seekTo)
     }
 
     private fun toUiState(playback: PlaybackState, positionMs: Long): MiniPlayerUiState {
@@ -55,6 +56,8 @@ internal class MiniPlayerViewModel @Inject constructor(
             showPlayButton = active.showPlayButton,
             progress = progressPercent(positionMs, active.durationMs),
             trackKey = current.key,
+            // Ползунок перематывает по доле длительности: без неё жест ничего не отправит.
+            canSeek = active.canSeek && active.durationMs > 0,
             visible = true,
         )
     }

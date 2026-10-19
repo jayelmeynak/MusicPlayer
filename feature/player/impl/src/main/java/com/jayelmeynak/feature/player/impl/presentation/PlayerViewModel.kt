@@ -62,8 +62,8 @@ internal class PlayerViewModel @Inject constructor(
             PlayerAction.TogglePlayPause -> playbackController.togglePlayPause()
             PlayerAction.Next -> playbackController.next()
             PlayerAction.Previous -> playbackController.previous()
-            PlayerAction.SeekBack -> playbackController.seekBack()
-            PlayerAction.SeekForward -> playbackController.seekForward()
+            PlayerAction.SeekBack -> if (ready()?.canSeekBack == true) playbackController.seekBack()
+            PlayerAction.SeekForward -> if (ready()?.canSeekForward == true) playbackController.seekForward()
             is PlayerAction.SeekTo -> seekTo(action.percent)
             is PlayerAction.OnNotificationPermissionChecked -> onNotificationPermissionChecked(action.granted)
         }
@@ -83,10 +83,13 @@ internal class PlayerViewModel @Inject constructor(
         }
     }
 
+    /** Перемотка недоступна — команда не отправляется: сессия её всё равно отбросит. */
     private fun seekTo(percent: Float) {
-        val duration = (_state.value as? PlayerUiState.Ready)?.durationMs ?: return
-        positionForPercent(percent, duration)?.let(playbackController::seekTo)
+        val ready = ready()?.takeIf { it.canSeek } ?: return
+        positionForPercent(percent, ready.durationMs)?.let(playbackController::seekTo)
     }
+
+    private fun ready(): PlayerUiState.Ready? = _state.value as? PlayerUiState.Ready
 
     private fun onPlaybackState(playback: PlaybackState) {
         val active = when (playback) {
@@ -125,6 +128,10 @@ internal class PlayerViewModel @Inject constructor(
             durationMs = active.durationMs,
             positionMs = playbackController.positionMs.value,
             errorMessage = active.error?.toUiText(),
+            // Ползунок перематывает по доле длительности: без неё жест ничего не отправит.
+            canSeek = active.canSeek && active.durationMs > 0,
+            canSeekBack = active.canSeekBack,
+            canSeekForward = active.canSeekForward,
         )
     }
 

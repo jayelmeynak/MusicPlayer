@@ -19,7 +19,9 @@ internal fun Player.readQueue(): List<QueueItem?> =
  * Всё состояние плеера разом, чтобы очередь, текущий индекс и флаги всегда сходились.
  * [queue] — результат [readQueue], передаётся снаружи, чтобы пересобирать его только при смене
  * timeline. Чужие элементы в очередь не попадают; если текущий элемент чужой,
- * [PlaybackState.Active.current] — `null`.
+ * [PlaybackState.Active.current] — `null`. Флаги перемотки — доступные команды плеера: у
+ * `MediaController` они меняются событием `EVENT_AVAILABLE_COMMANDS_CHANGED`, на которое снапшот
+ * пересобирается, как и на любое другое.
  */
 @OptIn(UnstableApi::class)
 internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): PlaybackState.Active {
@@ -39,6 +41,9 @@ internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): Play
         showPlayButton = Util.shouldShowPlayButton(this),
         durationMs = duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0L,
         error = playerError?.toPlaybackError(),
+        canSeek = isCommandAvailable(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM),
+        canSeekBack = isCommandAvailable(Player.COMMAND_SEEK_BACK),
+        canSeekForward = isCommandAvailable(Player.COMMAND_SEEK_FORWARD),
     )
 }
 
