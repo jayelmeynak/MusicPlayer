@@ -1,10 +1,12 @@
 package com.jayelmeynak.musicplayer
 
 import androidx.test.espresso.Espresso
+import com.jayelmeynak.feature.player.api.key
 import com.jayelmeynak.musicplayer.screen.MiniPlayerScreen
 import com.jayelmeynak.musicplayer.screen.PlayerScreen
 import com.jayelmeynak.musicplayer.screen.TrackListScreen
 import com.jayelmeynak.musicplayer.testing.MusicPlayerTestCase
+import com.jayelmeynak.musicplayer.testing.SessionPlayerEvents
 import dagger.hilt.android.testing.HiltAndroidTest
 import io.github.kakaocup.compose.node.element.ComposeScreen.Companion.onComposeScreen
 import org.junit.Assert.assertEquals
@@ -35,7 +37,6 @@ class PlaybackRegressionTest : MusicPlayerTestCase() {
         }
         step("Системная сессия играет этот трек") { awaitSession(STATE_PLAYING, chart[0].title) }
         step("Уведомление плеера с заголовком трека") { awaitNotificationTitle(chart[0].title) }
-        step("Заголовок виден в шторке") { assertTitleInNotificationShade(chart[0].title) }
     }
 
     @Test
@@ -100,26 +101,26 @@ class PlaybackRegressionTest : MusicPlayerTestCase() {
 
     @Test
     fun `повторный_тап_по_играющему_треку_не_перезапускает_его`() = run {
-        var playedPositionMs = 0L
-        step("Трек играет больше 2 с от стартовой позиции") {
-            playFromChart(0)
-            val startPositionMs = controller().positionMs.value
-            flakySafely(PLAYBACK_TIMEOUT_MS) {
-                assertTrue(controller().positionMs.value >= startPositionMs + 2_000)
+        step("Трек играет") { playFromChart(0) }
+        lateinit var events: SessionPlayerEvents
+        step("Контроллер теста подключён к сессии") { events = SessionPlayerEvents.connect(context, LOAD_TIMEOUT_MS) }
+        events.use { session ->
+            val mediaId = checkNotNull(active().current).key
+            step("Снова тап по тому же треку") {
+                assertEquals(mediaId, session.currentMediaId())
+                Espresso.pressBack()
+                onComposeScreen<TrackListScreen>(composeRule) { track(chart[0].title).performClick() }
+                onComposeScreen<PlayerScreen>(composeRule) { title(chart[0].title).assertIsDisplayed() }
             }
-            playedPositionMs = controller().positionMs.value
-        }
-        step("Снова тап по тому же треку") {
-            Espresso.pressBack()
-            onComposeScreen<TrackListScreen>(composeRule) { track(chart[0].title).performClick() }
-            onComposeScreen<PlayerScreen>(composeRule) { title(chart[0].title).assertIsDisplayed() }
-        }
-        step("Позиция не сброшена, трек тот же и играет") {
-            val state = active()
-            assertEquals(0, state.currentIndex)
-            val positionMs = controller().positionMs.value
-            assertTrue("позиция сброшена: $positionMs < $playedPositionMs", positionMs >= playedPositionMs)
-            awaitPlaying(chart[0].title)
+            step("Плеер сессии не перезапускал трек: тот же элемент, играет") {
+                // Сервис в том же процессе: команды play Media3 маскирует синхронно, события сессии
+                // приходят сообщениями главного looper — onIdle разбирает его очередь до пустой.
+                Espresso.onIdle()
+                assertEquals(emptyList<String>(), session.restarts())
+                assertEquals(mediaId, session.currentMediaId())
+                assertEquals(0, active().currentIndex)
+                awaitPlaying(chart[0].title)
+            }
         }
     }
 

@@ -93,8 +93,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kaspresso)
     androidTestImplementation(libs.kaspresso.compose.support)
-    // Используются напрямую: UiDevice (шторка, поворот) и screen-классы Kakao Compose из sharedTest.
+    // Используются напрямую: UiDevice (пробуждение, поворот) и screen-классы Kakao Compose из sharedTest.
     androidTestImplementation(libs.androidx.test.uiautomator)
+    // Свой MediaController теста на сессии сервиса: слушатель событий плеера.
+    androidTestImplementation(libs.media3.session)
     androidTestImplementation(libs.kakao.compose)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)

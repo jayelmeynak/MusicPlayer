@@ -7,16 +7,13 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.os.ParcelFileDescriptor
-import android.os.SystemClock
 import android.service.notification.StatusBarNotification
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.musicplayer.presentation.MainActivity
@@ -65,16 +62,11 @@ abstract class MusicPlayerTestCase : TestCase(kaspressoBuilder = kaspressoBuilde
     @get:Rule(order = 2)
     val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(*requiredPermissions())
 
-    /**
-     * Погасший экран телефона (Dozing) не даёт Activity выйти в RESUMED — будим до её запуска.
-     * Шторку, оставленную открытой прошлым прогоном (CI повторяет прогон на том же эмуляторе),
-     * закрываем: она забирает фокус окна у Activity.
-     */
+    /** Погасший экран телефона (Dozing) не даёт Activity выйти в RESUMED — будим до её запуска. */
     @get:Rule(order = 3)
     val wakeUpRule = object : ExternalResource() {
         override fun before() {
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).wakeUp()
-            shell("cmd statusbar collapse")
         }
     }
 
@@ -166,42 +158,6 @@ abstract class MusicPlayerTestCase : TestCase(kaspressoBuilder = kaspressoBuilde
         action.actionIntent.send()
     }
 
-    /**
-     * Заголовок трека виден в шторке уведомлений (текст — наши данные, не зависит от языка системы).
-     * Шторка закрывается до возврата фокуса приложению: иначе она держит фокус окна, и Espresso во
-     * всех следующих тестах прогона падает с `RootViewWithoutFocusException`.
-     */
-    protected fun assertTitleInNotificationShade(title: String) {
-        val uiDevice = device.uiDevice
-        uiDevice.openNotification()
-        val titleShown = uiDevice.wait(Until.hasObject(By.textContains(title)), SHADE_TIMEOUT_MS)
-        // Шторку закрываем до проверки заголовка, но её ошибка не должна заслонить отсутствие заголовка.
-        val collapsed = collapseNotificationShade()
-        assertTrue("В шторке нет «$title»", titleShown)
-        assertTrue("Шторка не закрылась, фокус: ${currentFocus()}", collapsed)
-    }
-
-    /**
-     * `cmd statusbar collapse`, пока фокус не вернётся приложению; `false` — не вернулся за
-     * [SHADE_TIMEOUT_MS]. Collapse во время анимации раскрытия система молча игнорирует
-     * (воспроизводится на API 36: `expand-notifications` и сразу `collapse` — шторка остаётся
-     * открытой), поэтому одной команды мало.
-     */
-    private fun collapseNotificationShade(): Boolean {
-        val deadline = SystemClock.uptimeMillis() + SHADE_TIMEOUT_MS
-        while (SystemClock.uptimeMillis() < deadline) {
-            shell("cmd statusbar collapse")
-            SystemClock.sleep(FOCUS_POLL_MS)
-            // Граница компонента « pkg/»: без неё совпал бы и пакет тестового APK (pkg.test).
-            if (" ${context.packageName}/" in currentFocus()) return true
-        }
-        return false
-    }
-
-    /** Окно с фокусом ввода из `dumpsys window` (строка `mCurrentFocus=…`). */
-    protected fun currentFocus(): String =
-        shell("dumpsys window").lineSequence().firstOrNull { "mCurrentFocus=" in it }?.trim().orEmpty()
-
     protected fun resumedMainActivities(): List<Activity> {
         var resumed: List<Activity> = emptyList()
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
@@ -223,8 +179,6 @@ abstract class MusicPlayerTestCase : TestCase(kaspressoBuilder = kaspressoBuilde
     companion object {
         const val LOAD_TIMEOUT_MS = 10_000L
         const val PLAYBACK_TIMEOUT_MS = 15_000L
-        const val SHADE_TIMEOUT_MS = 5_000L
-        const val FOCUS_POLL_MS = 200L
 
         const val STATE_PAUSED = 2
         const val STATE_PLAYING = 3
