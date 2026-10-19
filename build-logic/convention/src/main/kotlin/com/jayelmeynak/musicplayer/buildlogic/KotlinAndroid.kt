@@ -1,7 +1,9 @@
 package com.jayelmeynak.musicplayer.buildlogic
 
 import com.android.build.api.dsl.CommonExtension
+import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
@@ -34,3 +36,14 @@ internal fun Project.configureKotlin(explicitApi: Boolean) {
         if (explicitApi) explicitApi()
     }
 }
+
+/**
+ * Android-расширение модуля для плагинов поверх базового (`musicplayer.compose`, `musicplayer.hilt`).
+ * Без Android-плагина (JVM-модуль или неверный порядок в `plugins {}`) — понятная ошибка конфигурации,
+ * а не молчаливый пропуск.
+ */
+internal fun Project.requireAndroidExtension(pluginId: String): CommonExtension =
+    extensions.findByType<CommonExtension>() ?: throw GradleException(
+        "$pluginId применяется к Android-модулю после его базового плагина " +
+            "(musicplayer.application, musicplayer.lib, musicplayer.feature.impl|ui|di), а в $path Android-плагина нет."
+    )

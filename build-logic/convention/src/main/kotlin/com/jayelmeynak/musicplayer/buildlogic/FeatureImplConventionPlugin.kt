@@ -4,13 +4,9 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 /**
- * `feature:<domain>:impl`: Android library with Compose, Hilt, KSP, explicit API.
+ * `feature:<domain>:impl`: реализация фичи — экраны, `internal` Hilt-модули, use case, репозитории,
+ * сервисы. Состав — [configureFeatureAndroidModule] (Android-библиотека, Compose, Hilt, explicit API).
  */
 class FeatureImplConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) = with(target) {
-        applyPlugin("musicplayer-android-library")
-        configureCompose()
-        configureHilt()
-        configureKotlin(explicitApi = true)
-    }
+    override fun apply(target: Project) = target.configureFeatureAndroidModule()
 }

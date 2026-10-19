@@ -6,16 +6,15 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
 /**
- * The `app` module: Android application with Compose.
+ * Модуль `app`: Android-приложение (SDK, toolchain, build types, проверка графа). Compose и Hilt
+ * подключаются плагинами `musicplayer.compose` и `musicplayer.hilt`.
  */
 class ApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         applyPlugin("android-application")
-        applyPlugin("kotlin-compose")
         extensions.configure<ApplicationExtension> {
             configureAndroidCommon(this)
             defaultConfig.targetSdk = MusicPlayerBuild.TARGET_SDK
-            buildFeatures.compose = true
         }
         configureKotlin(explicitApi = false)
         forbidForeignImpl()

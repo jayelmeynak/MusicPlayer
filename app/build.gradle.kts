@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.musicplayer.application)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.musicplayer.compose)
+    alias(libs.plugins.musicplayer.hilt)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -46,8 +46,6 @@ dependencies {
     implementation(project(":lib:navigation"))
     implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     implementation(libs.navigation3.runtime)
@@ -58,8 +56,6 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
     testImplementation(libs.junit)

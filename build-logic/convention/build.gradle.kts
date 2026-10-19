@@ -51,6 +51,14 @@ gradlePlugin {
             id = libs.plugins.musicplayer.util.get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.UtilConventionPlugin"
         }
+        register("hilt") {
+            id = libs.plugins.musicplayer.hilt.get().pluginId
+            implementationClass = "com.jayelmeynak.musicplayer.buildlogic.HiltConventionPlugin"
+        }
+        register("compose") {
+            id = libs.plugins.musicplayer.compose.get().pluginId
+            implementationClass = "com.jayelmeynak.musicplayer.buildlogic.ComposeConventionPlugin"
+        }
         register("room") {
             id = libs.plugins.musicplayer.room.get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.RoomConventionPlugin"

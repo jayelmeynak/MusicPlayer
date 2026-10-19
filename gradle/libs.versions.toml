@@ -112,3 +112,5 @@ musicplayer-lib = { id = "musicplayer.lib" }
 musicplayer-lib-jvm = { id = "musicplayer.lib.jvm" }
 musicplayer-util = { id = "musicplayer.util" }
 musicplayer-room = { id = "musicplayer.room" }
+musicplayer-hilt = { id = "musicplayer.hilt" }
+musicplayer-compose = { id = "musicplayer.compose" }
