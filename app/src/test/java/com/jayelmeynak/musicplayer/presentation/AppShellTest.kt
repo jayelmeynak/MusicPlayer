@@ -149,6 +149,43 @@ class AppShellTest {
     }
 
     @Test
+    fun `плеер в стеке Remote - на Local мини-плеер виден, по возврату в Remote скрыт`() {
+        openPlayerFromChart(index = 1)
+
+        onComposeScreen<NavigationBarScreen>(composeRule) { localTab { performClick() } }
+        onComposeScreen<MiniPlayerScreen>(composeRule) {
+            root {
+                assertIsDisplayed()
+                assertTextContains(chart[1].title)
+            }
+        }
+
+        back()
+
+        onComposeScreen<NavigationBarScreen>(composeRule) { remoteTab { assertIsSelected() } }
+        waitForPlayerStub(chart[1].title)
+        onComposeScreen<MiniPlayerScreen>(composeRule) { root { assertDoesNotExist() } }
+    }
+
+    @Test
+    fun `пересоздание на списке с играющим треком - мини-плеер виден`() {
+        openPlayerFromChart(index = 2)
+        back()
+        waitForTrack(chart[0].title)
+
+        composeRule.activityRule.scenario.recreate()
+
+        waitForTrack(chart[0].title)
+        assertPlayerStubAbsent()
+        onComposeScreen<MiniPlayerScreen>(composeRule) {
+            root {
+                assertIsDisplayed()
+                assertTextContains(chart[2].title)
+            }
+        }
+    }
+
+    @Test
     fun `уход в фон и возврат - мини-плеер с треком виден всё время переподключения`() {
         openPlayerFromChart(index = 2)
         back()

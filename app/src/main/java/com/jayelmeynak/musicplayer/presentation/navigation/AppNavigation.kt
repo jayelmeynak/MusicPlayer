@@ -15,9 +15,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.get
 import androidx.navigation3.ui.NavDisplay
+import com.jayelmeynak.feature.player.api.HideMiniPlayer
 import com.jayelmeynak.feature.player.api.PlaybackController
-import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.ui.MiniPlayer
 import com.jayelmeynak.lib.navigation.EntryInstaller
 
@@ -32,10 +35,6 @@ fun AppNavigation(
     val navigationState = rememberNavigationState(startTab = AppTab.Catalog, tabs = AppTab.entries)
     val navigator = remember(navigationState) { AppNavigator(navigationState) }
     val currentTab = navigationState.currentTab
-    val currentBackStack = navigationState.backStacks[currentTab] ?: emptyList()
-    val currentRoute = currentBackStack.lastOrNull()
-
-    val isPlayerScreen = currentRoute is PlayerDestination
 
     val entryProvider = remember(entryInstallers, navigator) { appEntryProvider(entryInstallers, navigator) }
     val entries = navigationState.toEntries(entryProvider)
@@ -69,10 +68,20 @@ fun AppNavigation(
                 )
             }
 
-            // Outside NavDisplay: the mini player's view model is scoped to the Activity.
-            if (!isPlayerScreen) {
+            // Вне NavDisplay: ViewModel мини-плеера живёт в скоупе Activity.
+            if (showsMiniPlayer(entries)) {
                 MiniPlayer(navigator = navigator, modifier = Modifier.testTag(MINI_PLAYER_TAG))
             }
         }
     }
 }
+
+/**
+ * Показывать ли мини-плеер: решает верхняя запись [entries] — та, что `NavDisplay` рисует
+ * (одна панель, `SinglePaneSceneStrategy`). Мини-плеера нет, если она объявила [HideMiniPlayer].
+ *
+ * Список меняется сразу при переходе, поэтому мини-плеер переключается в начале анимации, а не после.
+ * Появится стратегия сцен с несколькими панелями или диалогами — признак надо брать у `Scene.metadata`.
+ */
+internal fun showsMiniPlayer(entries: List<NavEntry<NavKey>>): Boolean =
+    entries.lastOrNull()?.metadata?.get(HideMiniPlayer) != true

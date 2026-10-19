@@ -1,6 +1,8 @@
 package com.jayelmeynak.musicplayer.di
 
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.get
+import com.jayelmeynak.feature.player.api.HideMiniPlayer
 import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.lib.navigation.testing.FakeNavigator
@@ -11,6 +13,7 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -51,5 +54,12 @@ class EntryInstallerGraphTest {
 
         // Неизвестный ключ — исключение «Unknown screen», ключ записи по умолчанию — его строка.
         keys.forEach { key -> assertNotNull(provider(key)) }
+    }
+
+    @Test
+    fun `экраны корней вкладок не прячут мини-плеер`() {
+        val provider = appEntryProvider(installers, FakeNavigator())
+
+        AppTab.entries.forEach { tab -> assertNull(tab.name, provider(tab.root).metadata[HideMiniPlayer]) }
     }
 }
