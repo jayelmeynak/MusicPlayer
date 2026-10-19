@@ -13,6 +13,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.R as Media3R
+import com.jayelmeynak.feature.player.api.OpenPlayerRequest
 import com.jayelmeynak.feature.player.impl.artwork.ContentArtworkBitmapLoader
 import com.jayelmeynak.feature.player.impl.persistence.PlaybackPersistence
 import dagger.hilt.android.AndroidEntryPoint
@@ -165,9 +166,18 @@ internal class PlayBackService : MediaSessionService() {
         pauseAllPlayersAndStopSelf()
     }
 
-    /** Opens the app as the launcher does; MainActivity is singleTop, so no second copy appears. */
+    /**
+     * Тап по уведомлению: экран плеера. Явный интент launcher-активности (`MainActivity`, её класс
+     * модулю не виден) с действием [OpenPlayerRequest.ACTION]: действие отличает его от запуска
+     * с иконки (`filterEquals`), extras нет. Неизменяемый — отправитель не допишет ни extras, ни
+     * компонент. `MainActivity` — `singleTop`: живая Activity наверху получает `onNewIntent`, второй
+     * копии нет. Без launcher-активности (компонент отключён) — `null`: уведомление без перехода.
+     */
     private fun sessionActivity(): PendingIntent? =
-        packageManager.getLaunchIntentForPackage(packageName)?.let { intent ->
+        packageManager.getLaunchIntentForPackage(packageName)?.component?.let { launcher ->
+            val intent = Intent(OpenPlayerRequest.ACTION)
+                .setComponent(launcher)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
 

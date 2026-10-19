@@ -14,6 +14,7 @@ import androidx.media3.session.SessionToken
 import androidx.media3.test.utils.FakeMediaSourceFactory
 import androidx.media3.test.utils.TestExoPlayerBuilder
 import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
+import com.jayelmeynak.feature.player.api.OpenPlayerRequest
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.key
@@ -113,6 +114,28 @@ class PlayBackServiceTest {
 
         assertTrue(session.player === application.players.single())
         assertNotNull(session.sessionActivity)
+        service.destroy()
+    }
+
+    @Test
+    fun `тап по уведомлению - неизменяемый явный интент launcher-активности с действием открыть плеер, без extras`() {
+        val service = Robolectric.buildService(PlayBackService::class.java).create()
+
+        val sessionActivity = checkNotNull(service.get().sessions.single().sessionActivity)
+        val shadow = shadowOf(sessionActivity)
+        val intent = shadow.savedIntent
+
+        assertTrue(sessionActivity.isImmutable)
+        assertTrue(shadow.isActivity)
+        assertEquals(OpenPlayerRequest.ACTION, intent.action)
+        assertEquals(launcherComponent(), intent.component)
+        assertEquals(
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP,
+            intent.flags and (Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        assertNull(intent.extras)
+        assertNull(intent.categories)
+        assertNull(intent.data)
         service.destroy()
     }
 
@@ -354,9 +377,11 @@ class PlayBackServiceTest {
         .setClass(application, PlayBackService::class.java)
         .putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
 
-    /** The session activity is the package launch intent; the test manifest has no launcher. */
+    private fun launcherComponent() = ComponentName(application, "${application.packageName}.Launcher")
+
+    /** В тестовом манифесте нет launcher-активности: регистрирует её, `sessionActivity` берёт её компонент. */
     private fun registerLauncherActivity() {
-        val component = ComponentName(application, "${application.packageName}.Launcher")
+        val component = launcherComponent()
         shadowOf(application.packageManager).apply {
             addActivityIfNotPresent(component)
             addIntentFilterForActivity(
