@@ -31,6 +31,16 @@ android {
     }
 }
 
+// Lint анализирует unit- и инструментальные тесты app в процессе Gradle, общие исходники sharedTest входят
+// в оба анализа. Одновременный анализ двух тестовых вариантов изредка роняет K2 UAST («Unexpected failure
+// during lint analysis …: Error while resolving FirRegularClassImpl from RAW_FIR»), повтор проходит.
+// Поэтому анализ инструментальных тестов идёт после анализа unit-тестов; остальные задачи lint — параллельно.
+tasks.configureEach {
+    val variant = Regex("lintAnalyze(\\w+)AndroidTest").matchEntire(name)?.groupValues?.get(1)
+        ?: return@configureEach
+    mustRunAfter("lintAnalyze${variant}UnitTest")
+}
+
 dependencies {
 
     // ChartDestination — корень стека вкладки «Remote»; экран и резолвер Deezer приходят через :di.
