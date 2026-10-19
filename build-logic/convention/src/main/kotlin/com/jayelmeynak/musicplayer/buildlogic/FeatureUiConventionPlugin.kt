@@ -4,15 +4,10 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 /**
- * `feature:<domain>:ui`: Android library with Compose, Hilt, KSP, explicit API.
- *
- * Hilt is here for `@HiltViewModel` view models of the module's public composables.
+ * `feature:<domain>:ui`: публичные composable фичи для чужих модулей (например, мини-плеер для `app`)
+ * и их `@HiltViewModel`; Hilt-модулей и привязок контрактов здесь нет — они в `:impl` и `:di`.
+ * Состав — [configureFeatureAndroidModule]: KSP-компилятор Hilt нужен ради `@HiltViewModel`.
  */
 class FeatureUiConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) = with(target) {
-        applyPlugin("musicplayer-android-library")
-        configureCompose()
-        configureHilt()
-        configureKotlin(explicitApi = true)
-    }
+    override fun apply(target: Project) = target.configureFeatureAndroidModule()
 }
