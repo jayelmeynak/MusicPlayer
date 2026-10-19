@@ -30,7 +30,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
 
     // Компилятор Compose применяется ко всем исходникам модуля, включая testFixtures: нужен Compose runtime,
@@ -46,6 +45,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
+    // Прямых импортов нет: выравнивает androidx.test:core в тестовом runtime (иначе транзитивно 1.5.0).
     testImplementation(libs.androidx.test.core)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
