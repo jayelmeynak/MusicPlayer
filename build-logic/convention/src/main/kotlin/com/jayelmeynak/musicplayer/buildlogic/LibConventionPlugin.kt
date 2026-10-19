@@ -4,7 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 /**
- * `lib:<name>`: Android library, explicit API.
+ * `lib:<name>`: Android-библиотека, explicit API.
  */
 class LibConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {

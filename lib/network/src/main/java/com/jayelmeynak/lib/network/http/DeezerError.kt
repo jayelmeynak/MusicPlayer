@@ -10,7 +10,7 @@ import retrofit2.Retrofit
 import java.io.IOException
 import java.lang.reflect.Type
 
-// Deezer reports errors with HTTP 200 and a top-level {"error":{"type","message","code"}} body.
+// Deezer сообщает об ошибках с HTTP 200 и телом {"error":{"type","message","code"}} верхнего уровня.
 internal class DeezerApiException(val code: Int?) : IOException("Deezer error, code $code")
 
 internal fun deezerErrorToRemote(code: Int?): DataError.Remote = when (code) {
@@ -20,8 +20,8 @@ internal fun deezerErrorToRemote(code: Int?): DataError.Remote = when (code) {
     else -> DataError.Remote.UNKNOWN
 }
 
-// Must be added before the Gson factory: it reads the body, throws on a Deezer error
-// and hands the same text to the next converter otherwise.
+// Добавлять до фабрики Gson: читает тело, бросает на ошибке Deezer, иначе передаёт тот же
+// текст следующему конвертеру.
 internal object DeezerErrorConverterFactory : Converter.Factory() {
 
     override fun responseBodyConverter(

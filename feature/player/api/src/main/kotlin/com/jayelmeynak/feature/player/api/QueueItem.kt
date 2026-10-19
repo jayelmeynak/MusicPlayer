@@ -1,16 +1,16 @@
 package com.jayelmeynak.feature.player.api
 
 /**
- * One track of the playback queue.
+ * Один трек очереди воспроизведения.
  *
- * Holds what identifies the track and what the player shows, never a stream URL: a Deezer preview
- * URL expires in about 15 minutes, so the player asks [TrackUriResolver] for a fresh one right
- * before loading the track.
+ * Хранит то, что идентифицирует трек и что показывает плеер, но не URL потока: URL превью Deezer
+ * истекает примерно через 15 минут, поэтому плеер берёт свежий у [TrackUriResolver] прямо перед
+ * загрузкой трека.
  *
- * @property id Track id in [source]; see [TrackSource] for its format.
+ * @property id Id трека в [source]; формат — см. [TrackSource].
  * @property artworkUri Обложка: адрес картинки или `content://` URI, обложка которого — эскиз его
  *   провайдера (`ContentResolver.loadThumbnail`); у локального трека — URI самого трека. `null` — нет обложки.
- * @property durationMs Full length of the track in milliseconds; `0` when unknown.
+ * @property durationMs Полная длина трека, мс; `0`, если неизвестна.
  */
 public data class QueueItem(
     val id: String,

@@ -3,16 +3,16 @@ package com.jayelmeynak.lib.navigation.testing
 import androidx.navigation3.runtime.NavKey
 import com.jayelmeynak.lib.navigation.Navigator
 
-/** [Navigator] for tests: records where it was asked to go. */
+/** [Navigator] для тестов: запоминает, куда его просили перейти. */
 public class FakeNavigator : Navigator {
 
-    /** Keys passed to [navigateTo], in call order. */
+    /** Ключи, переданные в [navigateTo], в порядке вызова. */
     public val destinations: MutableList<NavKey> = mutableListOf()
 
     /** Ключи, переданные в [remove], в порядке вызовов. */
     public val removed: MutableList<NavKey> = mutableListOf()
 
-    /** How many times [goBack] was called. */
+    /** Сколько раз вызван [goBack]. */
     public var backCount: Int = 0
         private set
 

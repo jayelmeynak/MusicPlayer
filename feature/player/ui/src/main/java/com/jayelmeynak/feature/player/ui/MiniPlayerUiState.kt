@@ -1,11 +1,11 @@
 package com.jayelmeynak.feature.player.ui
 
 /**
- * The mini player over the tab content.
+ * Мини-плеер поверх содержимого вкладки.
  *
  * @property showPlayButton Тап по play/pause запустит воспроизведение; иконка рисуется по нему.
- * @property progress Position in percent of the current item's duration; `0` when it is unknown.
- * @property trackKey Changes with the current item; drops an unfinished seek gesture.
+ * @property progress Позиция в процентах от длительности текущего элемента; `0`, если она неизвестна.
+ * @property trackKey Меняется с текущим элементом; сбрасывает незаконченный жест перемотки.
  * @property visible В снапшоте сессии есть свой текущий трек — в том числе в последнем снапшоте
  *   без подключения (приложение возвращается из фона): так мини-плеер не мигает.
  */

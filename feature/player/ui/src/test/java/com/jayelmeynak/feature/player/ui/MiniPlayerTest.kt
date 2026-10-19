@@ -27,7 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Robolectric hosts the Compose test rule. */
+/** Compose test rule — на Robolectric. */
 @RunWith(RobolectricTestRunner::class)
 class MiniPlayerTest {
 
@@ -86,7 +86,7 @@ class MiniPlayerTest {
         setMiniPlayer(controller)
 
         val slider = composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
-        // The touch target sticks out of the window by a few pixels: start inside it.
+        // Зона касания выступает за окно на несколько пикселей: начинать внутри неё.
         slider.performTouchInput {
             down(percentOffset(0.1f, 0.5f))
             moveTo(center)

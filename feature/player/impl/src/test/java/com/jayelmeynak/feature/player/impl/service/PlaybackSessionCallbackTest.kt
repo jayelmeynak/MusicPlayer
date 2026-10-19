@@ -41,9 +41,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
 /**
- * Robolectric: MediaItem, Uri and MediaSession are Android classes. The callback is called
- * directly: adding items needs no session; connection decisions get a real session over a test
- * player and a [ControllerInfo] built for tests, since a foreign uid cannot connect in-process.
+ * Robolectric: MediaItem, Uri и MediaSession — Android-классы. Колбэк вызывается напрямую:
+ * добавлению элементов сессия не нужна; решения о подключении получают настоящую сессию над
+ * тестовым плеером и [ControllerInfo], собранный для тестов, — чужой uid не подключить внутри процесса.
  */
 @OptIn(UnstableApi::class)
 @RunWith(RobolectricTestRunner::class)

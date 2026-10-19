@@ -7,7 +7,7 @@ internal sealed interface PlayerAction {
     data object SeekBack : PlayerAction
     data object SeekForward : PlayerAction
 
-    /** The seek gesture ended at [percent] of the duration. */
+    /** Жест перемотки закончился на [percent] длительности. */
     data class SeekTo(val percent: Float) : PlayerAction
 
     /** Экран показан на API 33+: выдано ли разрешение на уведомления. */

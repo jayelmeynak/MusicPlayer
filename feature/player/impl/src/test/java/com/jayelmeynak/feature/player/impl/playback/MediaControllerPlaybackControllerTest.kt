@@ -42,9 +42,9 @@ import org.robolectric.Shadows.shadowOf
 import java.time.Duration
 
 /**
- * Robolectric runs an in-process media session over a test ExoPlayer; the controller connects to
- * its token instead of the service. Media3 delivers everything through the main looper, which the
- * test runs explicitly (`runMainLooperUntil`); position polling runs on a test dispatcher.
+ * Robolectric поднимает внутрипроцессную медиасессию над тестовым ExoPlayer; контроллер подключается
+ * к её токену, а не к сервису. Media3 доставляет всё через главный лупер, который тест крутит явно
+ * (`runMainLooperUntil`); опрос позиции идёт на тестовом диспетчере.
  *
  * Общий контракт и доставка транспортных команд до плеера сессии — в
  * [MediaControllerPlaybackControllerContractTest] (часы плеера там стоят); здесь — поведение
@@ -91,7 +91,7 @@ class MediaControllerPlaybackControllerTest {
     private val extraPlayers = mutableListOf<ExoPlayer>()
     private val collector = CoroutineScope(Dispatchers.Unconfined)
 
-    /** Every value [MediaControllerPlaybackController.state] takes, in order. */
+    /** Все значения [MediaControllerPlaybackController.state] по порядку. */
     private fun recordStates(): List<PlaybackState> {
         val states = mutableListOf<PlaybackState>()
         collector.launch { controller.state.collect { states += it } }
@@ -138,7 +138,7 @@ class MediaControllerPlaybackControllerTest {
         lifecycle.start()
         connectedPlay(queue, 0)
         val states = recordStates()
-        // The next connection finds a new, empty session, as a recreated service would give.
+        // Следующее подключение находит новую пустую сессию, как дал бы пересозданный сервис.
         val oldSession = session
         val newPlayer = TestExoPlayerBuilder(context).setMediaSourceFactory(FakeMediaSourceFactory()).build()
         extraPlayers += newPlayer
@@ -173,7 +173,7 @@ class MediaControllerPlaybackControllerTest {
         val connections = mutableListOf<SettableFuture<MediaController>>()
         val slow = MediaControllerPlaybackController(
             lifecycleOwner = lifecycle,
-            // The first connection never completes: the app goes to background before it does.
+            // Первое подключение так и не завершается: приложение уходит в фон раньше.
             connector = { listener ->
                 if (connections.isEmpty()) {
                     SettableFuture.create<MediaController>().also { connections += it }
@@ -593,7 +593,7 @@ class MediaControllerPlaybackControllerTest {
         runMainLooperUntil { (controller.state.value as? PlaybackState.Active)?.currentIndex == index }
     }
 
-    /** Stands in for the process lifecycle: the test moves it between CREATED and STARTED. */
+    /** Заменяет lifecycle процесса: тест переводит его между CREATED и STARTED. */
     private class TestProcessLifecycle : LifecycleOwner {
         val registry: LifecycleRegistry = LifecycleRegistry.createUnsafe(this).apply {
             currentState = Lifecycle.State.CREATED

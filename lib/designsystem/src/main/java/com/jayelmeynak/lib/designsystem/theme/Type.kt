@@ -6,7 +6,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Set of Material typography styles to start with
+// Начальный набор стилей типографики Material
 internal val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
@@ -16,7 +16,7 @@ internal val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
-    /* Other default text styles to override
+    /* Другие стили по умолчанию, которые можно переопределить
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,

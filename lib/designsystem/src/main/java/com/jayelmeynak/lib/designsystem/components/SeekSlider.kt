@@ -9,9 +9,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 /**
- * Playback progress slider in percent. While dragged it follows the finger and ignores [progress];
- * [onSeek] fires once, with the final value, when the gesture ends; a cancelled gesture seeks to
- * the last finger position. A new [trackKey] drops an unfinished gesture, so it can't seek the next track.
+ * Слайдер прогресса воспроизведения в процентах. Во время перетаскивания следует за пальцем и
+ * игнорирует [progress]; [onSeek] срабатывает один раз, с итоговым значением, когда жест кончается;
+ * отменённый жест перематывает к последней позиции пальца. Новый [trackKey] сбрасывает незаконченный
+ * жест, чтобы тот не перемотал следующий трек.
  */
 @Composable
 public fun SeekSlider(

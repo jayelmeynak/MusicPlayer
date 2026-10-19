@@ -203,7 +203,7 @@ class AppNavigatorTest {
 
     @Test
     fun `navigateToRoot resets a stack whose top is the root but has screens below`() {
-        // Not reachable through the navigator; the reset must not rely on the top of the stack alone.
+        // Через навигатор не достижимо; сброс не должен опираться только на верх стека.
         navigator.navigateTo(Screen("1"))
         state.backStacks.getValue(AppTab.Catalog).add(ChartDestination)
 

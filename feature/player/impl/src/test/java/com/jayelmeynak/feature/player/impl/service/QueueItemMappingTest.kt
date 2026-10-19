@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Robolectric: MediaItem keeps metadata extras in a Bundle and the artwork as a Uri. */
+/** Robolectric: MediaItem хранит extras метаданных в Bundle, а обложку — как Uri. */
 @RunWith(RobolectricTestRunner::class)
 class QueueItemMappingTest {
 

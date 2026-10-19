@@ -1,10 +1,10 @@
 package com.jayelmeynak.feature.player.api
 
-/** Where a track comes from and how its id is read. */
+/** Откуда трек и как читать его id. */
 public enum class TrackSource {
-    /** Deezer catalog; the id is the Deezer track id. */
+    /** Каталог Deezer; id — id трека в Deezer. */
     DEEZER,
 
-    /** Device audio from MediaStore; the id is the `content://` URI of the track. */
+    /** Аудио устройства из MediaStore; id — `content://` URI трека. */
     LOCAL,
 }

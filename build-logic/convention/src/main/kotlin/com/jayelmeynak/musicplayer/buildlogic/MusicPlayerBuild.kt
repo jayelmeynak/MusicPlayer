@@ -1,7 +1,7 @@
 package com.jayelmeynak.musicplayer.buildlogic
 
 /**
- * The only place where SDK levels and the JVM toolchain of the project are declared.
+ * Единственное место, где объявлены уровни SDK и JVM toolchain проекта.
  */
 internal object MusicPlayerBuild {
     const val COMPILE_SDK = 37

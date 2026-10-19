@@ -11,12 +11,12 @@ import com.jayelmeynak.feature.player.impl.service.PlayBackService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-/** Starts connecting a new [MediaController] to the playback session; [listener] gets its callbacks. */
+/** Начинает подключать новый [MediaController] к сессии воспроизведения; его колбэки получает [listener]. */
 internal fun interface MediaControllerConnector {
     fun connect(listener: MediaController.Listener): ListenableFuture<MediaController>
 }
 
-/** Connects to [PlayBackService]; binding creates the service if it is not running. */
+/** Подключается к [PlayBackService]; bind создаёт сервис, если он не запущен. */
 @OptIn(UnstableApi::class)
 internal class SessionServiceConnector @Inject constructor(
     @ApplicationContext private val context: Context,

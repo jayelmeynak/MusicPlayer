@@ -14,7 +14,7 @@ public class FakeTrackUriResolver(
 
     private val recorded = mutableListOf<String>()
 
-    /** Ids passed to [resolve], in call order. */
+    /** Id, переданные в [resolve], в порядке вызова. */
     public val requested: List<String> get() = recorded.toList()
 
     override suspend fun resolve(id: String): String? {

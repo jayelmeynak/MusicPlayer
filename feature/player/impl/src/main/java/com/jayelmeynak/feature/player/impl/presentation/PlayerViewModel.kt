@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * The player screen over [PlaybackController]: shows its current item and sends the transport
- * commands. Scoped to the screen's NavEntry; the playback state itself lives in the session, so a
- * new instance shows the current track right away.
+ * Экран плеера поверх [PlaybackController]: показывает текущий элемент и шлёт транспортные
+ * команды. Скоуп — NavEntry экрана; само состояние воспроизведения живёт в сессии, поэтому новый
+ * экземпляр сразу показывает текущий трек.
  */
 @HiltViewModel
 internal class PlayerViewModel @Inject constructor(
@@ -110,8 +110,8 @@ internal class PlayerViewModel @Inject constructor(
             }
             return
         }
-        // A foreign current item (added by another controller) has no metadata of ours: show the
-        // controls without track details rather than an endless progress indicator.
+        // У чужого текущего элемента (добавлен другим контроллером) нет наших метаданных: показать
+        // кнопки без данных трека, а не бесконечный индикатор прогресса.
         val current = active.current
         _state.value = PlayerUiState.Ready(
             trackKey = current?.key ?: "foreign|${active.currentIndex}",

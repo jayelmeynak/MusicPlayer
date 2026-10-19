@@ -10,7 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 
-/** Binds the player contracts from `:api` to their implementations. */
+/** Привязывает контракты плеера из `:api` к их реализациям. */
 @Module
 @InstallIn(SingletonComponent::class)
 public interface PlayerModule {

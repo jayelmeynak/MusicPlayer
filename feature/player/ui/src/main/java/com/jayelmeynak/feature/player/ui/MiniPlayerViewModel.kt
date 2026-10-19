@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 /**
- * The mini player over [PlaybackController]: the current item, its progress and play/pause.
- * Scoped to the host outside the navigation entries, so it lives as long as the Activity.
+ * Мини-плеер поверх [PlaybackController]: текущий элемент, его прогресс и play/pause.
+ * Скоуп — хост вне записей навигации, поэтому живёт столько же, сколько Activity.
  */
 @HiltViewModel
 internal class MiniPlayerViewModel @Inject constructor(
@@ -24,8 +24,8 @@ internal class MiniPlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     /**
-     * Collects the controller only while the mini player is shown: the view model lives as long
-     * as the Activity, and the position ticks every half second during playback.
+     * Собирает контроллер, только пока мини-плеер показан: view model живёт столько же, сколько
+     * Activity, а позиция во время воспроизведения тикает каждые полсекунды.
      */
     val state: StateFlow<MiniPlayerUiState> =
         combine(playbackController.state, playbackController.positionMs, ::toUiState)
@@ -47,7 +47,7 @@ internal class MiniPlayerViewModel @Inject constructor(
         // Снапшот без подключения тоже показывается: мини-плеер не мигает при возврате из фона.
         // Idle и ConnectionFailed — показывать нечего.
         val active = playback as? PlaybackState.Active ?: return MiniPlayerUiState()
-        // An item added by another controller has no metadata of ours: nothing to show.
+        // У элемента, добавленного другим контроллером, нет наших метаданных: показывать нечего.
         val current = active.current ?: return MiniPlayerUiState()
         return MiniPlayerUiState(
             title = current.title,
@@ -60,7 +60,7 @@ internal class MiniPlayerViewModel @Inject constructor(
     }
 
     private companion object {
-        /** Keeps the upstream through a configuration change. */
+        /** Держит upstream через смену конфигурации. */
         const val STOP_TIMEOUT_MS = 5_000L
     }
 }

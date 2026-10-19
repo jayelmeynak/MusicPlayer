@@ -27,11 +27,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.UUID
 
-/** A screen pushed over a tab root; saved with the back stack, so it is serializable. */
+/** Экран поверх корня вкладки; сохраняется вместе с back stack, поэтому сериализуемый. */
 @Serializable
 data class ProbeScreen(val id: String) : NavKey
 
-/** Records whether its ViewModelStore was cleared. */
+/** Запоминает, был ли очищен его ViewModelStore. */
 class ProbeViewModel : ViewModel() {
     var cleared = false
         private set
@@ -41,7 +41,7 @@ class ProbeViewModel : ViewModel() {
     }
 }
 
-// Robolectric: the shell needs a real ComponentActivity with its ViewModelStore and saved state.
+// Robolectric: оболочке нужна настоящая ComponentActivity с ViewModelStore и сохранённым состоянием.
 @RunWith(RobolectricTestRunner::class)
 class NavigationStateTest {
 
@@ -51,16 +51,16 @@ class NavigationStateTest {
     private lateinit var state: NavigationState
     private lateinit var navigator: AppNavigator
 
-    /** Every distinct ViewModel instance the probe screen got, in creation order. */
+    /** Все разные экземпляры ViewModel пробного экрана, в порядке создания. */
     private val probes = mutableListOf<ProbeViewModel>()
 
-    /** Every distinct saveable value the probe screen got, in creation order. */
+    /** Все разные saveable-значения пробного экрана, в порядке создания. */
     private val savedValues = mutableListOf<String>()
 
     private val api get() = state.backStacks.getValue(AppTab.Catalog).toList()
     private val local get() = state.backStacks.getValue(AppTab.LocalMusic).toList()
 
-    /** The app shell without the feature screens: the same state, navigator and decoration. */
+    /** Оболочка приложения без экранов фич: то же состояние, навигатор и декорация. */
     @Composable
     private fun Shell() {
         val navigationState = rememberNavigationState(

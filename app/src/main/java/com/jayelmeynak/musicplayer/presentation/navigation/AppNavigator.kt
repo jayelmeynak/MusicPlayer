@@ -15,9 +15,9 @@ class AppNavigator(private val state: NavigationState) : Navigator {
         } else {
             val stack = state.backStacks[state.currentTab] ?: return
             if (stack.lastOrNull() == destination) return
-            // One key lives in one place: equal entries share a content key in NavDisplay, and so
-            // their saved state and ViewModelStore. Moving the key between stacks keeps that state,
-            // since toEntries decorates all stacks as one list.
+            // Ключ живёт в одном месте: равные записи делят content key в NavDisplay, а с ним —
+            // сохранённое состояние и ViewModelStore. Перенос ключа между стеками это состояние
+            // сохраняет: toEntries декорирует все стеки одним списком.
             state.backStacks.values.forEach { it.removeAll { key -> key == destination } }
             stack.add(destination)
         }
