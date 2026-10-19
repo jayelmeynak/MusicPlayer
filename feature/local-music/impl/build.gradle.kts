@@ -39,7 +39,7 @@ dependencies {
     testFixturesImplementation(project(":util:result"))
 
     testImplementation(libs.junit)
-    testImplementation(testFixtures(project))
+    testImplementation(testFixtures(project(":feature:local-music:impl")))
     testImplementation(project(":util:testing"))
     testImplementation(testFixtures(project(":feature:player:api")))
     testImplementation(libs.kotlinx.coroutines.test)

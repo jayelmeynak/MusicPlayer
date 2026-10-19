@@ -21,8 +21,8 @@ android {
 
     // Фейковый сервер Deezer — общий для Robolectric- и инструментальных UI-тестов.
     sourceSets {
-        getByName("test").kotlin.srcDir("src/sharedTest/java")
-        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
+        getByName("test").kotlin.directories += "src/sharedTest/java"
+        getByName("androidTest").kotlin.directories += "src/sharedTest/java"
     }
 
     // Compose UI-тестам на Robolectric нужен объединённый манифест с тестовой ComponentActivity.

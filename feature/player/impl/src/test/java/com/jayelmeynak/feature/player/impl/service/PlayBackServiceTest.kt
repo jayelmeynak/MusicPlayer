@@ -64,7 +64,7 @@ import java.io.FileNotFoundException
  * [tearDown], даже если тест упал: сессия, не освобождённая в `onDestroy`, держит свой ID в
  * статическом реестре Media3, и следующий тест падает на создании сессии.
  *
- * Замена опирается на внутренности Hilt, проверено на Hilt 2.59.2: сгенерированный
+ * Замена опирается на внутренности Hilt, проверено на Hilt 2.60.1: сгенерированный
  * `PlayBackService_GeneratedInjector`, `dagger.hilt.android.internal.builders.ServiceComponentBuilder`
  * и `ServiceComponentManager.ServiceComponentBuilderEntryPoint`. Обновление Hilt, которое их меняет,
  * ломает компиляцию или [Robolectric.buildService] здесь, а не приложение.

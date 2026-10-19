@@ -46,16 +46,16 @@ feature/local-music/
 
 ## Технологии
 
-- Kotlin 2.3.20, Jetpack Compose (BOM 2026.04.01), Material 3
+- Kotlin 2.4.21, Jetpack Compose (BOM 2026.04.01), Material 3
 - Navigation3 1.1.1
-- Hilt 2.59.2 (KSP)
+- Hilt 2.60.1 (KSP)
 - Retrofit 3.0.0, OkHttp, Gson
 - Media3 1.10.0 (ExoPlayer, MediaSession, MediaController)
 - Coil — изображения, обложки локальных треков — эскизы MediaStore
 - Корутины и Flow
 - Тесты: JUnit4, kotlinx-coroutines-test, Turbine, Robolectric, MockWebServer
 
-Версии — в `gradle/libs.versions.toml`; SDK и JVM — в `build-logic` (`MusicPlayerBuild.kt`): minSdk 29, targetSdk 36, compileSdk 37, JVM 17. Сборка — AGP 9.1.1.
+Версии — в `gradle/libs.versions.toml`; SDK и JVM — в `build-logic` (`MusicPlayerBuild.kt`): minSdk 29, targetSdk 36, compileSdk 37, JVM 17. Сборка — AGP 9.3.3, Gradle 9.7.1.
 
 ## Сборка
 
