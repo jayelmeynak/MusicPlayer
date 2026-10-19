@@ -182,7 +182,7 @@ class MiniPlayerViewModelTest {
         assertTrue(controller.commands.none { it is Command.SeekTo })
     }
 
-    /** The state is collected only while subscribed, as by the composable on screen. */
+    /** Состояние собирается только при подписке — как composable на экране. */
     private fun TestScope.subscribed(viewModel: MiniPlayerViewModel): MiniPlayerViewModel {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
         return viewModel

@@ -5,24 +5,24 @@ import com.jayelmeynak.lib.designsystem.UiText
 
 internal sealed interface PlayerUiState {
 
-    /** Not connected to the playback session yet: nothing to show but a progress indicator. */
+    /** Ещё нет подключения к сессии воспроизведения: показать нечего, кроме индикатора прогресса. */
     data object Connecting : PlayerUiState
 
     /** Подключиться к сессии не удалось после всех попыток: текст ошибки вместо индикатора. */
     data object ConnectionFailed : PlayerUiState
 
     /**
-     * The current track.
+     * Текущий трек.
      *
-     * @property trackKey Changes with the current item; drops an unfinished seek gesture.
+     * @property trackKey Меняется с текущим элементом; сбрасывает незаконченный жест перемотки.
      * @property artworkUri Обложка: адрес картинки (Deezer) или `content://` URI, обложка которого —
      *   эскиз провайдера (локальный трек); `null` — обложки нет.
-     * @property isPreview The media is a 30-second Deezer preview, not the full track.
-     * @property trackLengthMs Full length of the track; `0` when unknown.
-     * @property durationMs Length of what is playing, from the player; `0` when unknown.
+     * @property isPreview Играет 30-секундное превью Deezer, а не полный трек.
+     * @property trackLengthMs Полная длина трека; `0`, если неизвестна.
+     * @property durationMs Длина того, что играет, по данным плеера; `0`, если неизвестна.
      * @property showPlayButton Тап по play/pause запустит воспроизведение; иконка рисуется по нему.
      * @property isBuffering Текущий элемент загружается: кольцо прогресса вокруг play/pause.
-     * @property progress Position in percent of [durationMs]; `0` when the duration is unknown.
+     * @property progress Позиция в процентах от [durationMs]; `0`, если длительность неизвестна.
      */
     data class Ready(
         val trackKey: String,

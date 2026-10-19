@@ -3,7 +3,7 @@ package com.jayelmeynak.lib.navigation
 import androidx.navigation3.runtime.NavKey
 
 /**
- * Moves between screens by [NavKey]. Implemented by `app`; features get it through [EntryInstaller].
+ * Переходы между экранами по [NavKey]. Реализует `app`; фичи получают его через [EntryInstaller].
  */
 public interface Navigator {
 
@@ -15,7 +15,7 @@ public interface Navigator {
      */
     public fun navigateTo(destination: NavKey)
 
-    /** Pops the current back stack. */
+    /** Снимает верх текущего back stack. */
     public fun goBack()
 
     /**

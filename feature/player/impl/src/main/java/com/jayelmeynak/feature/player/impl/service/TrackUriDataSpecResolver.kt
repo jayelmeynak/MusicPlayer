@@ -14,11 +14,12 @@ import java.io.InterruptedIOException
 import javax.inject.Inject
 
 /**
- * Turns the internal track URI of a session item into a playable one right before the player
- * opens it, so an expiring Deezer URL is fresh for every item and every reopen (seek, retry).
+ * Превращает внутренний URI трека элемента сессии в играбельный прямо перед тем, как плеер его
+ * откроет, — так истекающий URL Deezer свеж для каждого элемента и каждого переоткрытия (перемотка,
+ * повтор).
  *
- * Runs on the loader thread, which may block: [runBlocking] waits for the suspending resolver.
- * Interrupting the thread (a cancelled load) cancels the resolver.
+ * Работает на потоке загрузчика, который можно блокировать: [runBlocking] ждёт suspend-резолвер.
+ * Прерывание потока (отменённая загрузка) отменяет резолвер.
  *
  * `null` резолвера (в том числе по его таймауту) — неповторяемая ошибка: плеер сразу встаёт в
  * ошибку источника, без повторных загрузок.
@@ -49,7 +50,7 @@ internal class TrackUriDataSpecResolver @Inject constructor(
         } catch (e: IOException) {
             throw e
         } catch (e: Exception) {
-            // The contract says resolvers do not throw; a broken one still fails as a load error.
+            // По контракту резолверы не бросают; сломанный всё равно падает как ошибка загрузки.
             throw IOException("Resolving ${key.source} ${key.id} failed", e)
         } ?: throw FileNotFoundException("Track ${key.source} ${key.id} is unavailable")
         return dataSpec.withUri(uri.toUri())

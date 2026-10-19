@@ -11,14 +11,14 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-/** Creates the player of one [PlayBackService] instance; the service releases it. */
+/** Создаёт плеер одного экземпляра [PlayBackService]; его освобождает сервис. */
 internal fun interface PlayerFactory {
     fun create(): ExoPlayer
 }
 
 /**
- * Music attributes with audio focus, pause on unplugged headphones, and media loaded through
- * [TrackUriDataSpecResolver], so queue items carry no URL.
+ * Музыкальные атрибуты с аудиофокусом, пауза при отключении наушников и загрузка медиа через
+ * [TrackUriDataSpecResolver], поэтому элементы очереди не несут URL.
  */
 @OptIn(UnstableApi::class)
 internal class ExoPlayerFactory @Inject constructor(

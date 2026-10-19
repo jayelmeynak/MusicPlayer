@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
 
 /**
- * Room via KSP. Applied on top of an Android module plugin (e.g. `musicplayer.lib`).
+ * Room через KSP. Применяется поверх плагина Android-модуля (например, `musicplayer.lib`).
  */
 class RoomConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {

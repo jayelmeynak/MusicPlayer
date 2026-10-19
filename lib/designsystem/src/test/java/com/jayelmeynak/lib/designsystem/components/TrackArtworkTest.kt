@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
-/** Robolectric: `Uri`. */
+/** Robolectric: нужен `Uri`. */
 @RunWith(RobolectricTestRunner::class)
 class TrackArtworkTest {
 

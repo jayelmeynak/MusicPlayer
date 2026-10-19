@@ -30,10 +30,11 @@ import com.jayelmeynak.lib.designsystem.components.SeekSlider
 import com.jayelmeynak.lib.navigation.Navigator
 
 /**
- * The current track over the tab content; draws nothing until the playback session is connected
- * and while the queue is empty. A click opens [PlayerDestination] through [navigator].
+ * Текущий трек поверх содержимого вкладки; ничего не рисует, пока в снапшоте сессии нет своего
+ * текущего трека (`Idle`, `ConnectionFailed`, пустая очередь); последний снапшот без подключения
+ * виден. Клик открывает [PlayerDestination] через [navigator].
  *
- * Call it outside the navigation entries: its view model then lives as long as the Activity.
+ * Вызывать вне записей навигации: тогда его view model живёт столько же, сколько Activity.
  */
 @Composable
 public fun MiniPlayer(

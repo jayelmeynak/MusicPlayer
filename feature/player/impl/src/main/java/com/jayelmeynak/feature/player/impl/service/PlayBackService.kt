@@ -21,18 +21,18 @@ import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 /**
- * Owns the player and the media session for its lifetime: both are created in [onCreate] and
- * released in [onDestroy], so a service started again in the same process starts with a new
- * working pair. The app UI reaches them only through a `MediaController`. The standard Media3
- * notification follows the session and puts the service in the foreground while playback is
- * ongoing; nothing calls `startForeground` by hand.
+ * Владеет плеером и медиасессией на время своей жизни: оба создаются в [onCreate] и освобождаются
+ * в [onDestroy], так что сервис, запущенный повторно в том же процессе, начинает с новой рабочей
+ * парой. UI приложения достаёт их только через `MediaController`. Стандартное уведомление Media3
+ * следует за сессией и переводит сервис в foreground, пока идёт воспроизведение; `startForeground`
+ * вручную никто не вызывает.
  *
  * Новая сессия поднимает сохранённую очередь на паузе ([SessionRestorer]), сессия сохраняет очередь
  * и позицию ([PlaybackPersistence]); play медиакнопкой после смерти процесса стартует сервис через
  * [PlaybackMediaButtonReceiver] и продолжает сохранённый трек.
  *
- * [onTaskRemoved] is not overridden on purpose (owner's decision): the Media3 default keeps the
- * service while playing and stops it otherwise.
+ * [onTaskRemoved] намеренно не переопределён (решение владельца): по умолчанию Media3 оставляет
+ * сервис, пока идёт воспроизведение, и останавливает в остальных случаях.
  */
 @UnstableApi
 @AndroidEntryPoint
@@ -72,9 +72,9 @@ internal class PlayBackService : MediaSessionService() {
         val player = playerFactory.create()
         setListener(object : Listener {
             /**
-             * Android 12+ refuses a foreground start from the background (e.g. a play command
-             * from a Bluetooth device long after the app was left). Sound without a notification
-             * and a foreground service is not allowed: pause instead.
+             * Android 12+ запрещает старт foreground из фона (например, команда play с
+             * Bluetooth-устройства спустя долгое время после ухода из приложения). Звук без
+             * уведомления и foreground-сервиса недопустим: вместо этого — пауза.
              */
             override fun onForegroundServiceStartNotAllowedException() {
                 Log.w(TAG, "Foreground start not allowed, pausing playback")

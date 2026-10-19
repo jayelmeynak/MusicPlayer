@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.jayelmeynak.feature.player.impl"
 
-    // Compose UI tests on Robolectric need the merged manifest with the test ComponentActivity.
+    // Compose UI-тестам на Robolectric нужен объединённый манифест с тестовой ComponentActivity.
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }

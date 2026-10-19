@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.musicplayer.feature.api)
     alias(libs.plugins.kotlin.serialization)
-    // FakePlaybackController and FakeTrackUriResolver for tests of modules that use the player.
+    // FakePlaybackController и FakeTrackUriResolver для тестов модулей, работающих с плеером.
     `java-test-fixtures`
 }
 

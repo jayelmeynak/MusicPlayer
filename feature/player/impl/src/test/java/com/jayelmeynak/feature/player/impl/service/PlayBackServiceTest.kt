@@ -55,19 +55,19 @@ import org.robolectric.shadows.ShadowLooper
 import java.io.FileNotFoundException
 
 /**
- * Robolectric runs the real MediaSessionService and an in-process MediaController against it.
- * Hilt is replaced by [PlayBackServiceTestApplication], which injects a player factory that builds
- * test ExoPlayers and records them.
+ * Robolectric поднимает настоящий MediaSessionService и внутрипроцессный MediaController к нему.
+ * Hilt заменён на [PlayBackServiceTestApplication]: он внедряет фабрику плеера, которая строит
+ * тестовые ExoPlayer и запоминает их.
  *
  * Часы тестовых плееров стоят (`FakeClock` без автопродвижения): позиция не уходит вперёд, пока
  * лупер крутится, и проверки не зависят от скорости машины. Каждый созданный сервис уничтожается в
  * [tearDown], даже если тест упал: сессия, не освобождённая в `onDestroy`, держит свой ID в
  * статическом реестре Media3, и следующий тест падает на создании сессии.
  *
- * The replacement relies on Hilt internals, checked with Hilt 2.59.2: the generated
+ * Замена опирается на внутренности Hilt, проверено на Hilt 2.59.2: сгенерированный
  * `PlayBackService_GeneratedInjector`, `dagger.hilt.android.internal.builders.ServiceComponentBuilder`
- * and `ServiceComponentManager.ServiceComponentBuilderEntryPoint`. A Hilt update that changes them
- * breaks compilation or [Robolectric.buildService] here, not the app.
+ * и `ServiceComponentManager.ServiceComponentBuilderEntryPoint`. Обновление Hilt, которое их меняет,
+ * ломает компиляцию или [Robolectric.buildService] здесь, а не приложение.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = PlayBackServiceTestApplication::class)
@@ -165,9 +165,9 @@ class PlayBackServiceTest {
     }
 
     /**
-     * End to end through the real service and its callback. Under Robolectric an in-process
-     * controller is also `isTrusted`, so this does not tell the own-uid branch of the access policy
-     * from the trusted one; that branch is covered by `PlaybackSessionCallbackTest`.
+     * Сквозная проверка через настоящий сервис и его колбэк. Под Robolectric внутрипроцессный
+     * контроллер ещё и `isTrusted`, поэтому ветку «свой uid» политики доступа здесь не отличить от
+     * ветки доверенных; её покрывает `PlaybackSessionCallbackTest`.
      */
     @Test
     fun `контроллер своего приложения подключается к сервису и читает очередь`() {
@@ -406,9 +406,9 @@ class PlayBackServiceTest {
 }
 
 /**
- * Stands in for the Hilt application: hands every [PlayBackService] a factory of test players
- * (recorded in [players]), the real session callback and a bitmap loader, without a generated
- * Hilt test component.
+ * Заменяет Hilt-приложение: даёт каждому [PlayBackService] фабрику тестовых плееров (запоминаются
+ * в [players]), настоящий колбэк сессии и загрузчик bitmap — без сгенерированного тестового
+ * компонента Hilt.
  */
 class PlayBackServiceTestApplication : Application(), GeneratedComponentManager<Any> {
 

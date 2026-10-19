@@ -27,8 +27,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
 /**
- * Robolectric runs a test ExoPlayer: media from [FakeMediaSourceFactory] (or the real data source
- * stack for the error case), time from the auto-advancing fake clock.
+ * Robolectric крутит тестовый ExoPlayer: медиа — из [FakeMediaSourceFactory] (или настоящего стека
+ * data source для случая ошибки), время — из автопродвигаемых фейковых часов.
  */
 @RunWith(RobolectricTestRunner::class)
 class PlaybackStateMappingTest {

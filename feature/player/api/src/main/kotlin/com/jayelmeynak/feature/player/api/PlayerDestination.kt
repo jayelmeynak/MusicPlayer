@@ -4,8 +4,8 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /**
- * The player screen: shows the current item of [PlaybackController]. To play a list, call
- * [PlaybackController.play] and then navigate here.
+ * Экран плеера: показывает текущий элемент [PlaybackController]. Чтобы сыграть список, вызови
+ * [PlaybackController.play], затем перейди сюда.
  */
 @Serializable
 public data object PlayerDestination : NavKey

@@ -1,12 +1,12 @@
 package com.jayelmeynak.feature.player.api
 
 /**
- * Gives the player a playable URI for a track of one [TrackSource]; the player picks the resolver
- * by [QueueItem.source] and passes [QueueItem.id].
+ * Даёт плееру играбельный URI трека одного [TrackSource]; плеер выбирает резолвер по
+ * [QueueItem.source] и передаёт [QueueItem.id].
  *
- * The player calls it right before loading each item, off the main thread (on the loader thread),
- * so the result may expire soon after. An implementation may cache URIs for less than their
- * lifetime.
+ * Плеер вызывает его прямо перед загрузкой каждого элемента, не на главном потоке (на потоке
+ * загрузчика), поэтому результат может вскоре истечь. Реализация может кэшировать URI на срок
+ * меньше их жизни.
  *
  * Резолверы подключаются к плееру набором (`@Binds @IntoSet` в Hilt-модуле); плеер раскладывает
  * их по [source] при создании и падает, если у источника нет резолвера или их два.
@@ -17,8 +17,8 @@ public interface TrackUriResolver {
     public val source: TrackSource
 
     /**
-     * A playable URI for the track [id], or `null` if the track cannot be played now (no network,
-     * no access, removed track). Never throws, except [kotlin.coroutines.cancellation.CancellationException].
+     * Играбельный URI трека [id] или `null`, если трек сейчас не сыграть (нет сети, нет доступа,
+     * трек удалён). Не бросает исключений, кроме [kotlin.coroutines.cancellation.CancellationException].
      */
     public suspend fun resolve(id: String): String?
 }

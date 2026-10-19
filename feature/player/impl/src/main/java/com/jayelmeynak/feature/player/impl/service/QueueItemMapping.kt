@@ -10,22 +10,22 @@ import com.jayelmeynak.feature.player.api.TrackSource
 import com.jayelmeynak.feature.player.api.key
 
 /**
- * MediaMetadata extras key for the full track length in ms. Not durationMs: for Deezer the media is
- * a 30-second preview, and Media3 shows durationMs in system controls until the player knows better.
+ * Ключ extras в MediaMetadata для полной длины трека, мс. Не durationMs: у Deezer медиа — 30-секундное
+ * превью, а Media3 показывает durationMs в системных контролах, пока плеер не узнает точнее.
  */
 internal const val EXTRA_TRACK_DURATION_MS = "com.jayelmeynak.player.TRACK_DURATION_MS"
 
-/** Scheme of the URI the session gives a queue item; only the player's data source reads it. */
+/** Схема URI, который сессия даёт элементу очереди; читает его только data source плеера. */
 internal const val TRACK_URI_SCHEME = "musicplayer-track"
 
 private const val MEDIA_ID_SEPARATOR = '|'
 
-/** What identifies a track for [com.jayelmeynak.feature.player.api.TrackUriResolver]. */
+/** То, что идентифицирует трек для [com.jayelmeynak.feature.player.api.TrackUriResolver]. */
 internal data class TrackKey(val source: TrackSource, val id: String)
 
 /**
- * The queue item as a session item: `mediaId` = [QueueItem.key] (`SOURCE|id`), title, artist and artwork in the
- * metadata, the full length in extras. No URI: the session sets its own in `onAddMediaItems`.
+ * Элемент очереди как элемент сессии: `mediaId` = [QueueItem.key] (`SOURCE|id`), название, исполнитель и обложка —
+ * в метаданных, полная длина — в extras. Без URI: сессия ставит свой в `onAddMediaItems`.
  */
 internal fun QueueItem.toMediaItem(): MediaItem = MediaItem.Builder()
     .setMediaId(key)
@@ -39,7 +39,7 @@ internal fun QueueItem.toMediaItem(): MediaItem = MediaItem.Builder()
     )
     .build()
 
-/** The queue item back from a session item, or `null` if the item was not made by [toMediaItem]. */
+/** Элемент очереди обратно из элемента сессии или `null`, если элемент сделан не [toMediaItem]. */
 internal fun MediaItem.toQueueItem(): QueueItem? {
     val key = trackKey() ?: return null
     return QueueItem(
@@ -52,7 +52,7 @@ internal fun MediaItem.toQueueItem(): QueueItem? {
     )
 }
 
-/** The track behind a session item, read from its `mediaId`; `null` for a foreign item. */
+/** Трек элемента сессии, прочитанный из его `mediaId`; `null` — для чужого элемента. */
 internal fun MediaItem.trackKey(): TrackKey? {
     val separator = mediaId.indexOf(MEDIA_ID_SEPARATOR)
     if (separator <= 0) return null
@@ -61,14 +61,14 @@ internal fun MediaItem.trackKey(): TrackKey? {
     return TrackKey(source, id)
 }
 
-/** `musicplayer-track://SOURCE/<encoded id>`: never leaves the player. */
+/** `musicplayer-track://SOURCE/<encoded id>`: никогда не покидает плеер. */
 internal fun TrackKey.toTrackUri(): Uri = Uri.Builder()
     .scheme(TRACK_URI_SCHEME)
     .authority(source.name)
     .appendPath(id)
     .build()
 
-/** The track behind a URI made by [toTrackUri], or `null` for any other URI. */
+/** Трек URI, сделанного [toTrackUri], или `null` для любого другого URI. */
 internal fun Uri.toTrackKey(): TrackKey? {
     if (scheme != TRACK_URI_SCHEME) return null
     val source = authority?.let(::trackSourceOf) ?: return null

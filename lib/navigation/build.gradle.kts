@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.musicplayer.lib.jvm)
-    // FakeNavigator for tests of modules that navigate.
+    // FakeNavigator для тестов модулей с навигацией.
     `java-test-fixtures`
 }
 

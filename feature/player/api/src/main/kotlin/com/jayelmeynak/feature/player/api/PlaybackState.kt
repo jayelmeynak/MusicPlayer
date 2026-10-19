@@ -1,10 +1,10 @@
 package com.jayelmeynak.feature.player.api
 
 /**
- * What the player is doing, as a snapshot of the playback session.
+ * Что делает плеер — снапшот сессии воспроизведения.
  *
- * The playback position is not part of it: it changes every moment and is published separately
- * in [PlaybackController.positionMs].
+ * Позиции в нём нет: она меняется каждый миг и публикуется отдельно в
+ * [PlaybackController.positionMs].
  */
 public sealed interface PlaybackState {
 
@@ -18,22 +18,22 @@ public sealed interface PlaybackState {
     public data object ConnectionFailed : PlaybackState
 
     /**
-     * Connected to the playback session.
+     * Подключено к сессии воспроизведения.
      *
-     * @property queue The current queue; empty when nothing was asked to play.
-     * @property currentIndex Index of the current item in [queue].
-     * @property isPlaying The position is advancing right now.
-     * @property playWhenReady Playback is requested: `true` while playing and while buffering
-     *   before playing, `false` on pause.
-     * @property isBuffering The player is loading the current item and cannot play yet.
+     * @property queue Текущая очередь; пустая, если ничего не просили играть.
+     * @property currentIndex Индекс текущего элемента в [queue].
+     * @property isPlaying Позиция идёт прямо сейчас.
+     * @property playWhenReady Воспроизведение запрошено: `true` во время игры и буферизации перед
+     *   ней, `false` на паузе.
+     * @property isBuffering Плеер загружает текущий элемент и пока не может играть.
      * @property showPlayButton Тап по play/pause запустит воспроизведение — то же правило, что у
      *   [PlaybackController.togglePlayPause]. `true` на паузе, после ошибки, в конце очереди и
      *   когда воспроизведение запрошено, но подавлено (например, потерян аудиофокус:
      *   [playWhenReady] = `true`, а тап возобновит звук); `false`, пока воспроизведение запрошено
      *   и не подавлено, в том числе во время буферизации. Иконку
      *   play/pause рисовать по нему, а не по [isPlaying].
-     * @property durationMs Duration of the current item as the player reports it; `0` when unknown.
-     * @property error The reason playback stopped, or `null`.
+     * @property durationMs Длительность текущего элемента по данным плеера; `0`, если неизвестна.
+     * @property error Причина остановки воспроизведения или `null`.
      * @property isConnected `false` — последний известный снапшот, контроллер сейчас не подключён
      *   (приложение в фоне, сессия переподключается или ещё восстанавливает очередь): показывать
      *   можно; команды игнорируются, пока нет подключения (см. [PlaybackController]).
@@ -50,12 +50,12 @@ public sealed interface PlaybackState {
         val isConnected: Boolean = true,
     ) : PlaybackState {
 
-        /** The item at [currentIndex], or `null` if the index is outside [queue]. */
+        /** Элемент [currentIndex] или `null`, если индекс вне [queue]. */
         public val current: QueueItem? get() = queue.getOrNull(currentIndex)
     }
 }
 
-/** Why playback failed, without player library types. */
+/** Почему воспроизведение упало — без типов библиотеки плеера. */
 public enum class PlaybackError {
     /**
      * Трек не загрузился: резолвер не дал ссылку ([TrackUriResolver] вернул `null`, в том числе без
@@ -66,6 +66,6 @@ public enum class PlaybackError {
     /** Поток трека не загрузился из-за сети: нет подключения или истекло ожидание соединения. */
     NETWORK,
 
-    /** Any other player error. */
+    /** Любая другая ошибка плеера. */
     UNKNOWN,
 }

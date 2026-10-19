@@ -16,7 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-// Robolectric hosts the Compose test rule: the project has no instrumented tests.
+// Compose test rule — на Robolectric.
 @RunWith(RobolectricTestRunner::class)
 class SeekSliderTest {
 
@@ -48,7 +48,7 @@ class SeekSliderTest {
     fun `во время жеста ползунок показывает позицию пальца, а не прогресс плеера`() {
         setSlider(progress = 10f)
 
-        // The first move only passes the touch slop; the slider follows from the second one.
+        // Первый сдвиг лишь проходит touch slop; слайдер следует за пальцем со второго.
         slider().performTouchInput {
             down(percentOffset(0.1f, 0.5f))
             moveTo(percentOffset(0.3f, 0.5f))

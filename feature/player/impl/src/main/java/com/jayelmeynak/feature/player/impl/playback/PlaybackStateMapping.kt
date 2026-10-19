@@ -11,14 +11,15 @@ import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.impl.service.toQueueItem
 
-/** The player's items as queue items; `null` for an item this app did not add. */
+/** Элементы плеера как элементы очереди; `null` — для элемента, добавленного не этим приложением. */
 internal fun Player.readQueue(): List<QueueItem?> =
     (0 until mediaItemCount).map { index -> getMediaItemAt(index).toQueueItem() }
 
 /**
- * The whole player state at once, so the queue, the current index and the flags always agree.
- * [queue] is [readQueue], passed in to rebuild it only when the timeline changes. Foreign items are
- * left out of the queue; if the current item is foreign, [PlaybackState.Active.current] is `null`.
+ * Всё состояние плеера разом, чтобы очередь, текущий индекс и флаги всегда сходились.
+ * [queue] — результат [readQueue], передаётся снаружи, чтобы пересобирать его только при смене
+ * timeline. Чужие элементы в очередь не попадают; если текущий элемент чужой,
+ * [PlaybackState.Active.current] — `null`.
  */
 @OptIn(UnstableApi::class)
 internal fun Player.toPlaybackState(queue: List<QueueItem?> = readQueue()): PlaybackState.Active {
@@ -56,6 +57,6 @@ private val NETWORK_ERROR_CODES = setOf(
     PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
 )
 
-/** Media3 groups error codes by thousands; 2xxx are input/output errors. */
+/** Media3 группирует коды ошибок по тысячам; 2xxx — ошибки ввода-вывода. */
 private const val ERROR_GROUP = 1000
 private const val IO_ERROR_GROUP = PlaybackException.ERROR_CODE_IO_UNSPECIFIED / ERROR_GROUP

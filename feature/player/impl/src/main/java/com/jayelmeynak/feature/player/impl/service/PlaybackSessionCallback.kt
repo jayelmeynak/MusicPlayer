@@ -21,15 +21,15 @@ import java.util.Collections
 import javax.inject.Inject
 
 /**
- * Decides who may connect to the session and accepts queue items from controllers.
+ * Решает, кто может подключиться к сессии, и принимает элементы очереди от контроллеров.
  *
- * Connections follow [access]: this app and controllers trusted by the system get every command,
- * everyone else is rejected, so no other app reads the queue (the user's library) or drives the
- * player.
+ * Подключения следуют [access]: это приложение и контроллеры, которым доверяет система, получают все
+ * команды, остальные отклоняются — так ни одно другое приложение не читает очередь (библиотеку
+ * пользователя) и не управляет плеером.
  *
- * Items come without a URI (see [toMediaItem]); each one gets the internal track URI, and
- * [TrackUriDataSpecResolver] asks the resolver of its source for the playable URL right before
- * loading it. A URI that comes with an item is never opened.
+ * Элементы приходят без URI (см. [toMediaItem]); каждый получает внутренний URI трека, а
+ * [TrackUriDataSpecResolver] прямо перед загрузкой просит у резолвера его источника играбельный URL.
+ * URI, пришедший вместе с элементом, никогда не открывается.
  *
  * Возобновление ([onPlaybackResumption]) отдаёт сохранённую очередь. Media3 зовёт его на play при
  * пустом плеере — от принятого контроллера (по политике выше) или от медиакнопки, пришедшей в
@@ -55,7 +55,8 @@ internal class PlaybackSessionCallback @Inject constructor(
     ): MediaSession.ConnectionResult = when (controller.access()) {
         ControllerAccess.FULL -> MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
         ControllerAccess.NONE -> {
-            // A platform controller is asked again on every command (e.g. each media key press).
+            // Платформенный контроллер спрашивается заново на каждую команду
+            // (например, на каждое нажатие медиаклавиши).
             if (loggedRejectedUids.add(controller.uid)) {
                 Log.w(TAG, "Rejected controller ${controller.packageName} (uid=${controller.uid})")
             }
@@ -107,18 +108,18 @@ internal class PlaybackSessionCallback @Inject constructor(
     }
 
     /**
-     * An item of this app gets the internal URI of its track. Any other item gets an internal URI
-     * that never resolves, even if it carries its own URI: playing a `file://`, an arbitrary
-     * `content://` provider or a URL as is would open it with this app's permissions. Loading such
-     * an item fails with a player error (the player stops in IDLE with the error, it does not skip
-     * to the next item), and the rest of the queue stays in place.
+     * Элемент этого приложения получает внутренний URI своего трека. Любой другой — внутренний URI,
+     * который никогда не резолвится, даже если у элемента есть свой URI: сыграть `file://`,
+     * произвольный провайдер `content://` или URL как есть значило бы открыть их с разрешениями этого
+     * приложения. Загрузка такого элемента падает ошибкой плеера (плеер встаёт в IDLE с ошибкой и не
+     * переходит к следующему элементу), остальная очередь остаётся на месте.
      */
     fun prepareMediaItems(mediaItems: List<MediaItem>): List<MediaItem> = mediaItems.map { it.withTrackUri() }
 
     private companion object {
         const val TAG = "PlaybackSessionCallback"
 
-        /** Uids whose rejection is already logged in this process: one line per uid, not per key. */
+        /** Uid, чей отказ уже залогирован в этом процессе: одна строка на uid, а не на каждую клавишу. */
         val loggedRejectedUids: MutableSet<Int> = Collections.synchronizedSet(HashSet())
     }
 }

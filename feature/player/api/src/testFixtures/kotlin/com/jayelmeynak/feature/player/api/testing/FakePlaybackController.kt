@@ -34,7 +34,7 @@ public class FakePlaybackController(
 
     private val recorded = mutableListOf<Command>()
 
-    /** Calls in call order. */
+    /** Вызовы в порядке вызова. */
     public val commands: List<Command> get() = recorded.toList()
 
     /**
@@ -135,7 +135,7 @@ public class FakePlaybackController(
         )
     }
 
-    /** A call to one of the [PlaybackController] commands. */
+    /** Вызов одной из команд [PlaybackController]. */
     public sealed interface Command {
         public data class Play(val queue: List<QueueItem>, val startIndex: Int) : Command
         public data object TogglePlayPause : Command

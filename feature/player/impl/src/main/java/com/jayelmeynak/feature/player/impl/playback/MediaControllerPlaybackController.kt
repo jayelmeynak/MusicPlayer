@@ -45,14 +45,14 @@ internal const val MAX_CONNECT_ATTEMPTS = 4
 internal const val CONNECT_RETRY_BASE_MS = 500L
 
 /**
- * [PlaybackController] over a [MediaController] of the playback session: one controller per
- * process, connected while the process lifecycle is started (an Activity is visible) and released
- * on stop, so the session's service can stop in the background. A rotation does not reconnect.
+ * [PlaybackController] поверх [MediaController] сессии воспроизведения: один контроллер на процесс,
+ * подключён, пока lifecycle процесса в STARTED (видна какая-то Activity), и освобождается на stop,
+ * чтобы сервис сессии мог остановиться в фоне. Поворот экрана не переподключает.
  *
- * The state is a snapshot of the session player rebuilt on every player event: after a reconnect
- * the UI gets the current track, queue and position without any restore code. The position is
- * polled only while playing. All calls come on the main thread, like the controller's callbacks;
- * the first injection must happen on the main thread too, since it observes the process lifecycle.
+ * Состояние — снапшот плеера сессии, пересобираемый на каждое событие плеера: после переподключения
+ * UI получает текущий трек, очередь и позицию без кода восстановления. Позиция опрашивается только
+ * во время воспроизведения. Все вызовы — на главном потоке, как и колбэки контроллера; первая
+ * инъекция тоже должна быть на главном потоке: она подписывается на lifecycle процесса.
  *
  * Без подключения (фон, переподключение) [state] держит последний снапшот с `isConnected = false`:
  * мини-плеер и экран не мигают пустотой. Сессия, которая ещё поднимает сохранённую очередь
@@ -63,7 +63,7 @@ internal const val CONNECT_RETRY_BASE_MS = 500L
  * [CONNECT_RETRY_BASE_MS], удваивая её, до [MAX_CONNECT_ATTEMPTS] попыток, потом —
  * [PlaybackState.ConnectionFailed]; следующий выход на передний план или [play] начинает заново.
  *
- * Public only for the binding in `:di`; nothing outside the module can create it.
+ * Публичный только ради привязки в `:di`; вне модуля его не создать.
  */
 @Singleton
 @MainThread
@@ -97,7 +97,7 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         override fun onStop(owner: LifecycleOwner) = disconnect()
     }
 
-    /** The session went away (e.g. its service was destroyed): reconnect while the app is visible. */
+    /** Сессия пропала (например, её сервис уничтожен): переподключиться, пока приложение видно. */
     private val controllerListener = object : MediaController.Listener {
         override fun onDisconnected(controller: MediaController) {
             if (controller !== this@MediaControllerPlaybackController.controller) return
@@ -142,9 +142,9 @@ public class MediaControllerPlaybackController @Inject internal constructor(
     }
 
     /**
-     * Replaces the queue and plays [startIndex] from the start. The same queue with the same
-     * current item keeps playing from where it is (a paused or stopped one resumes), so tapping
-     * the playing track in a list neither restarts nor pauses it.
+     * Заменяет очередь и играет [startIndex] с начала. Та же очередь с тем же текущим элементом
+     * играет дальше с текущего места (на паузе или остановленная — возобновляется), так что тап
+     * по играющему треку в списке не перезапускает его и не ставит на паузу.
      */
     override fun play(queue: List<QueueItem>, startIndex: Int) {
         require(startIndex in queue.indices) { "startIndex $startIndex is not in the queue of ${queue.size}" }
@@ -193,7 +193,7 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         attempts++
         val future = connector.connect(controllerListener)
         controllerFuture = future
-        // The future completes on the main thread, where the controller lives.
+        // Future завершается на главном потоке, где живёт контроллер.
         future.addListener({ onConnected(future) }, MoreExecutors.directExecutor())
     }
 
@@ -217,8 +217,8 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         val request = pendingPlay
         pendingPlay = null
         if (request != null) {
-            // Publishes the snapshot with the new queue: a deferred play never shows the empty
-            // queue of a fresh session, which would close the player screen.
+            // Публикует снапшот с новой очередью: отложенный play не покажет пустую очередь свежей
+            // сессии, которая закрыла бы экран плеера.
             start(connected, request)
         } else {
             queue = connected.readQueue()
@@ -255,7 +255,7 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         controllerFuture?.let(MediaController::releaseFuture)
         controllerFuture = null
         sessionReady = false
-        // A tap that never got connected is dropped: it must not start playing hours later.
+        // Тап, так и не дождавшийся подключения, отбрасывается: он не должен запустить игру через несколько часов.
         pendingPlay = null
         queue = emptyList()
         // Последний снапшот остаётся видимым, но помечен: команды до сессии не дойдут.
@@ -278,8 +278,8 @@ public class MediaControllerPlaybackController @Inject internal constructor(
         controller.prepare()
         controller.play()
         _positionMs.value = 0L
-        // The controller masks the commands at once; publish now, not on the next player event,
-        // so a screen opened right after this call and a repeated tap see the new queue.
+        // Контроллер маскирует команды сразу; публикуем сейчас, а не на следующем событии плеера,
+        // чтобы экран, открытый сразу после вызова, и повторный тап видели новую очередь.
         queue = controller.readQueue()
         publish(controller)
     }

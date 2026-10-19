@@ -30,7 +30,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-/** Robolectric: DataSpec holds an android.net.Uri. */
+/** Robolectric: DataSpec держит android.net.Uri. */
 @RunWith(RobolectricTestRunner::class)
 class TrackUriDataSpecResolverTest {
 

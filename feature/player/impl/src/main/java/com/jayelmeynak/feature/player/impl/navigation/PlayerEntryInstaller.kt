@@ -10,7 +10,7 @@ import com.jayelmeynak.lib.navigation.EntryInstaller
 import com.jayelmeynak.lib.navigation.Navigator
 import javax.inject.Inject
 
-/** Registers the player screen. Public only for the binding in `:di`. */
+/** Регистрирует экран плеера. Публичный только ради привязки в `:di`. */
 public class PlayerEntryInstaller @Inject internal constructor() : EntryInstaller {
 
     override fun EntryProviderScope<NavKey>.install(navigator: Navigator) {

@@ -3,7 +3,7 @@ package com.jayelmeynak.util.coroutines
 import javax.inject.Qualifier
 
 /**
- * Scope that lives as long as the application process.
+ * Scope, живущий столько же, сколько процесс приложения.
  */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)

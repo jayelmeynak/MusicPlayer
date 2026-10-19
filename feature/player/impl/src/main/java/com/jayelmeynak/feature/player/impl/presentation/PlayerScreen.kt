@@ -175,7 +175,7 @@ private fun PlayerContent(
     }
 }
 
-/** `MM:SS` of [durationMs]. */
+/** [durationMs] в виде `MM:SS`. */
 internal fun formatDuration(durationMs: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs) - TimeUnit.MINUTES.toSeconds(minutes)

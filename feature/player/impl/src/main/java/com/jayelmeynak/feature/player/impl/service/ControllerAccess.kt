@@ -6,41 +6,43 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 
 /**
- * Whether a controller may connect to the playback session.
+ * Может ли контроллер подключиться к сессии воспроизведения.
  *
- * The session queue is the visible list of a screen, up to the user's whole local library (titles,
- * artists, `content://` ids), so it is readable only by controllers the user or the system trusts.
+ * Очередь сессии — видимый список экрана, вплоть до всей локальной библиотеки пользователя (названия,
+ * исполнители, `content://` id), поэтому читать её могут только контроллеры, которым доверяет
+ * пользователь или система.
  *
- * Access is binary on purpose. Any accepted connection, even one with a reduced command set, hands
- * the controller the platform session token, and the platform session publishes the current
- * metadata and the queue to every holder of that token, bypassing the command set. A
- * "transport only" level would leak the queue again. Playback resumption and media buttons
- * (a later stage) must come through the trusted system path, not through a new access level.
+ * Доступ намеренно двоичный. Любое принятое подключение, даже с урезанным набором команд, отдаёт
+ * контроллеру токен платформенной сессии, а платформенная сессия публикует текущие метаданные и
+ * очередь каждому держателю токена в обход набора команд. Уровень «только транспорт» снова отдал бы
+ * очередь. Медиакнопки при живой сессии идут через систему; возобновление после смерти процесса —
+ * через [PlaybackMediaButtonReceiver], а не через новый уровень доступа.
  */
 internal enum class ControllerAccess {
-    /** Every command, including reading the queue and its metadata. */
+    /** Все команды, включая чтение очереди и её метаданных. */
     FULL,
 
-    /** The connection is rejected: no commands, nothing to read. */
+    /** Подключение отклонено: ни команд, ни чтения. */
     NONE,
 }
 
 /**
- * The access policy of the playback session:
- * - this app (same uid): the UI controller and the Media3 notification controller;
- * - controllers trusted by the system ([MediaSession.ControllerInfo.isTrusted]): System UI, the
- *   system media key dispatcher, Bluetooth, apps holding `MEDIA_CONTENT_CONTROL` or with an enabled
- *   notification listener. Media3 checks this by the caller's uid and pid. A Media3 controller of
- *   another uid must also have its package name verified against that uid; platform (legacy)
- *   controllers cannot always be verified and are judged by trust alone;
- * - everyone else, platform controllers included, gets [ControllerAccess.NONE]. Headset and
- *   Bluetooth keys and the notification shade reach the session through the notification
- *   controller or the system, which are covered above; an untrusted app can get the platform
- *   session token only by browsing this service, and that path asks this policy too. Third-party
- *   media key remappers that dispatch keys as themselves (not as the system) are rejected too.
+ * Политика доступа к сессии воспроизведения:
+ * - это приложение (тот же uid): контроллер UI и контроллер уведомления Media3;
+ * - контроллеры, которым доверяет система ([MediaSession.ControllerInfo.isTrusted]): System UI,
+ *   системный диспетчер медиаклавиш, Bluetooth, приложения с `MEDIA_CONTENT_CONTROL` или с
+ *   включённым notification listener. Media3 проверяет это по uid и pid вызывающего. У
+ *   Media3-контроллера другого uid имя пакета ещё должно быть проверено по этому uid; платформенные
+ *   (legacy) контроллеры проверить можно не всегда, их судят только по доверию;
+ * - все остальные, включая платформенные контроллеры, получают [ControllerAccess.NONE]. Клавиши
+ *   гарнитуры и Bluetooth и шторка уведомлений доходят до сессии через контроллер уведомления или
+ *   систему — они покрыты выше; недоверенное приложение может получить токен платформенной сессии,
+ *   только подключившись к этому сервису как browser, и этот путь тоже спрашивает политику.
+ *   Сторонние переназначатели медиаклавиш, шлющие клавиши от себя (а не от системы), тоже
+ *   отклоняются.
  *
- * Reads only fields of [MediaSession.ControllerInfo]: for platform controllers `onConnect` may block
- * the main thread.
+ * Читает только поля [MediaSession.ControllerInfo]: для платформенных контроллеров `onConnect` может
+ * блокировать главный поток.
  */
 @OptIn(UnstableApi::class)
 internal fun MediaSession.ControllerInfo.access(ownUid: Int = Process.myUid()): ControllerAccess = when {

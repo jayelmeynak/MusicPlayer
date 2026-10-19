@@ -29,7 +29,7 @@ fun rememberNavigationState(
     val currentTab = rememberSaveable(saver = currentTabSaver(startTab, tabs)) {
         mutableStateOf(startTab)
     }
-    // Keyed by tab, so each stack is saved under its tab rather than its position in the list.
+    // Ключ — вкладка: стек сохраняется под своей вкладкой, а не под позицией в списке.
     val backStacks = tabs.associateWith { tab -> key(tab.name) { rememberNavBackStack(tab.root) } }
     return remember(startTab, tabs) {
         NavigationState(
@@ -79,13 +79,13 @@ class NavigationState(
 }
 
 /**
- * The entries `NavDisplay` shows: the stacks in [NavigationState.stacksInUse].
+ * Записи, которые показывает `NavDisplay`: стеки из [NavigationState.stacksInUse].
  *
- * All stacks are decorated as one list. A key lives in one stack at a time, so a screen moved to
- * another tab's stack stays in that list and is not popped: its ViewModelStore and saved state
- * survive the move. With a decoration per stack the old stack would see the key leave and pop it,
- * clearing the state the new stack has just picked up. Screens of the hidden tab stay decorated, so
- * they live on while the tab is not shown.
+ * Все стеки декорируются одним списком. Ключ живёт в одном стеке за раз, поэтому экран, перенесённый
+ * в стек другой вкладки, остаётся в этом списке и не снимается: его ViewModelStore и сохранённое
+ * состояние переживают перенос. С декорацией на каждый стек старый стек увидел бы уход ключа и снял
+ * его, стерев состояние, которое только что подхватил новый. Экраны скрытой вкладки остаются
+ * задекорированными и живут, пока вкладка не показана.
  */
 @Composable
 fun NavigationState.toEntries(
@@ -94,8 +94,8 @@ fun NavigationState.toEntries(
     val tabs = backStacks.keys.toList()
     val stacks = tabs.map { tab -> backStacks.getValue(tab).toList() }
     val keys = stacks.flatten()
-    // The shared decoration tells screens apart by key; AppNavigator.navigateTo keeps each key in
-    // one stack. A duplicate would show one screen's state in two places, so it is a bug.
+    // Общая декорация различает экраны по ключу; AppNavigator.navigateTo держит каждый ключ в одном
+    // стеке. Дубль показал бы состояние одного экрана в двух местах — это баг.
     check(keys.size == keys.toSet().size) {
         "A screen key must live in one stack only; change stacks through AppNavigator: $keys"
     }
@@ -107,7 +107,7 @@ fun NavigationState.toEntries(
         ),
         entryProvider = entryProvider,
     )
-    // Decorated entries follow the keys one to one, so each stack is a contiguous slice.
+    // Задекорированные записи идут за ключами один к одному, поэтому каждый стек — непрерывный срез.
     val entriesByTab = buildMap {
         var from = 0
         tabs.forEachIndexed { index, tab ->

@@ -25,7 +25,7 @@ android {
         getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
     }
 
-    // Compose UI tests on Robolectric need the merged manifest with the test ComponentActivity.
+    // Compose UI-тестам на Robolectric нужен объединённый манифест с тестовой ComponentActivity.
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
@@ -74,7 +74,7 @@ dependencies {
     testImplementation(testFixtures(project(":lib:navigation")))
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
-    // The test ComponentActivity for every unit-test variant, not only debug.
+    // Тестовая ComponentActivity для всех вариантов юнит-тестов, не только debug.
     testImplementation(libs.androidx.ui.test.manifest)
     // UI-тесты оболочки на Robolectric: Hilt testing, фейковый Deezer, фейковый контроллер плеера.
     testImplementation(libs.hilt.android.testing)

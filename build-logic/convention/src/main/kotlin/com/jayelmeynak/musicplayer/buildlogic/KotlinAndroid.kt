@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
 /**
- * SDK levels, test runner and release build type shared by every Android module.
+ * Уровни SDK, test runner и build type release — общие для всех Android-модулей.
  */
 internal fun Project.configureAndroidCommon(extension: CommonExtension) {
     extension.apply {
@@ -28,7 +28,7 @@ internal fun Project.configureAndroidCommon(extension: CommonExtension) {
 }
 
 /**
- * JVM toolchain for Kotlin (Android or JVM) and, for target module types, explicit API mode.
+ * JVM toolchain для Kotlin (Android или JVM) и, для целевых типов модулей, режим explicit API.
  */
 internal fun Project.configureKotlin(explicitApi: Boolean) {
     extensions.getByType<KotlinProjectExtension>().apply {

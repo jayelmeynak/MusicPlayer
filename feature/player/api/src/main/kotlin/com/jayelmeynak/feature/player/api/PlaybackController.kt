@@ -21,18 +21,18 @@ public interface PlaybackController {
     public val state: StateFlow<PlaybackState>
 
     /**
-     * Position in the current item in milliseconds. Updated while playing, and once after a seek
-     * on pause and after the current item changes; [play] resets it to `0`.
+     * Позиция в текущем элементе, мс. Обновляется во время воспроизведения и один раз после
+     * перемотки на паузе и смены текущего элемента; [play] сбрасывает её в `0`.
      */
     public val positionMs: StateFlow<Long>
 
     /**
-     * Replaces the queue with [queue] and starts playing the item at [startIndex] from the start.
-     * If [queue] already is the current queue and [startIndex] the current item, the item is not
-     * restarted: it keeps playing, or resumes if paused (a tap on the playing track in a list).
+     * Заменяет очередь на [queue] и играет элемент [startIndex] с начала. Если [queue] — уже
+     * текущая очередь, а [startIndex] — текущий элемент, он не перезапускается: играет дальше или
+     * возобновляется с паузы (тап по играющему треку в списке).
      *
-     * @throws IllegalArgumentException if [startIndex] is not in `queue.indices` (so [queue] must
-     *   not be empty).
+     * @throws IllegalArgumentException если [startIndex] не в `queue.indices` (значит, [queue]
+     *   не может быть пустой).
      */
     public fun play(queue: List<QueueItem>, startIndex: Int)
 
