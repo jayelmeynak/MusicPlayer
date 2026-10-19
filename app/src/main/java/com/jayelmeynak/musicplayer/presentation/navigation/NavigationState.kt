@@ -16,69 +16,65 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import kotlinx.serialization.json.Json
 
 /**
- * [roots] — корень стека вкладки, если это не сама вкладка (экран фичи, например каталога). Вкладка
- * остаётся [TopLevelDestination]: её хранит и показывает `app`, а корень её стека может быть ключом
- * из `:api` фичи.
+ * Состояние оболочки: текущая вкладка из [tabs] (стартовая — [startTab]) и стек каждой вкладки,
+ * начинающийся с её корня [AppTab.root].
  */
 @Composable
 fun rememberNavigationState(
-    startRoute: TopLevelDestination,
-    topLevelRoutes: Set<TopLevelDestination>,
-    roots: Map<TopLevelDestination, NavKey> = emptyMap(),
+    startTab: AppTab,
+    tabs: List<AppTab>,
 ): NavigationState {
-    val topLevelRoute = rememberSaveable(saver = topLevelRouteSaver(startRoute, topLevelRoutes)) {
-        mutableStateOf(startRoute)
+    val currentTab = rememberSaveable(saver = currentTabSaver(startTab, tabs)) {
+        mutableStateOf(startTab)
     }
-    // Keyed by tab, so each stack is saved under its tab rather than its position in the set.
-    val backStacks = topLevelRoutes.associateWith { tab -> key(tab) { rememberNavBackStack(roots[tab] ?: tab) } }
-    return remember(startRoute, topLevelRoutes, roots) {
+    // Keyed by tab, so each stack is saved under its tab rather than its position in the list.
+    val backStacks = tabs.associateWith { tab -> key(tab.name) { rememberNavBackStack(tab.root) } }
+    return remember(startTab, tabs) {
         NavigationState(
-            startRoute = startRoute,
-            topLevelRoute = topLevelRoute,
+            startTab = startTab,
+            currentTab = currentTab,
             backStacks = backStacks,
-            roots = roots,
         )
     }
 }
 
 /**
- * Saves the current tab with its serializer. A saved value that does not decode to one of
- * [topLevelRoutes] (say, a tab removed in an update) restores [startRoute].
+ * Сохраняет текущую вкладку по имени. Значение, которое не является именем одной из [tabs]
+ * (вкладку убрали в обновлении, прежний формат), восстанавливает [startTab].
  */
-internal fun topLevelRouteSaver(
-    startRoute: TopLevelDestination,
-    topLevelRoutes: Set<TopLevelDestination>,
-): Saver<MutableState<TopLevelDestination>, String> = Saver(
-    save = { Json.encodeToString(TopLevelDestination.serializer(), it.value) },
-    restore = { saved ->
-        val route = runCatching { Json.decodeFromString(TopLevelDestination.serializer(), saved) }.getOrNull()
-        mutableStateOf(route?.takeIf { it in topLevelRoutes } ?: startRoute)
-    },
+internal fun currentTabSaver(
+    startTab: AppTab,
+    tabs: List<AppTab>,
+): Saver<MutableState<AppTab>, String> = Saver(
+    save = { it.value.name },
+    restore = { saved -> mutableStateOf(tabs.firstOrNull { it.name == saved } ?: startTab) },
 )
 
 class NavigationState(
-    val startRoute: TopLevelDestination,
-    topLevelRoute: MutableState<TopLevelDestination>,
-    val backStacks: Map<TopLevelDestination, NavBackStack<NavKey>>,
-    private val roots: Map<TopLevelDestination, NavKey> = emptyMap(),
+    val startTab: AppTab,
+    currentTab: MutableState<AppTab>,
+    val backStacks: Map<AppTab, NavBackStack<NavKey>>,
 ) {
-    var topLevelRoute: TopLevelDestination by topLevelRoute
+    init {
+        val roots = backStacks.keys.map { it.root }
+        require(roots.size == roots.toSet().size) { "Корни вкладок должны быть различны: $roots" }
+    }
 
-    /** Корень стека вкладки [tab]: ключ из `roots` или сама вкладка. */
-    fun rootOf(tab: TopLevelDestination): NavKey = roots[tab] ?: tab
+    var currentTab: AppTab by currentTab
+
+    /** Корень стека вкладки [tab]. */
+    fun rootOf(tab: AppTab): NavKey = tab.root
 
     /** Вкладка, корень стека которой — [key], или `null`, если [key] не корень. */
-    fun tabOfRoot(key: NavKey): TopLevelDestination? =
-        (key as? TopLevelDestination) ?: roots.entries.firstOrNull { it.value == key }?.key
+    fun tabOfRoot(key: NavKey): AppTab? = backStacks.keys.firstOrNull { it.root == key }
 
-    val stacksInUse: List<TopLevelDestination>
-        get() = if (topLevelRoute == startRoute) {
-            listOf(startRoute)
+    val stacksInUse: List<AppTab>
+        get() = if (currentTab == startTab) {
+            listOf(startTab)
         } else {
-            listOf(startRoute, topLevelRoute)
+            listOf(startTab, currentTab)
         }
 }
 

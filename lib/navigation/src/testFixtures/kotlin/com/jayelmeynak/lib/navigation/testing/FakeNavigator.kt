@@ -9,9 +9,6 @@ public class FakeNavigator : Navigator {
     /** Keys passed to [navigateTo], in call order. */
     public val destinations: MutableList<NavKey> = mutableListOf()
 
-    /** Keys passed to [navigateToRoot], in call order. */
-    public val rootDestinations: MutableList<NavKey> = mutableListOf()
-
     /** Ключи, переданные в [remove], в порядке вызовов. */
     public val removed: MutableList<NavKey> = mutableListOf()
 
@@ -21,10 +18,6 @@ public class FakeNavigator : Navigator {
 
     override fun navigateTo(destination: NavKey) {
         destinations += destination
-    }
-
-    override fun navigateToRoot(destination: NavKey) {
-        rootDestinations += destination
     }
 
     override fun goBack() {

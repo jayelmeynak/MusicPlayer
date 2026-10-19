@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -102,7 +103,9 @@ private fun MiniPlayerContent(
             IconButton(onClick = { onAction(MiniPlayerAction.TogglePlayPause) }) {
                 Icon(
                     imageVector = if (state.showPlayButton) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                    contentDescription = if (state.showPlayButton) "Воспроизведение" else "Пауза",
+                    contentDescription = stringResource(
+                        if (state.showPlayButton) R.string.mini_player_play else R.string.mini_player_pause,
+                    ),
                 )
             }
         }

@@ -25,7 +25,7 @@ internal fun Project.forbidForeignImpl() {
                         "остальные модули зависят от :api фичи."
                 )
             }
-            if (configuration.endsWith(API_SUFFIX, ignoreCase = true)) {
+            if (configuration.endsWith(API_CONFIGURATION_SUFFIX, ignoreCase = true)) {
                 throw GradleException(
                     "$consumer подключает $target через $configuration: только implementation, " +
                         "иначе классы :impl утекут потребителям $consumer."
@@ -37,4 +37,5 @@ internal fun Project.forbidForeignImpl() {
 
 private const val IMPL_SUFFIX = ":impl"
 private const val DI_SUFFIX = ":di"
-private const val API_SUFFIX = "api"
+/** Суффикс конфигурации, отдающей зависимость потребителям: `api`, `testFixturesApi`. */
+private const val API_CONFIGURATION_SUFFIX = "Api"

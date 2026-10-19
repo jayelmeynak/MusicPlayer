@@ -15,6 +15,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.jayelmeynak.feature.catalog.api.ChartDestination
+import com.jayelmeynak.feature.localmusic.api.LocalMusicDestination
 import kotlinx.serialization.Serializable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,15 +57,15 @@ class NavigationStateTest {
     /** Every distinct saveable value the probe screen got, in creation order. */
     private val savedValues = mutableListOf<String>()
 
-    private val api get() = state.backStacks.getValue(TopLevelDestination.ApiTracks).toList()
-    private val local get() = state.backStacks.getValue(TopLevelDestination.DownloadTracks).toList()
+    private val api get() = state.backStacks.getValue(AppTab.Catalog).toList()
+    private val local get() = state.backStacks.getValue(AppTab.LocalMusic).toList()
 
     /** The app shell without the feature screens: the same state, navigator and decoration. */
     @Composable
     private fun Shell() {
         val navigationState = rememberNavigationState(
-            startRoute = TopLevelDestination.ApiTracks,
-            topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
+            startTab = AppTab.Catalog,
+            tabs = AppTab.entries,
         )
         val appNavigator = remember(navigationState) { AppNavigator(navigationState) }
         state = navigationState
@@ -71,8 +73,8 @@ class NavigationStateTest {
 
         val entries = navigationState.toEntries(
             entryProvider {
-                entry<TopLevelDestination.ApiTracks> { Text("api root") }
-                entry<TopLevelDestination.DownloadTracks> { Text("local root") }
+                entry<ChartDestination> { Text("api root") }
+                entry<LocalMusicDestination> { Text("local root") }
                 entry<ProbeScreen> { key ->
                     val probe = viewModel { ProbeViewModel() }
                     val saved = rememberSaveable { UUID.randomUUID().toString() }
@@ -96,13 +98,13 @@ class NavigationStateTest {
     fun `screen moved to another tab stack keeps its view model and saved state`() {
         compose.setContent { Shell() }
         navigate { navigateTo(ProbeScreen("player")) }
-        navigate { navigateTo(TopLevelDestination.DownloadTracks) }
+        navigate { navigateTo(LocalMusicDestination) }
 
         navigate { navigateTo(ProbeScreen("player")) }
 
         compose.onNodeWithText("screen player").assertExists()
-        assertEquals(listOf(TopLevelDestination.DownloadTracks, ProbeScreen("player")), local)
-        assertEquals(listOf<NavKey>(TopLevelDestination.ApiTracks), api)
+        assertEquals(listOf(LocalMusicDestination, ProbeScreen("player")), local)
+        assertEquals(listOf<NavKey>(ChartDestination), api)
         assertEquals(1, probes.size)
         assertFalse(probes.single().cleared)
         assertEquals(1, savedValues.size)
@@ -112,7 +114,7 @@ class NavigationStateTest {
     fun `popping a moved screen clears its view model`() {
         compose.setContent { Shell() }
         navigate { navigateTo(ProbeScreen("player")) }
-        navigate { navigateTo(TopLevelDestination.DownloadTracks) }
+        navigate { navigateTo(LocalMusicDestination) }
         navigate { navigateTo(ProbeScreen("player")) }
 
         navigate { goBack() }
@@ -127,7 +129,7 @@ class NavigationStateTest {
         compose.setContent { Shell() }
         navigate { navigateTo(ProbeScreen("player")) }
 
-        navigate { navigateToRoot(TopLevelDestination.ApiTracks) }
+        navigate { navigateToRoot(AppTab.Catalog) }
 
         compose.onNodeWithText("api root").assertExists()
         assertEquals(1, probes.size)
@@ -137,11 +139,11 @@ class NavigationStateTest {
     @Test
     fun `resetting the hidden tab clears its screen and a new open starts fresh`() {
         compose.setContent { Shell() }
-        navigate { navigateToRoot(TopLevelDestination.DownloadTracks) }
+        navigate { navigateToRoot(AppTab.LocalMusic) }
         navigate { navigateTo(ProbeScreen("player")) }
-        navigate { navigateTo(TopLevelDestination.ApiTracks) }
+        navigate { navigateTo(ChartDestination) }
 
-        navigate { navigateToRoot(TopLevelDestination.DownloadTracks) }
+        navigate { navigateToRoot(AppTab.LocalMusic) }
 
         compose.onNodeWithText("local root").assertExists()
         assertEquals(1, probes.size)
@@ -161,7 +163,7 @@ class NavigationStateTest {
 
         val error = runCatching {
             compose.runOnIdle {
-                state.backStacks.getValue(TopLevelDestination.DownloadTracks).add(ProbeScreen("player"))
+                state.backStacks.getValue(AppTab.LocalMusic).add(ProbeScreen("player"))
             }
             compose.waitForIdle()
         }.exceptionOrNull()
@@ -174,8 +176,8 @@ class NavigationStateTest {
         compose.setContent { Shell() }
         navigate { navigateTo(ProbeScreen("player")) }
 
-        navigate { navigateTo(TopLevelDestination.DownloadTracks) }
-        navigate { navigateTo(TopLevelDestination.ApiTracks) }
+        navigate { navigateTo(LocalMusicDestination) }
+        navigate { navigateTo(ChartDestination) }
 
         compose.onNodeWithText("screen player").assertExists()
         assertEquals(1, probes.size)
@@ -186,72 +188,65 @@ class NavigationStateTest {
     fun `current tab and both stacks survive recreation`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Shell() }
-        navigate { navigateTo(ProbeScreen("remote")) }
-        navigate { navigateToRoot(TopLevelDestination.DownloadTracks) }
-        navigate { navigateTo(ProbeScreen("local")) }
+        navigate { navigateTo(ProbeScreen("in-remote-tab")) }
+        navigate { navigateToRoot(AppTab.LocalMusic) }
+        navigate { navigateTo(ProbeScreen("in-local-tab")) }
 
         restoration.emulateSavedInstanceStateRestore()
 
         compose.waitForIdle()
-        assertEquals(TopLevelDestination.DownloadTracks, state.topLevelRoute)
-        assertEquals(listOf(TopLevelDestination.DownloadTracks, ProbeScreen("local")), local)
-        assertEquals(listOf(TopLevelDestination.ApiTracks, ProbeScreen("remote")), api)
-        compose.onNodeWithText("screen local").assertExists()
+        assertEquals(AppTab.LocalMusic, state.currentTab)
+        assertEquals(listOf(LocalMusicDestination, ProbeScreen("in-local-tab")), local)
+        assertEquals(listOf(ChartDestination, ProbeScreen("in-remote-tab")), api)
+        compose.onNodeWithText("screen in-local-tab").assertExists()
     }
 
     @Test
     fun `start tab survives recreation`() {
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Shell() }
-        navigate { navigateTo(ProbeScreen("remote")) }
+        navigate { navigateTo(ProbeScreen("in-remote-tab")) }
 
         restoration.emulateSavedInstanceStateRestore()
 
         compose.waitForIdle()
-        assertEquals(TopLevelDestination.ApiTracks, state.topLevelRoute)
-        assertEquals(listOf(TopLevelDestination.ApiTracks, ProbeScreen("remote")), api)
-        compose.onNodeWithText("screen remote").assertExists()
+        assertEquals(AppTab.Catalog, state.currentTab)
+        assertEquals(listOf(ChartDestination, ProbeScreen("in-remote-tab")), api)
+        compose.onNodeWithText("screen in-remote-tab").assertExists()
     }
 
     @Test
     fun `saved tab round-trips through the saver`() {
-        val saver = topLevelRouteSaver(
-            startRoute = TopLevelDestination.ApiTracks,
-            topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
-        )
+        val saver = currentTabSaver(startTab = AppTab.Catalog, tabs = AppTab.entries)
 
-        val saved = with(saver) { SaverScope { true }.save(mutableStateOf(TopLevelDestination.DownloadTracks)) }
+        val saved = with(saver) { SaverScope { true }.save(mutableStateOf(AppTab.LocalMusic)) }
 
-        assertEquals(TopLevelDestination.DownloadTracks, saver.restore(checkNotNull(saved))?.value)
+        assertEquals(AppTab.LocalMusic, saver.restore(checkNotNull(saved))?.value)
     }
 
     @Test
     fun `saved tab that is no longer a tab restores the start tab`() {
-        val saver = topLevelRouteSaver(
-            startRoute = TopLevelDestination.ApiTracks,
-            topLevelRoutes = setOf(TopLevelDestination.ApiTracks),
-        )
-        val removedTab = with(topLevelRouteSaver(TopLevelDestination.ApiTracks, setOf(TopLevelDestination.DownloadTracks))) {
-            SaverScope { true }.save(mutableStateOf(TopLevelDestination.DownloadTracks))
+        val saver = currentTabSaver(startTab = AppTab.Catalog, tabs = listOf(AppTab.Catalog))
+        val removedTab = with(currentTabSaver(AppTab.Catalog, AppTab.entries)) {
+            SaverScope { true }.save(mutableStateOf(AppTab.LocalMusic))
         }
 
-        assertEquals(TopLevelDestination.ApiTracks, saver.restore(checkNotNull(removedTab))?.value)
-        assertEquals(TopLevelDestination.ApiTracks, saver.restore("not a saved tab")?.value)
+        assertEquals(AppTab.Catalog, saver.restore(checkNotNull(removedTab))?.value)
+        assertEquals(AppTab.Catalog, saver.restore("not a saved tab")?.value)
+        // Вкладка прежнего формата (JSON ключа навигации) тоже даёт стартовую.
+        assertEquals(
+            AppTab.Catalog,
+            saver.restore("""{"type":"com.jayelmeynak.musicplayer.presentation.navigation.LocalMusicDestination"}""")?.value,
+        )
     }
 
     @Test
-    fun `стек вкладки начинается с корня из roots`() {
-        compose.setContent {
-            val navigationState = rememberNavigationState(
-                startRoute = TopLevelDestination.ApiTracks,
-                topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
-                roots = mapOf(TopLevelDestination.ApiTracks to ProbeScreen("root")),
-            )
-            state = navigationState
-        }
+    fun `стек каждой вкладки начинается с её корня`() {
+        compose.setContent { Shell() }
         compose.waitForIdle()
 
-        assertEquals(listOf<NavKey>(ProbeScreen("root")), api)
-        assertEquals(listOf<NavKey>(TopLevelDestination.DownloadTracks), local)
+        assertEquals(listOf<NavKey>(ChartDestination), api)
+        assertEquals(listOf<NavKey>(LocalMusicDestination), local)
+        compose.onNodeWithText("api root").assertExists()
     }
 }
