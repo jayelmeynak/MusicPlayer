@@ -5,4 +5,10 @@
     <string name="player_error_unknown">Не удалось воспроизвести трек</string>
     <string name="player_error_network">Проблема с сетью. Проверьте подключение</string>
     <string name="player_error_connection">Не удалось подключиться к плееру. Откройте приложение снова</string>
+    <string name="player_seek_back">Пролистать назад</string>
+    <string name="player_previous">Предыдущий трек</string>
+    <string name="player_next">Следующий трек</string>
+    <string name="player_seek_forward">Пролистать вперед</string>
+    <string name="player_play">Воспроизведение</string>
+    <string name="player_pause">Пауза</string>
 </resources>

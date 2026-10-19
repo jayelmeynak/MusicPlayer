@@ -25,7 +25,6 @@ class EntryInstallerTest {
         (entry.metadata.getValue(ON_CLICK) as () -> Unit).invoke()
 
         assertEquals(listOf<NavKey>(DetailKey("1")), navigator.destinations)
-        assertEquals(emptyList<NavKey>(), navigator.rootDestinations)
         assertEquals(0, navigator.backCount)
     }
 

@@ -1,0 +1,4 @@
+<resources>
+    <string name="mini_player_play">Воспроизведение</string>
+    <string name="mini_player_pause">Пауза</string>
+</resources>

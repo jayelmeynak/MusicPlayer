@@ -7,17 +7,13 @@ import androidx.navigation3.runtime.NavKey
  */
 public interface Navigator {
 
-    /** Switches to a top-level destination or pushes [destination] onto the current back stack. */
-    public fun navigateTo(destination: NavKey)
-
     /**
-     * Switches to the top-level [destination] and resets its back stack to the root.
+     * Ключ корня вкладки — переключает на эту вкладку (стек не меняется); любой другой ключ кладёт
+     * наверх стека текущей вкладки, убирая его из остальных мест.
      *
-     * For the host shell (`app`, e.g. a tab click); features must not call it.
-     *
-     * @throws IllegalArgumentException if [destination] is not a root of one of the host's tabs.
+     * Сбросить стек вкладки до корня может только оболочка (тап по вкладке): такой операции у фич нет.
      */
-    public fun navigateToRoot(destination: NavKey)
+    public fun navigateTo(destination: NavKey)
 
     /** Pops the current back stack. */
     public fun goBack()

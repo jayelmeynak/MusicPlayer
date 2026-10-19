@@ -15,7 +15,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.jayelmeynak.feature.player.impl.R
 
 /**
  * Play/pause с кольцом прогресса, пока текущий элемент загружается. Иконка показывает, что сделает
@@ -45,7 +47,7 @@ internal fun PlayPauseIconButton(
             IconButton(onClick = onIconButtonClick) {
                 Icon(
                     imageVector = if (showPlay) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                    contentDescription = if (showPlay) "Воспроизведение" else "Пауза",
+                    contentDescription = stringResource(if (showPlay) R.string.player_play else R.string.player_pause),
                 )
             }
         }

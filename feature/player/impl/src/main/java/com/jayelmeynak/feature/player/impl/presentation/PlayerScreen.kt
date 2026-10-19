@@ -155,10 +155,10 @@ private fun PlayerContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { onAction(PlayerAction.SeekBack) }) {
-                Icon(imageVector = Icons.Filled.FastRewind, contentDescription = "Пролистать назад")
+                Icon(imageVector = Icons.Filled.FastRewind, contentDescription = stringResource(PlayerR.string.player_seek_back))
             }
             IconButton(onClick = { onAction(PlayerAction.Previous) }) {
-                Icon(imageVector = Icons.Filled.SkipPrevious, contentDescription = "Предыдущий трек")
+                Icon(imageVector = Icons.Filled.SkipPrevious, contentDescription = stringResource(PlayerR.string.player_previous))
             }
             PlayPauseIconButton(
                 showPlayButton = state.showPlayButton,
@@ -166,10 +166,10 @@ private fun PlayerContent(
                 onIconButtonClick = { onAction(PlayerAction.TogglePlayPause) },
             )
             IconButton(onClick = { onAction(PlayerAction.Next) }) {
-                Icon(imageVector = Icons.Filled.SkipNext, contentDescription = "Следующий трек")
+                Icon(imageVector = Icons.Filled.SkipNext, contentDescription = stringResource(PlayerR.string.player_next))
             }
             IconButton(onClick = { onAction(PlayerAction.SeekForward) }) {
-                Icon(imageVector = Icons.Filled.FastForward, contentDescription = "Пролистать вперед")
+                Icon(imageVector = Icons.Filled.FastForward, contentDescription = stringResource(PlayerR.string.player_seek_forward))
             }
         }
     }

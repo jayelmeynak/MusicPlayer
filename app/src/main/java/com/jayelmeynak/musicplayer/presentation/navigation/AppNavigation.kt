@@ -7,11 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SdStorage
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.outlined.SdStorage
-import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -19,10 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.navigation3.runtime.entryProvider
+import androidx.compose.ui.res.stringResource
 import androidx.navigation3.ui.NavDisplay
-import com.jayelmeynak.feature.catalog.api.ChartDestination
-import com.jayelmeynak.feature.localmusic.api.LocalMusicDestination
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlayerDestination
 import com.jayelmeynak.feature.player.ui.MiniPlayer
@@ -36,55 +29,28 @@ fun AppNavigation(
     entryInstallers: Set<EntryInstaller>,
     playbackController: PlaybackController,
 ) {
-    val navigationState = rememberNavigationState(
-        startRoute = TopLevelDestination.ApiTracks,
-        topLevelRoutes = setOf(TopLevelDestination.ApiTracks, TopLevelDestination.DownloadTracks),
-        // Экраны вкладок регистрируют фичи: «Remote» — каталог (CatalogEntryInstaller),
-        // «Local» — локальная музыка (LocalMusicEntryInstaller).
-        roots = remember {
-            mapOf(
-                TopLevelDestination.ApiTracks to ChartDestination,
-                TopLevelDestination.DownloadTracks to LocalMusicDestination,
-            )
-        },
-    )
+    val navigationState = rememberNavigationState(startTab = AppTab.Catalog, tabs = AppTab.entries)
     val navigator = remember(navigationState) { AppNavigator(navigationState) }
-    val currentTop = navigationState.topLevelRoute
-    val currentBackStack = navigationState.backStacks[currentTop] ?: emptyList()
+    val currentTab = navigationState.currentTab
+    val currentBackStack = navigationState.backStacks[currentTab] ?: emptyList()
     val currentRoute = currentBackStack.lastOrNull()
 
     val isPlayerScreen = currentRoute is PlayerDestination
 
-    val entries = navigationState.toEntries(
-        entryProvider {
-            entryInstallers.forEach { installer -> with(installer) { install(navigator) } }
-        }
-    )
+    val entryProvider = remember(entryInstallers, navigator) { appEntryProvider(entryInstallers, navigator) }
+    val entries = navigationState.toEntries(entryProvider)
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            item(
-                icon = {
-                    Icon(
-                        imageVector = if (currentTop == TopLevelDestination.ApiTracks) Icons.Filled.Wifi else Icons.Outlined.Wifi,
-                        contentDescription = "Remote",
-                    )
-                },
-                label = { Text("Remote") },
-                selected = currentTop == TopLevelDestination.ApiTracks,
-                onClick = { navigator.navigateToRoot(TopLevelDestination.ApiTracks) },
-            )
-            item(
-                icon = {
-                    Icon(
-                        imageVector = if (currentTop == TopLevelDestination.DownloadTracks) Icons.Filled.SdStorage else Icons.Outlined.SdStorage,
-                        contentDescription = "Local",
-                    )
-                },
-                label = { Text("Local") },
-                selected = currentTop == TopLevelDestination.DownloadTracks,
-                onClick = { navigator.navigateToRoot(TopLevelDestination.DownloadTracks) },
-            )
+            AppTab.entries.forEach { tab ->
+                val selected = currentTab == tab
+                item(
+                    icon = { Icon(imageVector = tab.icon(selected), contentDescription = stringResource(tab.label)) },
+                    label = { Text(stringResource(tab.label)) },
+                    selected = selected,
+                    onClick = { navigator.navigateToRoot(tab) },
+                )
+            }
         },
     ) {
         Column(
