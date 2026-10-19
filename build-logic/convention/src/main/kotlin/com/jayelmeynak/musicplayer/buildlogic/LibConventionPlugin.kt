@@ -8,7 +8,7 @@ import org.gradle.api.Project
  */
 class LibConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
-        applyPlugin("musicplayer-android-library")
+        configureAndroidLibrary()
         configureKotlin(explicitApi = true)
     }
 }

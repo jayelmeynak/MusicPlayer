@@ -8,7 +8,7 @@ import org.gradle.api.Project
  */
 class FeatureDiConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
-        applyPlugin("musicplayer-android-library")
+        configureAndroidLibrary()
         applyPlugin("musicplayer-hilt")
         configureKotlin(explicitApi = true)
     }

@@ -19,10 +19,6 @@ gradlePlugin {
             id = libs.plugins.musicplayer.application.get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.ApplicationConventionPlugin"
         }
-        register("androidLibrary") {
-            id = libs.plugins.musicplayer.android.library.get().pluginId
-            implementationClass = "com.jayelmeynak.musicplayer.buildlogic.AndroidLibraryConventionPlugin"
-        }
         register("featureApi") {
             id = libs.plugins.musicplayer.feature.api.get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.FeatureApiConventionPlugin"
@@ -58,10 +54,6 @@ gradlePlugin {
         register("compose") {
             id = libs.plugins.musicplayer.compose.get().pluginId
             implementationClass = "com.jayelmeynak.musicplayer.buildlogic.ComposeConventionPlugin"
-        }
-        register("room") {
-            id = libs.plugins.musicplayer.room.get().pluginId
-            implementationClass = "com.jayelmeynak.musicplayer.buildlogic.RoomConventionPlugin"
         }
     }
 }

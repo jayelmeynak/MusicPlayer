@@ -21,7 +21,6 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.material3)
     // Иконка «Открыть в Deezer» (OpenInNew).

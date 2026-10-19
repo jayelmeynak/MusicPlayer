@@ -13,19 +13,16 @@ okhttp = "5.3.2"
 retrofit = "3.0.0"
 media3 = "1.10.0"
 ksp = "2.3.6"
-room = "2.8.4"
 navigation3 = "1.1.1"
 kotlinxSerializationJson = "1.11.0"
 kotlinxCoroutines = "1.10.2"
 turbine = "1.2.1"
 robolectric = "4.16.1"
-sqlite = "2.6.2"
 material3AdaptiveNavigationSuite = "1.4.0"
 androidxTestRunner = "1.7.0"
 androidxTestRules = "1.7.0"
 androidxTestCore = "1.7.0"
 androidxTestExtJunit = "1.3.0"
-espressoCore = "3.7.0"
 uiautomator = "2.4.0"
 kaspresso = "1.6.1"
 kakaoCompose = "1.1.0"
@@ -58,9 +55,6 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
@@ -72,7 +66,6 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
-sqlite-bundled-jvm = { module = "androidx.sqlite:sqlite-bundled-jvm", version.ref = "sqlite" }
 media3-test-utils = { module = "androidx.media3:media3-test-utils", version.ref = "media3" }
 media3-test-utils-robolectric = { module = "androidx.media3:media3-test-utils-robolectric", version.ref = "media3" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
@@ -81,7 +74,6 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
-androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 kaspresso = { module = "com.kaspersky.android-components:kaspresso", version.ref = "kaspresso" }
 kaspresso-compose-support = { module = "com.kaspersky.android-components:kaspresso-compose-support", version.ref = "kaspresso" }
@@ -103,7 +95,6 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 
 # Plugins defined by build-logic
 musicplayer-application = { id = "musicplayer.application" }
-musicplayer-android-library = { id = "musicplayer.android.library" }
 musicplayer-feature-api = { id = "musicplayer.feature.api" }
 musicplayer-feature-impl = { id = "musicplayer.feature.impl" }
 musicplayer-feature-ui = { id = "musicplayer.feature.ui" }
@@ -111,6 +102,5 @@ musicplayer-feature-di = { id = "musicplayer.feature.di" }
 musicplayer-lib = { id = "musicplayer.lib" }
 musicplayer-lib-jvm = { id = "musicplayer.lib.jvm" }
 musicplayer-util = { id = "musicplayer.util" }
-musicplayer-room = { id = "musicplayer.room" }
 musicplayer-hilt = { id = "musicplayer.hilt" }
 musicplayer-compose = { id = "musicplayer.compose" }

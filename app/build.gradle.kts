@@ -56,15 +56,12 @@ dependencies {
     implementation(project(":lib:navigation"))
     implementation(project(":util:coroutines"))
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     implementation(libs.navigation3.runtime)
     implementation(libs.navigation3.ui)
     implementation(libs.lifecycle.viewmodel.navigation3)
     implementation(libs.material3.adaptive.navigation.suite)
-    implementation(libs.kotlinx.serialization.json)
 
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
@@ -84,7 +81,6 @@ dependencies {
     testImplementation(project(":lib:network"))
     testImplementation(testFixtures(project(":feature:player:api")))
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.androidx.test.espresso.core)
     testImplementation(libs.kakao.compose)
 
     // Инструментальные UI-тесты: настоящий плеер, уведомление, системные точки входа.
