@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.metadata
+import com.jayelmeynak.feature.player.api.HideMiniPlayer
 import com.jayelmeynak.feature.player.api.PlaybackController
 import com.jayelmeynak.feature.player.api.PlaybackState
 import com.jayelmeynak.feature.player.api.PlayerDestination
@@ -36,7 +38,8 @@ object TestPlayerModule {
     @Provides
     @IntoSet
     fun providePlayerStubInstaller(controller: PlaybackController): EntryInstaller = EntryInstaller {
-        entry<PlayerDestination> {
+        // Как настоящий экран плеера: мини-плеера над ним нет.
+        entry<PlayerDestination>(metadata = metadata { put(HideMiniPlayer, true) }) {
             val state by controller.state.collectAsStateWithLifecycle()
             val title = (state as? PlaybackState.Active)?.current?.title.orEmpty()
             Text(text = "$PLAYER_STUB_TEXT$title", modifier = Modifier.testTag(PLAYER_STUB_TAG))
