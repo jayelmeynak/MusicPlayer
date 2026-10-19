@@ -4,6 +4,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.test.utils.FakeMediaSourceFactory
 import androidx.media3.test.utils.TestExoPlayerBuilder
+import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
 import androidx.media3.test.utils.robolectric.TestPlayerRunHelper.run
 import com.jayelmeynak.feature.player.api.QueueItem
 import com.jayelmeynak.feature.player.api.TrackSource
@@ -24,6 +25,12 @@ import org.robolectric.shadows.ShadowLooper
 /**
  * Robolectric — ради настоящего ExoPlayer (`TestExoPlayer`): сохранение слушает события плеера.
  * Время дебаунса и периодической записи — на тестовом планировщике.
+ *
+ * `onEvents` Media3 рассылает отдельным сообщением главного лупера, а `FakeClock` плеера пропускает
+ * его только после текущего сообщения потока плеера. Пока плеер подготовлен, поток плеера работает
+ * параллельно тесту, и рассылка встаёт в очередь главного лупера в непредсказуемый момент: один
+ * `idleMainLooper()` может вернуться до рассылки — на медленной машине
+ * сохранение ещё не видело событие. Такие тесты ждут события через [EventsProbe].
  */
 @RunWith(RobolectricTestRunner::class)
 class PlaybackPersistenceTest {
@@ -87,12 +94,12 @@ class PlaybackPersistenceTest {
     @Test
     fun `пауза записывает позицию, во время игры - раз в период`() {
         persistence.attach(player)
+        val probe = EventsProbe().also(player::addListener)
         player.setMediaItems(mediaItems(queue))
         player.prepare()
         player.play()
-        run(player).untilState(Player.STATE_READY)
-        ShadowLooper.idleMainLooper()
-        assertTrue(player.isPlaying)
+        // Сохранение увидело старт игры и запустило периодическую запись.
+        runMainLooperUntil { probe.isPlaying == true }
         dispatcher.scheduler.advanceTimeBy(QUEUE_SAVE_DEBOUNCE_MS + 1)
         dispatcher.scheduler.runCurrent()
         val beforePeriod = store.savedPositions.size
@@ -101,30 +108,16 @@ class PlaybackPersistenceTest {
         dispatcher.scheduler.runCurrent()
         assertEquals(beforePeriod + 2, store.savedPositions.size)
 
-        // Позиция плеера в событиях, на которые пишется позиция, — в той же рассылке, что и запись.
-        // Сравнивать с player.currentPosition после лупера нельзя: поток плеера (часы TestExoPlayer
-        // идут сами) подтверждает паузу позже и может уточнить позицию без нового события — на
-        // медленной машине (CI) она расходится с записанной.
-        var lastEventPositionMs = -1L
-        player.addListener(object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                if (events.containsAny(
-                        Player.EVENT_IS_PLAYING_CHANGED,
-                        Player.EVENT_MEDIA_ITEM_TRANSITION,
-                        Player.EVENT_POSITION_DISCONTINUITY,
-                    )
-                ) {
-                    lastEventPositionMs = player.currentPosition
-                }
-            }
-        })
         player.pause()
-        // Часы плеера идут сами: пока лупер крутится, плеер мог сменить трек — это тоже запись.
-        ShadowLooper.idleMainLooper()
+        // Ждём рассылку паузы, а не один проход лупера: сохранение получает её в том же сообщении,
+        // что и проба. Часы плеера идут сами: до паузы плеер мог сменить трек — это тоже запись.
+        runMainLooperUntil { probe.isPlaying == false }
         dispatcher.scheduler.runCurrent()
         val afterPause = store.savedPositions.size
         assertTrue(afterPause > beforePeriod + 2)
-        assertEquals(lastEventPositionMs, store.savedPositions.last().positionMs)
+        // Позиция из той же рассылки, что и запись. player.currentPosition после лупера не годится:
+        // поток плеера подтверждает паузу позже и может уточнить позицию без нового события.
+        assertEquals(probe.lastPositionEventMs, store.savedPositions.last().positionMs)
 
         // Периодическая запись на паузе остановлена: планировщик доходит до простоя, записей нет.
         dispatcher.scheduler.advanceUntilIdle()
@@ -151,9 +144,10 @@ class PlaybackPersistenceTest {
         ShadowLooper.idleMainLooper()
         dispatcher.scheduler.advanceUntilIdle()
 
+        val probe = EventsProbe().also(player::addListener)
         player.prepare()
-        run(player).untilState(Player.STATE_READY)
-        ShadowLooper.idleMainLooper()
+        // Обновление источника приходит не позже READY: сохранение его уже обработало, а не пропустило.
+        runMainLooperUntil { probe.sawReady }
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(1, store.savedQueues.size)
@@ -191,6 +185,38 @@ class PlaybackPersistenceTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(SavedPosition(2, queue[0].key, 500L), store.savedPositions.last())
+    }
+
+    /**
+     * Подключается после [PlaybackPersistence.attach]: Media3 вызывает `onEvents` слушателей по
+     * порядку добавления, поэтому событие, которое видит проба, сохранение уже обработало.
+     */
+    private class EventsProbe : Player.Listener {
+        /** `isPlaying` в последней рассылке со сменой `isPlaying`, до неё — null. */
+        var isPlaying: Boolean? = null
+            private set
+
+        /** Позиция в последней рассылке из тех, на которые сохранение пишет позицию. */
+        var lastPositionEventMs = -1L
+            private set
+
+        var sawReady = false
+            private set
+
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) isPlaying = player.isPlaying
+            if (events.containsAny(
+                    Player.EVENT_IS_PLAYING_CHANGED,
+                    Player.EVENT_MEDIA_ITEM_TRANSITION,
+                    Player.EVENT_POSITION_DISCONTINUITY,
+                )
+            ) {
+                lastPositionEventMs = player.currentPosition
+            }
+            if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_READY) {
+                sawReady = true
+            }
+        }
     }
 
     private fun mediaItems(items: List<QueueItem>) =

@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import androidx.media3.test.utils.FakeClock
 import androidx.media3.test.utils.FakeMediaSourceFactory
 import androidx.media3.test.utils.TestExoPlayerBuilder
 import androidx.media3.test.utils.robolectric.RobolectricUtil.runMainLooperUntil
@@ -48,6 +49,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 import java.io.FileNotFoundException
@@ -56,6 +58,11 @@ import java.io.FileNotFoundException
  * Robolectric runs the real MediaSessionService and an in-process MediaController against it.
  * Hilt is replaced by [PlayBackServiceTestApplication], which injects a player factory that builds
  * test ExoPlayers and records them.
+ *
+ * Часы тестовых плееров стоят (`FakeClock` без автопродвижения): позиция не уходит вперёд, пока
+ * лупер крутится, и проверки не зависят от скорости машины. Каждый созданный сервис уничтожается в
+ * [tearDown], даже если тест упал: сессия, не освобождённая в `onDestroy`, держит свой ID в
+ * статическом реестре Media3, и следующий тест падает на создании сессии.
  *
  * The replacement relies on Hilt internals, checked with Hilt 2.59.2: the generated
  * `PlayBackService_GeneratedInjector`, `dagger.hilt.android.internal.builders.ServiceComponentBuilder`
@@ -68,6 +75,7 @@ class PlayBackServiceTest {
 
     private lateinit var application: PlayBackServiceTestApplication
     private val controllers = mutableListOf<MediaController>()
+    private val services = mutableListOf<ServiceController<PlayBackService>>()
 
     @Before
     fun setUp() {
@@ -79,17 +87,24 @@ class PlayBackServiceTest {
 
     @After
     fun tearDown() {
-        controllers.forEach { it.release() }
-        application.players.forEach { it.release() }
+        // Каждый шаг отдельно: сбой одного не должен оставить сессию следующему тесту.
+        val failures = mutableListOf<Throwable>()
+        controllers.forEach { runCatching { it.release() }.onFailure(failures::add) }
+        // Уничтоженный тестом сервис уже без сессий: повторный onDestroy не нужен.
+        services.filter { it.get().sessions.isNotEmpty() }
+            .forEach { runCatching { it.destroy() }.onFailure(failures::add) }
+        application.players.forEach { runCatching { it.release() }.onFailure(failures::add) }
+        application.players.clear()
+        failures.firstOrNull()?.let { throw it }
     }
 
     @Test
     fun `сервис создан заново после уничтожения - новые плеер и сессия принимают команды`() {
-        val first = Robolectric.buildService(PlayBackService::class.java).create()
+        val first = buildService().create()
         val firstSession = first.get().sessions.single()
         first.destroy()
 
-        val second = Robolectric.buildService(PlayBackService::class.java).create()
+        val second = buildService().create()
         val secondSession = second.get().sessions.single()
         val controller = connect(secondSession.token)
         controller.setMediaItem(queueItem.toMediaItem())
@@ -103,23 +118,21 @@ class PlayBackServiceTest {
         assertNotSame(application.players[0], player)
         assertTrue(controller.isConnected)
         assertEquals(1, player.mediaItemCount)
-        second.destroy()
     }
 
     @Test
     fun `сессия сервиса управляет его собственным плеером и открывает приложение`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
 
         val session = service.get().sessions.single()
 
         assertTrue(session.player === application.players.single())
         assertNotNull(session.sessionActivity)
-        service.destroy()
     }
 
     @Test
     fun `тап по уведомлению - неизменяемый явный интент launcher-активности с действием открыть плеер, без extras`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
 
         val sessionActivity = checkNotNull(service.get().sessions.single().sessionActivity)
         val shadow = shadowOf(sessionActivity)
@@ -136,12 +149,11 @@ class PlayBackServiceTest {
         assertNull(intent.extras)
         assertNull(intent.categories)
         assertNull(intent.data)
-        service.destroy()
     }
 
     @Test
     fun `элемент от контроллера приходит в плеер с внутренним URI, без URL`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val controller = connect(service.get().sessions.single().token)
 
         controller.setMediaItem(queueItem.toMediaItem())
@@ -150,7 +162,6 @@ class PlayBackServiceTest {
 
         val uri = player.getMediaItemAt(0).localConfiguration?.uri
         assertEquals(TrackKey(TrackSource.DEEZER, "42"), uri?.toTrackKey())
-        service.destroy()
     }
 
     /**
@@ -160,7 +171,7 @@ class PlayBackServiceTest {
      */
     @Test
     fun `контроллер своего приложения подключается к сервису и читает очередь`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val controller = connect(service.get().sessions.single().token)
 
         controller.setMediaItem(queueItem.toMediaItem())
@@ -168,12 +179,11 @@ class PlayBackServiceTest {
 
         assertTrue(controller.isCommandAvailable(Player.COMMAND_GET_TIMELINE))
         assertEquals(queueItem, controller.getMediaItemAt(0).toQueueItem())
-        service.destroy()
     }
 
     @Test
     fun `уничтожение сервиса - сессия убрана, плеер освобождён`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val controller = connect(service.get().sessions.single().token)
         controller.setMediaItem(queueItem.toMediaItem())
         controller.prepare()
@@ -191,36 +201,34 @@ class PlayBackServiceTest {
     fun `новая сессия поднимает сохранённую очередь на паузе, без звука`() {
         application.store = savedStore()
 
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val session = service.get().sessions.single()
         val player = application.players.single()
         runMainLooperUntil { !session.sessionExtras.getBoolean(EXTRA_SESSION_RESTORING, true) }
 
         assertEquals(savedQueue, List(player.mediaItemCount) { player.getMediaItemAt(it).toQueueItem() })
         assertEquals(1, player.currentMediaItemIndex)
-        assertEquals(42_000L, player.currentPosition)
+        assertEquals(SAVED_POSITION_MS, player.currentPosition)
         assertFalse(player.playWhenReady)
         assertEquals(Player.STATE_IDLE, player.playbackState)
         assertTrue(List(player.mediaItemCount) { player.getMediaItemAt(it) }.all { it.localConfiguration?.uri?.toTrackKey() != null })
-        service.destroy()
     }
 
     @Test
     fun `сохранённой очереди нет - сессия пуста и сообщает, что восстановление завершено`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val session = service.get().sessions.single()
 
         runMainLooperUntil { !session.sessionExtras.getBoolean(EXTRA_SESSION_RESTORING, true) }
 
         assertEquals(0, application.players.single().mediaItemCount)
-        service.destroy()
     }
 
     @Test
     fun `очередь, заданная до конца восстановления, не перетирается сохранённой`() {
         application.store = savedStore()
         application.store.readGate = true
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val session = service.get().sessions.single()
         val controller = connect(session.token)
         assertTrue(controller.sessionExtras.getBoolean(EXTRA_SESSION_RESTORING))
@@ -232,14 +240,13 @@ class PlayBackServiceTest {
         runMainLooperUntil { !session.sessionExtras.getBoolean(EXTRA_SESSION_RESTORING, true) }
 
         assertEquals(listOf(queueItem), List(player.mediaItemCount) { player.getMediaItemAt(it).toQueueItem() })
-        service.destroy()
     }
 
     @Test
     fun `медиакнопка play после смерти процесса - играет сохранённый трек с сохранённой позиции`() {
         application.store = savedStore()
 
-        val service = Robolectric.buildService(PlayBackService::class.java, mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY))
+        val service = buildService(mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY))
             .create()
             .startCommand(0, 1)
         val player = application.players.single()
@@ -247,8 +254,7 @@ class PlayBackServiceTest {
 
         assertEquals(savedQueue, List(player.mediaItemCount) { player.getMediaItemAt(it).toQueueItem() })
         assertEquals(1, player.currentMediaItemIndex)
-        assertTrue(player.currentPosition >= 42_000L)
-        service.destroy()
+        assertEquals(SAVED_POSITION_MS, player.currentPosition)
     }
 
     @Test
@@ -272,55 +278,43 @@ class PlayBackServiceTest {
     @Test
     fun `медиакнопка из уведомления работающего сервиса и неудачное возобновление - сервис не останавливается`() {
         // Первый старт — свой (Media3 уводит сервис в foreground), медиакнопка уведомления — следующий.
-        val service = Robolectric.buildService(PlayBackService::class.java, Intent(application, PlayBackService::class.java))
+        val service = buildService(Intent(application, PlayBackService::class.java))
             .create()
             .startCommand(0, 1)
         val shadow = shadowOf(service.get())
-        try {
-            service.withIntent(mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY)).startCommand(0, 2)
-            repeat(5) { ShadowLooper.idleMainLooper() }
+        service.withIntent(mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY)).startCommand(0, 2)
+        repeat(5) { ShadowLooper.idleMainLooper() }
 
-            assertFalse(shadow.isStoppedBySelf)
-            assertNull(shadow.lastForegroundNotification)
-        } finally {
-            service.destroy()
-        }
+        assertFalse(shadow.isStoppedBySelf)
+        assertNull(shadow.lastForegroundNotification)
     }
 
     @Test
     fun `первый старт медиакнопкой, foreground запрещён, возобновлять нечего - сервис всё равно останавливается`() {
-        val service = Robolectric.buildService(PlayBackService::class.java, mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY)).create()
+        val service = buildService(mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY)).create()
         val shadow = shadowOf(service.get())
         shadow.setThrowInStartForeground(ForegroundServiceStartNotAllowedException("запрещено в тесте"))
-        try {
-            service.startCommand(0, 1)
+        service.startCommand(0, 1)
 
-            runMainLooperUntil { shadow.isStoppedBySelf }
-        } finally {
-            service.destroy()
-        }
+        runMainLooperUntil { shadow.isStoppedBySelf }
     }
 
     /** Сервис запущен приёмником как foreground: без воспроизведения он обязан остановиться сам. */
     private fun assertStopsWithoutPlayback() {
-        val service = Robolectric.buildService(PlayBackService::class.java, mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY))
+        val service = buildService(mediaButton(KeyEvent.KEYCODE_MEDIA_PLAY))
             .create()
             .startCommand(0, 1)
         val shadow = shadowOf(service.get())
-        try {
-            runMainLooperUntil { shadow.isStoppedBySelf }
+        runMainLooperUntil { shadow.isStoppedBySelf }
 
-            assertTrue(shadow.isForegroundStopped)
-            assertTrue(shadow.notificationShouldRemoved)
-            assertEquals(0, application.players.single().mediaItemCount)
-        } finally {
-            service.destroy()
-        }
+        assertTrue(shadow.isForegroundStopped)
+        assertTrue(shadow.notificationShouldRemoved)
+        assertEquals(0, application.players.single().mediaItemCount)
     }
 
     @Test
     fun `при игре сервис в foreground с уведомлением`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val controller = connect(service.get().sessions.single().token)
 
         controller.setMediaItem(queueItem.toMediaItem())
@@ -328,12 +322,11 @@ class PlayBackServiceTest {
         controller.play()
 
         runMainLooperUntil { shadowOf(service.get()).lastForegroundNotification != null }
-        service.destroy()
     }
 
     @Test
     fun `запрет foreground-старта ставит воспроизведение на паузу`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         shadowOf(service.get()).setThrowInStartForeground(ForegroundServiceStartNotAllowedException("запрещено в тесте"))
         val controller = connect(service.get().sessions.single().token)
         val player = application.players.single()
@@ -345,12 +338,11 @@ class PlayBackServiceTest {
 
         runMainLooperUntil { !player.playWhenReady }
         assertTrue(shadowOf(service.get()).lastForegroundNotification == null)
-        service.destroy()
     }
 
     @Test
     fun `сервис сохраняет очередь, а при уничтожении - позицию`() {
-        val service = Robolectric.buildService(PlayBackService::class.java).create()
+        val service = buildService().create()
         val controller = connect(service.get().sessions.single().token)
         controller.setMediaItem(queueItem.toMediaItem())
         val player = application.players.single()
@@ -370,7 +362,7 @@ class PlayBackServiceTest {
 
     private fun savedStore() = FakePlaybackStateStore(
         queue = SavedQueue(savedQueue.map { it.toSaved() }),
-        position = SavedPosition(index = 1, key = savedQueue[1].key, positionMs = 42_000L),
+        position = SavedPosition(index = 1, key = savedQueue[1].key, positionMs = SAVED_POSITION_MS),
     )
 
     private fun mediaButton(keyCode: Int) = Intent(Intent.ACTION_MEDIA_BUTTON)
@@ -393,10 +385,23 @@ class PlayBackServiceTest {
 
     private val queueItem = QueueItem("42", TrackSource.DEEZER, "Title", "Artist", null, 0L)
 
+    /** Сервис, который [tearDown] уничтожит, если тест не успел. */
+    private fun buildService(intent: Intent? = null): ServiceController<PlayBackService> =
+        Robolectric.buildService(PlayBackService::class.java, intent).also { services += it }
+
     private fun connect(token: SessionToken): MediaController {
         val future = MediaController.Builder(application, token).buildAsync()
         runMainLooperUntil { future.isDone }
         return future.get().also { controllers += it }
+    }
+
+    private companion object {
+        /**
+         * Внутри фейкового трека: `FakeMediaSourceFactory` даёт окна по 10 с. Позиция за концом
+         * окна после подготовки сводится к концу трека (`STATE_ENDED`) — проверка позиции зависела
+         * бы от того, успел ли поток плеера её обработать.
+         */
+        const val SAVED_POSITION_MS = 4_200L
     }
 }
 
@@ -430,6 +435,7 @@ class PlayBackServiceTestApplication : Application(), GeneratedComponentManager<
         override fun injectPlayBackService(playBackService: PlayBackService) {
             playBackService.playerFactory = PlayerFactory {
                 TestExoPlayerBuilder(this@PlayBackServiceTestApplication)
+                    .setClock(FakeClock(/* isAutoAdvancing= */ false))
                     .setMediaSourceFactory(FakeMediaSourceFactory())
                     .build()
                     .also { players += it }
