@@ -49,20 +49,33 @@ internal class PlaybackSessionCallback @Inject constructor(
      */
     var onResumptionFinished: ((succeeded: Boolean) -> Unit)? = null
 
-    override fun onConnect(
+    /**
+     * Решение принимается сразу, по полям [MediaSession.ControllerInfo]: для платформенных контроллеров
+     * Media3 ждёт результат, блокируя главный поток, поэтому future уже заполнен.
+     */
+    override fun onConnectAsync(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
-    ): MediaSession.ConnectionResult = when (controller.access()) {
-        ControllerAccess.FULL -> MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
-        ControllerAccess.NONE -> {
-            // Платформенный контроллер спрашивается заново на каждую команду
-            // (например, на каждое нажатие медиаклавиши).
-            if (loggedRejectedUids.add(controller.uid)) {
-                Log.w(TAG, "Rejected controller ${controller.packageName} (uid=${controller.uid})")
+    ): ListenableFuture<MediaSession.ConnectionResult> = Futures.immediateFuture(connectionResult(controller))
+
+    private fun connectionResult(controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
+        when (controller.access()) {
+            // Полный набор команд задан явно: конструктор по контроллеру урезал бы права своему uid,
+            // если система не считает его доверенным. Для MediaLibrarySession набор пришлось бы расширить
+            // библиотечными командами.
+            ControllerAccess.FULL -> MediaSession.ConnectionResult.AcceptedResultBuilder()
+                .setAvailableSessionCommands(MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
+                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                .build()
+            ControllerAccess.NONE -> {
+                // Платформенный контроллер спрашивается заново на каждую команду
+                // (например, на каждое нажатие медиаклавиши).
+                if (loggedRejectedUids.add(controller.uid)) {
+                    Log.w(TAG, "Rejected controller ${controller.packageName} (uid=${controller.uid})")
+                }
+                MediaSession.ConnectionResult.reject()
             }
-            MediaSession.ConnectionResult.reject()
         }
-    }
 
     override fun onAddMediaItems(
         mediaSession: MediaSession,

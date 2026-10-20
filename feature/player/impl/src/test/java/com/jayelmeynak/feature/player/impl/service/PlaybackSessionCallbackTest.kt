@@ -61,14 +61,14 @@ class PlaybackSessionCallbackTest {
 
     @Test
     fun `чужое недоверенное приложение не подключается и не читает очередь`() {
-        val result = callback.onConnect(session(), controller(uid = FOREIGN_UID, trusted = false))
+        val result = connect(session(), controller(uid = FOREIGN_UID, trusted = false))
 
         assertFalse(result.isAccepted)
     }
 
     @Test
     fun `чужой недоверенный платформенный контроллер не подключается`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(uid = FOREIGN_UID, trusted = false, version = ControllerInfo.LEGACY_CONTROLLER_VERSION),
         )
@@ -78,7 +78,7 @@ class PlaybackSessionCallbackTest {
 
     @Test
     fun `чужое приложение, назвавшееся пакетом приложения, не подключается`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(packageName = OWN_PACKAGE, uid = FOREIGN_UID, trusted = false),
         )
@@ -88,7 +88,7 @@ class PlaybackSessionCallbackTest {
 
     @Test
     fun `доверенный контроллер Media3 с непроверенным пакетом не подключается`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(packageName = "com.android.systemui", uid = FOREIGN_UID, trusted = true, verified = false),
         )
@@ -98,7 +98,7 @@ class PlaybackSessionCallbackTest {
 
     @Test
     fun `доверенный платформенный контроллер подключается и без проверки пакета`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(
                 packageName = "android",
@@ -114,29 +114,27 @@ class PlaybackSessionCallbackTest {
 
     @Test
     fun `контроллер своего приложения получает полный доступ, включая очередь`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(packageName = OWN_PACKAGE, uid = Process.myUid(), trusted = false),
         )
 
-        assertTrue(result.isAccepted)
-        assertTrue(result.availablePlayerCommands.contains(Player.COMMAND_GET_TIMELINE))
+        assertFullAccess(result)
     }
 
     @Test
     fun `доверенный системой контроллер получает полный доступ, включая очередь`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(packageName = "com.android.systemui", uid = FOREIGN_UID, trusted = true),
         )
 
-        assertTrue(result.isAccepted)
-        assertTrue(result.availablePlayerCommands.contains(Player.COMMAND_GET_TIMELINE))
+        assertFullAccess(result)
     }
 
     @Test
     fun `доверенный платформенный контроллер системы - медиакнопки и шторка - получает полный доступ`() {
-        val result = callback.onConnect(
+        val result = connect(
             session(),
             controller(
                 packageName = "android",
@@ -146,8 +144,7 @@ class PlaybackSessionCallbackTest {
             ),
         )
 
-        assertTrue(result.isAccepted)
-        assertTrue(result.availablePlayerCommands.contains(Player.COMMAND_GET_TIMELINE))
+        assertFullAccess(result)
     }
 
     @Test
@@ -276,6 +273,21 @@ class PlaybackSessionCallbackTest {
         assertEquals("Нет сохранённой очереди для возобновления", runCatching { future.get() }.exceptionOrNull()?.cause?.message)
         assertTrue(ShadowLog.getLogsForTag("PlaybackSessionCallback").none { it.msg.contains("Could not read") })
         assertEquals(listOf("сигнал упал в тесте"), uncaught.map { it.message })
+    }
+
+    /** Решение о подключении принимается сразу: future уже заполнен, главный поток не ждёт. */
+    private fun connect(session: MediaSession, controller: ControllerInfo): MediaSession.ConnectionResult {
+        val future = callback.onConnectAsync(session, controller)
+        assertTrue(future.isDone)
+        return future.get()
+    }
+
+    /** Полный доступ — все команды сессии и плеера, включая чтение очереди, независимо от доверия системы. */
+    private fun assertFullAccess(result: MediaSession.ConnectionResult) {
+        assertTrue(result.isAccepted)
+        assertTrue(result.availablePlayerCommands.contains(Player.COMMAND_GET_TIMELINE))
+        assertEquals(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS, result.availablePlayerCommands)
+        assertEquals(MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS, result.availableSessionCommands)
     }
 
     private val savedQueue = listOf(

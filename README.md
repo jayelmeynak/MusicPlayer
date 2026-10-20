@@ -46,11 +46,11 @@ feature/local-music/
 
 ## Технологии
 
-- Kotlin 2.4.21, Jetpack Compose (BOM 2026.04.01), Material 3
-- Navigation3 1.1.1
+- Kotlin 2.4.21, Jetpack Compose (BOM 2026.09.00), Material 3
+- Navigation3 1.2.0
 - Hilt 2.60.1 (KSP)
 - Retrofit 3.0.0, OkHttp, Gson
-- Media3 1.10.0 (ExoPlayer, MediaSession, MediaController)
+- Media3 1.11.1 (ExoPlayer, MediaSession, MediaController)
 - Coil — изображения, обложки локальных треков — эскизы MediaStore
 - Корутины и Flow
 - Тесты: JUnit4, kotlinx-coroutines-test, Turbine, Robolectric, MockWebServer
