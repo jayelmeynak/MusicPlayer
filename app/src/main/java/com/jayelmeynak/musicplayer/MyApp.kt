@@ -23,7 +23,9 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Файл исчезает после первого запуска новой версии; дальше удалять нечего — вызов дешёвый.
+        // Прежние кэши исчезают после первого запуска новой версии; дальше удалять нечего — вызовы дешёвые.
+        // Отдельные корутины: сбой одной очистки не отменяет другую.
         applicationScope.launch(ioDispatcher) { deleteLegacyArtworkCache() }
+        applicationScope.launch(ioDispatcher) { deleteLegacyImageCache() }
     }
 }
