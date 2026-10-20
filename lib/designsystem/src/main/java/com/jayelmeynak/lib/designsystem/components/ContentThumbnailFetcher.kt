@@ -1,18 +1,18 @@
 package com.jayelmeynak.lib.designsystem.components
 
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.CancellationSignal
 import android.os.OperationCanceledException
 import android.util.Size
-import coil.ImageLoader
-import coil.decode.DataSource
-import coil.fetch.DrawableResult
-import coil.fetch.FetchResult
-import coil.fetch.Fetcher
-import coil.request.Options
-import coil.size.pxOrElse
+import coil3.ImageLoader
+import coil3.asImage
+import coil3.decode.DataSource
+import coil3.fetch.FetchResult
+import coil3.fetch.Fetcher
+import coil3.fetch.ImageFetchResult
+import coil3.request.Options
+import coil3.size.pxOrElse
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -47,8 +47,8 @@ internal class ContentThumbnailFetcher(
             options.size.height.pxOrElse { DEFAULT_SIZE_PX },
         )
         val bitmap = loadCancellable { signal -> loader.load(uri, size, signal) }
-        return DrawableResult(
-            drawable = BitmapDrawable(options.context.resources, bitmap),
+        return ImageFetchResult(
+            image = bitmap.asImage(),
             // Эскиз меньше оригинала: Coil не подставит его из памяти в слот крупнее.
             isSampled = true,
             dataSource = DataSource.DISK,

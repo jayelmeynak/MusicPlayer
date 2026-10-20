@@ -38,9 +38,9 @@ class TrackArtworkTest {
 
         val request = trackArtworkRequest(RuntimeEnvironment.getApplication(), uri)
 
-        assertEquals("content-thumbnail:$uri", request.memoryCacheKey?.key)
+        assertEquals("content-thumbnail:$uri", request.memoryCacheKey)
         assertNotNull(request.fetcherFactory)
-        assertEquals(ContentThumbnail::class.java, request.fetcherFactory!!.second)
+        assertEquals(ContentThumbnail::class, request.fetcherFactory!!.second)
     }
 
     @Test

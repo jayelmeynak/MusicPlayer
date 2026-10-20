@@ -10,9 +10,9 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 
 @Composable
@@ -23,7 +23,7 @@ public fun RemoteTrackImage(
     SubcomposeAsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(imageUrl)
-            .dispatcher(Dispatchers.IO)
+            .coroutineContext(Dispatchers.IO)
             .memoryCacheKey(imageUrl)
             .diskCacheKey(imageUrl)
             .diskCachePolicy(CachePolicy.ENABLED)

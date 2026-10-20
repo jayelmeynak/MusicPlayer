@@ -18,6 +18,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.compose)
+    // Сеть Coil 3 — отдельный артефакт: без него обложки Deezer по URL не загрузятся.
+    implementation(libs.coil.network.okhttp)
     // Flow — в публичном API (debounceSearchQuery).
     api(libs.kotlinx.coroutines.core)
 
@@ -25,6 +27,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
+    testImplementation(libs.mockwebserver3)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.ui.test.junit4)
     // Тестовая ComponentActivity для Robolectric-тестов SeekSlider: AGP подключает её через
