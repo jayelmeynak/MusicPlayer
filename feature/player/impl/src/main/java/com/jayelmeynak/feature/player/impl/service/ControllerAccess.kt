@@ -41,8 +41,8 @@ internal enum class ControllerAccess {
  *   Сторонние переназначатели медиаклавиш, шлющие клавиши от себя (а не от системы), тоже
  *   отклоняются.
  *
- * Читает только поля [MediaSession.ControllerInfo]: для платформенных контроллеров `onConnect` может
- * блокировать главный поток.
+ * Читает только поля [MediaSession.ControllerInfo]: для платформенных контроллеров `onConnectAsync`
+ * может блокировать главный поток.
  */
 @OptIn(UnstableApi::class)
 internal fun MediaSession.ControllerInfo.access(ownUid: Int = Process.myUid()): ControllerAccess = when {
