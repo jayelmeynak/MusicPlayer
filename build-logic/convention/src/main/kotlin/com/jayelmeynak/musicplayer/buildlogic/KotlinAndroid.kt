@@ -1,5 +1,6 @@
 package com.jayelmeynak.musicplayer.buildlogic
 
+import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -8,7 +9,9 @@ import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 
 /**
- * Уровни SDK, test runner и build type release — общие для всех Android-модулей.
+ * Уровни SDK и test runner — общие для всех Android-модулей. Build type release задаёт только
+ * приложение ([configureReleaseShrinking]): библиотеки не минифицируются, их keep-правила приходят
+ * в приложение через `consumer-rules.pro`.
  */
 internal fun Project.configureAndroidCommon(extension: CommonExtension) {
     extension.apply {
@@ -17,13 +20,22 @@ internal fun Project.configureAndroidCommon(extension: CommonExtension) {
             minSdk = MusicPlayerBuild.MIN_SDK
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
-        buildTypes.getByName("release").apply {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
+    }
+}
+
+/**
+ * Release приложения: R8 (сжатие, оптимизация, обфускация) и удаление неиспользуемых ресурсов.
+ * Правила — оптимизирующие по умолчанию AGP, `proguard-rules.pro` приложения и consumer rules
+ * зависимостей: keep-правило лежит у модуля, который полагается на рефлексию (`docs/modules.md`).
+ */
+internal fun ApplicationExtension.configureReleaseShrinking() {
+    buildTypes.getByName("release").apply {
+        isMinifyEnabled = true
+        isShrinkResources = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
     }
 }
 
