@@ -3,6 +3,7 @@ package com.jayelmeynak.lib.designsystem.components
 import android.graphics.Bitmap
 import coil3.SingletonImageLoader
 import coil3.decode.DataSource
+import coil3.request.CachePolicy
 import coil3.request.SuccessResult
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
@@ -45,7 +46,12 @@ class TrackArtworkNetworkTest {
         server.enqueue(MockResponse.Builder().body(Buffer().write(png(width = 3, height = 2))).build())
         val url = server.url("/cover.png").toString()
 
-        val result = SingletonImageLoader.get(context).execute(trackArtworkRequest(context, url))
+        // Кэши выключены: дисковый кэш Coil живёт во временном каталоге хоста и пережил бы прогон.
+        val request = trackArtworkRequest(context, url).newBuilder()
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .build()
+        val result = SingletonImageLoader.get(context).execute(request)
 
         assertTrue("ожидался успех, а не $result", result is SuccessResult)
         result as SuccessResult
