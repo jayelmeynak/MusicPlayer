@@ -1,13 +1,13 @@
 package com.jayelmeynak.lib.designsystem.components
 
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.CancellationSignal
 import android.os.OperationCanceledException
-import coil.fetch.DrawableResult
-import coil.request.Options
-import coil.size.Size
+import coil3.BitmapImage
+import coil3.fetch.ImageFetchResult
+import coil3.request.Options
+import coil3.size.Size
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -40,11 +40,11 @@ class ContentThumbnailFetcherTest {
         val result = fetcher(Size(120, 80)) { requestedUri, size, _ ->
             requests += requestedUri to size
             bitmap
-        }.fetch() as DrawableResult
+        }.fetch() as ImageFetchResult
 
         assertEquals(listOf(uri to PlatformSize(120, 80)), requests)
         assertTrue(result.isSampled)
-        assertSame(bitmap, (result.drawable as BitmapDrawable).bitmap)
+        assertSame(bitmap, (result.image as BitmapImage).bitmap)
     }
 
     @Test
